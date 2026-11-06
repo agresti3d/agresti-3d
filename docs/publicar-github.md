@@ -46,8 +46,9 @@ git push -u origin main
   páginas de producto.
 - Manual: después de una importación grande, ejecutá el workflow a mano.
 
-El catálogo visible se actualiza al instante desde Firestore; las páginas SEO
-pueden demorar hasta 6 horas o hasta que ejecutes el workflow manualmente.
+El catálogo visible se actualiza al instante desde Firestore. Al publicar desde
+el editor cloud se dispara el workflow automáticamente; el cron de 6 horas queda
+como respaldo. Ver `docs/seo-automatico.md`.
 
 ## Notas
 
