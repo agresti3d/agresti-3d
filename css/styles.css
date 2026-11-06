@@ -2318,3 +2318,35 @@ body.is-quote-visible .wa-float {
   .gift-dialog__actions,
   .gift-results { padding-left: var(--s-4); padding-right: var(--s-4); }
 }
+
+/* Referencia del pedido */
+.field__optional { color: var(--muted); font-weight: 400; }
+.field__hint { margin: .35rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+.quote-preview { margin-top: .6rem; }
+.quote-preview img { width: 100%; max-width: 220px; max-height: 160px; object-fit: cover; border: 1px solid var(--line); border-radius: 10px; }
+
+/* Orden del catálogo */
+.catalog-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: .78rem;
+}
+.catalog-sort select {
+  min-height: 44px;
+  padding: .35rem 2rem .35rem .65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .catalog-sort { margin-left: 0; width: 100%; }
+  .catalog-sort select { flex: 1; }
+}

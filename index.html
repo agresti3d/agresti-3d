@@ -6,6 +6,8 @@
   <title>Agresti.3D — Objetos impresos en 3D para regalar y usar</title>
   <meta name="description" content="Deco, organizadores, juguetes y regalos personalizados impresos en 3D. Solo PLA, PETG y TPU. Elegí tu modelo y color; lo imprimimos a pedido y lo enviamos.">
   <meta name="theme-color" content="#070f1f">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png">
 
   <script>document.documentElement.classList.add("js");</script>
   <script>
@@ -47,7 +49,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=30">
+  <link rel="stylesheet" href="css/styles.css?v=32">
   <link rel="stylesheet" href="css/theme.css?v=8">
 <script type="application/ld+json">
 {
@@ -197,6 +199,16 @@
         <nav class="breadcrumbs" id="breadcrumbs" aria-label="Ruta de categorías" hidden></nav>
         <div class="catalog-nav__row">
           <div class="filters" id="filters" role="group" aria-label="Filtrar productos por categoría"></div>
+          <label class="catalog-sort">
+            <span>Ordenar</span>
+            <select id="catalogSort">
+              <option value="relevancia">Relevancia</option>
+              <option value="novedades">Novedades</option>
+              <option value="precio-asc">Precio: menor a mayor</option>
+              <option value="precio-desc">Precio: mayor a menor</option>
+              <option value="nombre">Nombre A–Z</option>
+            </select>
+          </label>
           <button class="chip chip--fav" id="favToggle" type="button" aria-pressed="false" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1Z"/></svg>
             Favoritos <span class="chip__count" id="favCount">0</span>
@@ -408,12 +420,20 @@
             <p class="field__error" id="details-error" role="alert"></p>
           </div>
 
+          <div class="field">
+            <label for="reference">Foto o referencia <span class="field__optional">(opcional)</span></label>
+            <input id="reference" name="reference" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" aria-describedby="reference-hint reference-error">
+            <p class="field__hint" id="reference-hint">Si tenés una foto, un boceto o una captura del modelo, sumala. Se sube a Cloudinary y el link viaja en el mensaje.</p>
+            <div class="quote-preview" id="referencePreview" hidden></div>
+            <p class="field__error" id="reference-error" role="alert"></p>
+          </div>
+
           <button class="btn btn--primary" type="submit">
             Pedir por WhatsApp
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
 
-          <p class="form-note">Elegí la sucursal y se abre WhatsApp con el mensaje ya escrito. No guardamos los datos en esta página.</p>
+          <p class="form-note">Elegí la sucursal y se abre WhatsApp con el mensaje ya escrito. La foto de referencia se sube a Cloudinary para compartir el link; no guardamos datos personales.</p>
         </form>
       </div>
 
@@ -609,9 +629,9 @@
 <div class="cart-toast" id="cartToast" role="status" aria-live="polite" hidden></div>
 
 <script src="js/seasons.js?v=3"></script>
-<script src="js/main.js?v=8"></script>
+<script src="js/main.js?v=11"></script>
 <script src="js/campaigns.js?v=1"></script>
-<script src="js/catalog.js?v=32"></script>
+<script src="js/catalog.js?v=34"></script>
 <script src="js/gift-finder.js?v=1"></script>
 </body>
 </html>

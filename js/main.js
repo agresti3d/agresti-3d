@@ -230,6 +230,53 @@ if (form) {
     details: "Contanos un poco más.",
   };
 
+  const referenceInput = form.querySelector("#reference");
+  const referencePreview = document.getElementById("referencePreview");
+  const referenceError = document.getElementById("reference-error");
+  const submitButton = form.querySelector('button[type="submit"]');
+  const CLOUDINARY = {
+    cloud: "ejl0yvoo",
+    preset: "agresti3d_unsigned",
+    folder: "agresti3d/pedidos",
+  };
+
+  const mostrarReferencia = () => {
+    if (!referenceInput?.files?.[0] || !referencePreview) return;
+    const archivo = referenceInput.files[0];
+    if (!archivo.type.startsWith("image/")) {
+      referenceError.textContent = "La referencia tiene que ser una imagen.";
+      referenceInput.value = "";
+      referencePreview.hidden = true;
+      return;
+    }
+    if (archivo.size > 10 * 1024 * 1024) {
+      referenceError.textContent = "La imagen no puede superar los 10 MB.";
+      referenceInput.value = "";
+      referencePreview.hidden = true;
+      return;
+    }
+    referenceError.textContent = "";
+    const url = URL.createObjectURL(archivo);
+    referencePreview.innerHTML = `<img src="${url}" alt="Vista previa de la referencia">`;
+    referencePreview.hidden = false;
+  };
+
+  const subirReferencia = async (archivo) => {
+    const datos = new FormData();
+    datos.append("file", archivo);
+    datos.append("upload_preset", CLOUDINARY.preset);
+    datos.append("folder", CLOUDINARY.folder);
+    const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloud}/image/upload`, {
+      method: "POST",
+      body: datos,
+    });
+    if (!respuesta.ok) throw new Error("No se pudo subir la foto.");
+    const data = await respuesta.json();
+    return data.secure_url;
+  };
+
+  referenceInput?.addEventListener("change", mostrarReferencia);
+
   const clearError = (field) => {
     field.removeAttribute("aria-invalid");
     const error = document.getElementById(`${field.id}-error`);
@@ -241,7 +288,7 @@ if (form) {
     field.addEventListener("change", () => clearError(field));
   });
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const data = new FormData(form);
@@ -270,6 +317,28 @@ if (form) {
     const tipo = (data.get("kind") || "").toString().trim();
     const detalle = (data.get("details") || "").toString().trim();
 
+    let referencia = "";
+    const archivo = referenceInput?.files?.[0];
+    if (archivo) {
+      const textoOriginal = submitButton?.innerHTML;
+      try {
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Subiendo foto…";
+        }
+        referencia = await subirReferencia(archivo);
+      } catch (error) {
+        if (referenceError) {
+          referenceError.textContent = "No se pudo subir la foto. Probá de nuevo o quitá la imagen.";
+        }
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.innerHTML = textoOriginal;
+        }
+        return;
+      }
+    }
+
     const mensaje = [
       "¡Hola Agresti.3D! Quiero hacer un pedido.",
       "",
@@ -278,9 +347,14 @@ if (form) {
       `*Qué quiere:* ${tipo}`,
       "",
       `*Detalle:* ${detalle}`,
+      ...(referencia ? ["", `*Referencia:* ${referencia}`] : []),
     ].join("\n");
 
     requestWhatsApp(mensaje);
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Pedir por WhatsApp";
+    }
   });
 }
 
@@ -307,3 +381,12 @@ if (quoteSection && "IntersectionObserver" in window) {
 ["gesturestart", "gesturechange", "gestureend"].forEach((gesto) => {
   document.addEventListener(gesto, (evento) => evento.preventDefault(), { passive: false });
 });
+
+// ---------- 8. PWA ----------
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Sin service worker el sitio sigue funcionando normalmente.
+    });
+  });
+}

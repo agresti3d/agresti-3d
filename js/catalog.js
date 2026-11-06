@@ -45,6 +45,7 @@
   let fotosTemporada = [];
   let ruta = [];
   let paginaActual = 0;
+  let ordenCatalogo = "relevancia";
   let verFavoritos = false;
   let favoritos = new Set();
 
@@ -705,6 +706,26 @@
     } else {
       const alcance = ruta.length ? ramaCompleta(ruta[ruta.length - 1]) : null;
       lista = productos.filter((p) => !alcance || alcance.has(p.categoria));
+    }
+
+    if (ordenCatalogo !== "relevancia") {
+      const precio = (producto) => {
+        const numero = parseInt(String(producto.precio || "").replace(/[^\d]/g, ""), 10);
+        return Number.isFinite(numero) ? numero : null;
+      };
+      lista = [...lista];
+      if (ordenCatalogo === "novedades") lista.reverse();
+      if (ordenCatalogo === "nombre") lista.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+      if (ordenCatalogo === "precio-asc" || ordenCatalogo === "precio-desc") {
+        lista.sort((a, b) => {
+          const pa = precio(a);
+          const pb = precio(b);
+          if (pa === null && pb === null) return 0;
+          if (pa === null) return 1;
+          if (pb === null) return -1;
+          return ordenCatalogo === "precio-asc" ? pa - pb : pb - pa;
+        });
+      }
     }
 
     const totalPaginas = Math.ceil(lista.length / PAGE_SIZE);
@@ -1492,4 +1513,10 @@
       grid.innerHTML =
         '<p class="products__empty">No pudimos cargar el catálogo. Escribinos por WhatsApp y te pasamos la lista completa.</p>';
     });
+
+  document.getElementById("catalogSort")?.addEventListener("change", (evento) => {
+    ordenCatalogo = evento.target.value;
+    paginaActual = 0;
+    renderProductos(renderCategorias());
+  });
 })();
