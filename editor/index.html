@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=8">
+  <link rel="stylesheet" href="editor.css?v=9">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -236,6 +236,17 @@
               <div class="cloud-review-list" id="reviewList"></div>
               <p class="cloud-status" id="reviewStatus" role="status" aria-live="polite"></p>
             </section>
+            <section class="cloud-pending-reviews" aria-labelledby="pendingReviewsTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="pendingReviewsTitle">Reseñas pendientes de aprobación</h3>
+                  <p class="cloud-muted">Las enviadas desde la ficha del producto. Aprobá solo las reales.</p>
+                </div>
+                <button class="btn btn--ghost" id="reloadPendingReviews" type="button">Actualizar</button>
+              </div>
+              <div id="pendingReviewsList" class="cloud-pending-list"></div>
+              <p class="cloud-status" id="pendingReviewsStatus" role="status" aria-live="polite"></p>
+            </section>
           </div>
 
           <div class="cloud-form-tab-panel" data-form-panel="variantes" hidden>
@@ -308,6 +319,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=15"></script>
+  <script src="editor.js?v=16"></script>
 </body>
 </html>

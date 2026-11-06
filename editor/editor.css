@@ -670,3 +670,9 @@
 }
 
 .cloud-review-list { display: grid; gap: var(--cloud-s3); }
+
+.cloud-pending-reviews { display: grid; gap: var(--cloud-s3); padding-top: var(--cloud-s3); border-top: 1px solid var(--cloud-line); }
+.cloud-pending-list { display: grid; gap: var(--cloud-s3); }
+.cloud-pending { display: grid; gap: .5rem; padding: var(--cloud-s3); border: 1px solid var(--cloud-line); border-radius: 9px; background: rgba(255,255,255,.025); }
+.cloud-pending img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; }
+.cloud-pending__actions { display: flex; gap: .5rem; flex-wrap: wrap; }

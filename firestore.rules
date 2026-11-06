@@ -18,6 +18,30 @@ service cloud.firestore {
       allow read, write: if esAdmin();
     }
 
+    // Reseñas enviadas por clientes: se crean sin cuenta y quedan pendientes.
+    // Solo el administrador puede leerlas, aprobarlas o borrarlas.
+    function resenaValida() {
+      return request.resource.data.productoId is string
+        && request.resource.data.productoId.size() > 0
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 80
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 600
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.estado == 'pendiente'
+        && request.resource.data.foto is string
+        && request.resource.data.foto.size() <= 500;
+    }
+
+    match /resenas/{resena} {
+      allow create: if resenaValida();
+      allow read, update, delete: if esAdmin();
+    }
+
     // Configuración privada (token de GitHub para disparar el SEO).
     // Solo el administrador puede leerla; se escribe desde la consola.
     match /config/{documento} {

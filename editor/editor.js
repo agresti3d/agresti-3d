@@ -56,6 +56,9 @@
     reviewList: $("#reviewList"),
     addReview: $("#addReview"),
     reviewStatus: $("#reviewStatus"),
+    pendingReviewsList: $("#pendingReviewsList"),
+    pendingReviewsStatus: $("#pendingReviewsStatus"),
+    reloadPendingReviews: $("#reloadPendingReviews"),
     branchList: $("#branchList"),
     addBranch: $("#addBranch"),
     saveBranches: $("#saveBranches"),
@@ -901,6 +904,89 @@
     }
   };
 
+
+  const fechaResena = (fecha) => {
+    try {
+      if (fecha?.toDate) return fecha.toDate().toISOString().slice(0, 10);
+      if (typeof fecha === "string") return fecha.slice(0, 10);
+    } catch (error) {}
+    return new Date().toISOString().slice(0, 10);
+  };
+
+  const renderPendientes = (docs) => {
+    if (!els.pendingReviewsList) return;
+    if (!docs.length) {
+      els.pendingReviewsList.innerHTML = '<p class="cloud-muted">No hay reseñas pendientes.</p>';
+      return;
+    }
+    els.pendingReviewsList.innerHTML = docs
+      .map(({ id, data }) => {
+        const producto = catalog?.productos?.find((item) => item.id === data.productoId);
+        return `<article class="cloud-pending" data-pending-id="${escapeHTML(id)}">
+          ${data.foto ? `<img src="${escapeHTML(data.foto)}" alt="Foto de la reseña">` : ""}
+          <strong>${escapeHTML(data.nombre || "Cliente")} · ${"★".repeat(Math.max(1, Math.min(5, Number(data.rating) || 5)))}</strong>
+          <small>${escapeHTML(producto?.nombre || data.productoId || "Producto")} · ${fechaResena(data.fecha)}</small>
+          <p>${escapeHTML(data.texto || "")}</p>
+          <div class="cloud-pending__actions">
+            <button class="btn btn--primary" type="button" data-approve="${escapeHTML(id)}">Aprobar</button>
+            <button class="cloud-danger" type="button" data-reject="${escapeHTML(id)}">Descartar</button>
+          </div>
+        </article>`;
+      })
+      .join("");
+  };
+
+  const cargarResenasPendientes = async () => {
+    if (!db || !els.pendingReviewsList) return;
+    try {
+      setStatus(els.pendingReviewsStatus, "Buscando reseñas pendientes…");
+      const snap = await db.collection("resenas").where("estado", "==", "pendiente").limit(30).get();
+      const docs = snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+      renderPendientes(docs);
+      setStatus(els.pendingReviewsStatus, docs.length ? `${docs.length} pendiente(s).` : "No hay reseñas pendientes.", "success");
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se pudieron cargar: ${firebaseErrorMessage(error)}`, "error");
+    }
+  };
+
+  const aprobarResena = async (id) => {
+    if (!db) return;
+    try {
+      const ref = db.collection("resenas").doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) throw new Error("La reseña ya no existe.");
+      const data = snap.data();
+      const producto = catalog?.productos?.find((item) => item.id === data.productoId);
+      if (!producto) throw new Error("No encuentro el producto de esta reseña.");
+      const resena = {
+        nombre: data.nombre || "Cliente",
+        rating: Number(data.rating) || 5,
+        texto: data.texto || "",
+        foto: data.foto || "",
+        fecha: fechaResena(data.fecha),
+      };
+      producto.resenas = [...(Array.isArray(producto.resenas) ? producto.resenas : []), resena];
+      await ref.update({ estado: "aprobada" });
+      if (selectedId === producto.id) renderResenas(producto);
+      dirty = true;
+      await guardarBorrador(null, { silencioso: true });
+      await cargarResenasPendientes();
+      toast("Reseña aprobada. Guardá y publicá para que aparezca en la web.");
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se aprobó: ${error.message}`, "error");
+    }
+  };
+
+  const rechazarResena = async (id) => {
+    if (!db) return;
+    try {
+      await db.collection("resenas").doc(id).update({ estado: "rechazada" });
+      await cargarResenasPendientes();
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se descartó: ${error.message}`, "error");
+    }
+  };
+
   const renderImagenes = (producto) => {
     if (!els.imageList) return;
     const imagenes = producto?.imagenes || [];
@@ -1492,6 +1578,7 @@
   };
 
   const activarFormTab = (nombre) => {
+    if (nombre === "resenas") cargarResenasPendientes();
     document.querySelectorAll("[data-form-tab]").forEach((tab) => {
       const activo = tab.dataset.formTab === nombre;
       tab.setAttribute("aria-selected", String(activo));
@@ -1573,6 +1660,20 @@
     if (els.importCatalog) els.importCatalog.addEventListener("click", importarCatalogo);
     if (els.addVariant) els.addVariant.addEventListener("click", agregarVariante);
     if (els.addReview) els.addReview.addEventListener("click", agregarResena);
+    if (els.reloadPendingReviews) {
+      els.reloadPendingReviews.addEventListener("click", cargarResenasPendientes);
+    }
+    if (els.pendingReviewsList) {
+      els.pendingReviewsList.addEventListener("click", (event) => {
+        const aprobar = event.target.closest("[data-approve]");
+        if (aprobar) {
+          aprobarResena(aprobar.dataset.approve);
+          return;
+        }
+        const rechazar = event.target.closest("[data-reject]");
+        if (rechazar) rechazarResena(rechazar.dataset.reject);
+      });
+    }
     if (els.reviewList) {
       els.reviewList.addEventListener("click", (event) => {
         const quitar = event.target.closest("[data-remove-review]");

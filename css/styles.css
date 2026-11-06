@@ -2350,3 +2350,19 @@ body.is-quote-visible .wa-float {
   .catalog-sort { margin-left: 0; width: 100%; }
   .catalog-sort select { flex: 1; }
 }
+
+/* Formulario de reseñas */
+.product-review-form { margin-top: var(--s-4); border-top: 1px solid var(--line); padding-top: var(--s-3); }
+.product-review-form summary { min-height: 44px; display: flex; align-items: center; color: var(--accent-ink); font-weight: 600; cursor: pointer; }
+.product-review-form form { display: grid; gap: var(--s-3); margin-top: var(--s-2); }
+.product-review-form label { display: grid; gap: .3rem; color: var(--muted); font-size: .8rem; }
+.product-review-form input, .product-review-form select, .product-review-form textarea {
+  width: 100%; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: .9rem;
+}
+.product-review-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.product-review-form__intro { margin: 0; color: var(--muted); font-size: .8rem; }
+.product-review-form__status { margin: 0; font-size: .8rem; color: var(--muted); }
+.product-review-form__status[data-state="error"] { color: #ff9b8b; }
+.product-review-form__status[data-state="success"] { color: #9fe3b0; }
+@media (max-width: 480px) { .product-review-form__row { grid-template-columns: 1fr; } }

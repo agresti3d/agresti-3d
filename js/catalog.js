@@ -491,6 +491,23 @@
             .join("")}</ul>
         </section>`
       : "";
+    const formResenaHtml = `
+      <details class="product-review-form">
+        <summary>Dejá tu reseña</summary>
+        <form data-review-form data-producto-id="${esc(producto.id)}" novalidate>
+          <p class="product-review-form__intro">¿Ya lo tenés? Contanos cómo te fue. La revisamos antes de publicarla.</p>
+          <div class="product-review-form__row">
+            <label>Nombre<input name="nombre" type="text" maxlength="80" required autocomplete="name"></label>
+            <label>Calificación
+              <select name="rating">${[5,4,3,2,1].map((n) => `<option value="${n}">${"★".repeat(n)}${"☆".repeat(5 - n)}</option>`).join("")}</select>
+            </label>
+          </div>
+          <label>Tu experiencia<textarea name="texto" rows="3" maxlength="600" required placeholder="Qué te gustó, cómo llegó, cómo lo usás…"></textarea></label>
+          <label>Foto (opcional)<input name="foto" type="file" accept="image/jpeg,image/png,image/webp,image/heic"></label>
+          <p class="product-review-form__status" data-review-status role="status" aria-live="polite"></p>
+          <button class="btn btn--ghost" type="submit">Enviar reseña</button>
+        </form>
+      </details>`;
     const variantes = Array.isArray(producto.variantes)
       ? producto.variantes.filter((variante) => variante && variante.nombre)
       : [];
@@ -556,6 +573,7 @@
           ${variantesHtml}
           ${specsHtml}
           ${resenasHtml}
+          ${formResenaHtml}
           <div class="product-detail__purchase">
             <span class="product__price">${precio}${nota}</span>
             <div class="product-detail__purchase-actions">
