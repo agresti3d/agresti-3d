@@ -37,7 +37,16 @@ jobs:
           node-version: "20"
 
       - name: Instalar Firebase CLI
-        run: npm install -g firebase-tools
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          for intento in 1 2 3; do
+            if npm install -g firebase-tools; then
+              break
+            fi
+            echo "Reintentando instalación de Firebase CLI ($intento/3)…"
+            sleep 15
+          done
 
       - name: Credenciales de Firebase
         env:
