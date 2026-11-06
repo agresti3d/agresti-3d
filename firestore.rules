@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function esAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'agresti.3d@gmail.com';
+    }
+
+    // El sitio público lee solamente la versión publicada.
+    match /catalogo/publicado {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // El borrador es privado del administrador.
+    match /catalogo/borrador {
+      allow read, write: if esAdmin();
+    }
+  }
+}

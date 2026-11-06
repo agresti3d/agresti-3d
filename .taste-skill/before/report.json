@@ -1,0 +1,2348 @@
+{
+ "url": "http://localhost:8766/index.html",
+ "at": "2026-11-01T12:52:51.510Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    0.39,
+    0.61,
+    0.8,
+    0.46,
+    0.29,
+    0.71
+   ],
+   "motion": {
+    "elements": 26,
+    "css": 1,
+    "transitions": 25,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 5047,
+     "screens": 5.6,
+     "words": 615,
+     "img": 3,
+     "video": 0,
+     "canvas": 0,
+     "svg": 13,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 2,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "mate-azul-oro.webp?v=6",
+      "figura-cerebro.webp?v=6"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "chars": 44,
+     "lines": 2,
+     "size": 58,
+     "vw": 4,
+     "font": "Space Grotesk",
+     "weight": 600,
+     "tracking": -0.04,
+     "leading": 0.98,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "left",
+     "widthRatio": 0.42,
+     "top": 227,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "lines": 2,
+     "size": 58,
+     "font": "Space Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "words": 8,
+      "chars": 44,
+      "lines": 2,
+      "size": 58,
+      "vw": 4,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.04,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.42,
+      "top": 227,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que está saliendo de la impresora.",
+      "words": 7,
+      "chars": 37,
+      "lines": 2,
+      "size": 46,
+      "vw": 3.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.4,
+      "top": 901,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Tres plásticos. Ninguno de relleno.",
+      "words": 5,
+      "chars": 35,
+      "lines": 2,
+      "size": 46,
+      "vw": 3.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.4,
+      "top": 1692,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "PLA",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 1.9,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.03,
+      "top": 1880,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "PETG",
+      "words": 1,
+      "chars": 4,
+      "lines": 1,
+      "size": 28,
+      "vw": 1.9,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.04,
+      "top": 1880,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "TPU",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 1.9,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.03,
+      "top": 1880,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "Elegís. Confirmamos. Llega a tu casa.",
+      "words": 6,
+      "chars": 37,
+      "lines": 2,
+      "size": 46,
+      "vw": 3.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 2553,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que suelen preguntarme.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 46,
+      "vw": 3.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.4,
+      "top": 3986,
+      "tag": "h2",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 8,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 4,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.75,
+       "mono": false
+      },
+      {
+       "family": "Space Grotesk",
+       "share": 0.25,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      13,
+      15,
+      16,
+      20,
+      22,
+      24,
+      28,
+      46,
+      58
+     ],
+     "sizeCount": 9,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 16,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 82,
+     "max": {
+      "size": 58,
+      "vw": 4,
+      "font": "Space Grotesk",
+      "text": "Objetos que dan ganas."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 15,
+     "microLabelShare": 0.042,
+     "microSamples": [
+      "Objetos impresos en 3D",
+      "Catálogo",
+      "Materiales",
+      "El más lindo",
+      "El más resistente",
+      "El flexible"
+     ],
+     "upperShare": 0.08,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "Objetos impresos en 3D",
+      "above": "Objetos que dan ganas. Impresos uno por ",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 186
+     },
+     {
+      "text": "Catálogo",
+      "above": "Lo que está saliendo de la impresora.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 874
+     },
+     {
+      "text": "Materiales",
+      "above": "Tres plásticos. Ninguno de relleno.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 1651
+     },
+     {
+      "text": "Cómo comprar",
+      "above": "Elegís. Confirmamos. Llega a tu casa.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 2512
+     },
+     {
+      "text": "Preguntas",
+      "above": "Lo que suelen preguntarme.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 3945
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070f1f",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.63,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#93a6c4",
+       "share": 0.46
+      },
+      {
+       "color": "#d3dcec",
+       "share": 0.28
+      },
+      {
+       "color": "#f3f6fc",
+       "share": 0.12
+      },
+      {
+       "color": "#a9bad6",
+       "share": 0.07
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.04
+      }
+     ],
+     "button": {
+      "bg": "#d23c14",
+      "hsl": {
+       "h": 13,
+       "s": 0.83,
+       "l": 0.45
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 5,
+     "inHero": 4,
+     "radius": "pill",
+     "height": 48,
+     "withShadow": 3,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Saltar al contenido",
+      "Hacer un pedido",
+      "Ver productos",
+      "Encargar algo a medida"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 2,
+     "shadowSamples": [
+      "a.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px",
+      "div.form-card.is-visible → rgba(0, 0, 0, 0.3) 0px 1px 2px 0px",
+      "button.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px"
+     ],
+     "gradients": 1,
+     "scrims": 1,
+     "gradientSamples": [
+      "div.process.is-visible → linear-gradient(160deg, rgb(13, 32, 64) 0%, rgb(8, 20, 40) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 14,
+     "hairlineSamples": [
+      "div.materials 1440px",
+      "section#materiales.section.section--tint 1440px",
+      "div.step 313px",
+      "div.step 313px",
+      "div.step 313px"
+     ],
+     "outlinedBoxes": 8,
+     "dashed": 0,
+     "blurred": 4,
+     "roundedBoxes": 9,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 3,
+     "mediaRadius": 16,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 1845
+      },
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 2698
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.11
+     }
+    ],
+    "nav": {
+     "links": 6,
+     "fixed": true,
+     "height": 77,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "inter",
+     "space grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 5047,
+    "margins": {
+     "left": 170,
+     "right": 172
+    },
+    "sections": [
+     {
+      "sel": "section.hero",
+      "tag": "section",
+      "top": 77,
+      "height": 613,
+      "words": 52,
+      "media": 1,
+      "middle": 90,
+      "heading": {
+       "text": "Objetos que dan ganas.",
+       "size": 58,
+       "tag": "h1"
+      },
+      "left": 170,
+      "right": 188,
+      "textLeft": 170,
+      "textRight": 383,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#productos.section",
+      "tag": "section",
+      "top": 748,
+      "height": 790,
+      "words": 71,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que está saliendo de la impresora.",
+       "size": 46,
+       "tag": "h2"
+      },
+      "left": 170,
+      "right": 170,
+      "textLeft": 170,
+      "textRight": 170,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#materiales.section.section--tint",
+      "tag": "section",
+      "top": 1538,
+      "height": 805,
+      "words": 146,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Tres plásticos. Ninguno de relleno.",
+       "size": 46,
+       "tag": "h2"
+      },
+      "left": 170,
+      "right": 186,
+      "textLeft": 170,
+      "textRight": 186,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#como-comprar.section",
+      "tag": "section",
+      "top": 2343,
+      "height": 716,
+      "words": 85,
+      "media": 0,
+      "middle": 37,
+      "heading": {
+       "text": "Elegís. Confirmamos. Llega a tu casa.",
+       "size": 46,
+       "tag": "h2"
+      },
+      "left": 227,
+      "right": 251,
+      "textLeft": 227,
+      "textRight": 251,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#pedido.section",
+      "tag": "section",
+      "top": 3059,
+      "height": 774,
+      "words": 81,
+      "media": 0,
+      "middle": 142,
+      "heading": {
+       "text": "Contanos qué querés.",
+       "size": 24,
+       "tag": "h2"
+      },
+      "left": 170,
+      "right": 211,
+      "textLeft": 170,
+      "textRight": 247,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#preguntas.section",
+      "tag": "section",
+      "top": 3833,
+      "height": 819,
+      "words": 222,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que suelen preguntarme.",
+       "size": 46,
+       "tag": "h2"
+      },
+      "left": 170,
+      "right": 172,
+      "textLeft": 170,
+      "textRight": 172,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "footer.site-footer",
+      "tag": "footer",
+      "top": 4652,
+      "height": 395,
+      "words": 41,
+      "media": 0,
+      "middle": 214,
+      "heading": {
+       "text": "Tienda",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 170,
+      "right": 170,
+      "textLeft": 170,
+      "textRight": 170,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "size": 58,
+      "top": 227,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 170,
+      "n": 15
+     },
+     {
+      "x": 227,
+      "n": 3
+     },
+     {
+      "x": 779,
+      "n": 3
+     },
+     {
+      "x": 203,
+      "n": 2
+     },
+     {
+      "x": 564,
+      "n": 2
+     },
+     {
+      "x": 575,
+      "n": 2
+     },
+     {
+      "x": 900,
+      "n": 2
+     },
+     {
+      "x": 947,
+      "n": 2
+     }
+    ],
+    "leftBlocks": 31,
+    "bodySize": 16,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0.08,
+    "voidBox": {
+     "x": 1260,
+     "y": 120,
+     "w": 180,
+     "h": 540
+    }
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 7,
+   "filled": [
+    0.45,
+    0.73,
+    0.92,
+    0.48,
+    0.73,
+    0.91,
+    0.77
+   ],
+   "motion": {
+    "elements": 23,
+    "css": 1,
+    "transitions": 22,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 6228,
+     "screens": 6.1,
+     "words": 607,
+     "img": 3,
+     "video": 0,
+     "canvas": 0,
+     "svg": 13,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 2,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "mate-azul-oro.webp?v=6",
+      "figura-cerebro.webp?v=6"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "chars": 44,
+     "lines": 2,
+     "size": 40,
+     "vw": 5.2,
+     "font": "Space Grotesk",
+     "weight": 600,
+     "tracking": -0.04,
+     "leading": 0.98,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.92,
+     "top": 172,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "lines": 2,
+     "size": 40,
+     "font": "Space Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "words": 8,
+      "chars": 44,
+      "lines": 2,
+      "size": 40,
+      "vw": 5.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.04,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 172,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que está saliendo de la impresora.",
+      "words": 7,
+      "chars": 37,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 1012,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Tres plásticos. Ninguno de relleno.",
+      "words": 5,
+      "chars": 35,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 1703,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "PLA",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.06,
+      "top": 1894,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "PETG",
+      "words": 1,
+      "chars": 4,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.08,
+      "top": 2198,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "TPU",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.06,
+      "top": 2501,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "Elegís. Confirmamos. Llega a tu casa.",
+      "words": 6,
+      "chars": 37,
+      "lines": 2,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.42,
+      "top": 2935,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que suelen preguntarme.",
+      "words": 4,
+      "chars": 26,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.92,
+      "top": 4915,
+      "tag": "h2",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 8,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 4,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.75,
+       "mono": false
+      },
+      {
+       "family": "Space Grotesk",
+       "share": 0.25,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      13,
+      15,
+      16,
+      18,
+      20,
+      24,
+      28,
+      40
+     ],
+     "sizeCount": 8,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 16,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 82,
+     "max": {
+      "size": 40,
+      "vw": 5.2,
+      "font": "Space Grotesk",
+      "text": "Objetos que dan ganas."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 15,
+     "microLabelShare": 0.042,
+     "microSamples": [
+      "Objetos impresos en 3D",
+      "Catálogo",
+      "Materiales",
+      "El más lindo",
+      "El más resistente",
+      "El flexible"
+     ],
+     "upperShare": 0.08,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "Objetos impresos en 3D",
+      "above": "Objetos que dan ganas. Impresos uno por ",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 131
+     },
+     {
+      "text": "Catálogo",
+      "above": "Lo que está saliendo de la impresora.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 985
+     },
+     {
+      "text": "Materiales",
+      "above": "Tres plásticos. Ninguno de relleno.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 1662
+     },
+     {
+      "text": "Cómo comprar",
+      "above": "Elegís. Confirmamos. Llega a tu casa.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 2894
+     },
+     {
+      "text": "Preguntas",
+      "above": "Lo que suelen preguntarme.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 4875
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070f1f",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.63,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#93a6c4",
+       "share": 0.45
+      },
+      {
+       "color": "#d3dcec",
+       "share": 0.28
+      },
+      {
+       "color": "#f3f6fc",
+       "share": 0.12
+      },
+      {
+       "color": "#a9bad6",
+       "share": 0.07
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#d23c14",
+      "hsl": {
+       "h": 13,
+       "s": 0.83,
+       "l": 0.45
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": "pill",
+     "height": 48,
+     "withShadow": 2,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Saltar al contenido",
+      "Ver productos",
+      "Encargar algo a medida"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "a.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px",
+      "div.form-card.is-visible → rgba(0, 0, 0, 0.3) 0px 1px 2px 0px",
+      "button.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px"
+     ],
+     "gradients": 1,
+     "scrims": 1,
+     "gradientSamples": [
+      "div.process.is-visible → linear-gradient(160deg, rgb(13, 32, 64) 0%, rgb(8, 20, 40) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 14,
+     "hairlineSamples": [
+      "div.materials 768px",
+      "section#materiales.section.section--tint 768px",
+      "div.step 641px",
+      "div.step 641px",
+      "div.step 641px"
+     ],
+     "outlinedBoxes": 8,
+     "dashed": 0,
+     "blurred": 4,
+     "roundedBoxes": 9,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 1,
+     "mediaRadius": 24,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 3026
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.1
+     }
+    ],
+    "nav": {
+     "links": 1,
+     "fixed": true,
+     "height": 77,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "inter",
+     "space grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 6228,
+    "margins": {
+     "left": 31,
+     "right": 31
+    },
+    "sections": [
+     {
+      "sel": "section.hero",
+      "tag": "section",
+      "top": 77,
+      "height": 775,
+      "words": 52,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Objetos que dan ganas.",
+       "size": 40,
+       "tag": "h1"
+      },
+      "left": 31,
+      "right": 111,
+      "textLeft": 31,
+      "textRight": 111,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#productos.section",
+      "tag": "section",
+      "top": 910,
+      "height": 690,
+      "words": 71,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que está saliendo de la impresora.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 67,
+      "textLeft": 31,
+      "textRight": 67,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#materiales.section.section--tint",
+      "tag": "section",
+      "top": 1600,
+      "height": 1200,
+      "words": 146,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Tres plásticos. Ninguno de relleno.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 65,
+      "textLeft": 31,
+      "textRight": 65,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#como-comprar.section",
+      "tag": "section",
+      "top": 2799,
+      "height": 762,
+      "words": 85,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Elegís. Confirmamos. Llega a tu casa.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 64,
+      "right": 118,
+      "textLeft": 64,
+      "textRight": 118,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#pedido.section",
+      "tag": "section",
+      "top": 3561,
+      "height": 1252,
+      "words": 81,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Contanos qué querés.",
+       "size": 24,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 56,
+      "textLeft": 31,
+      "textRight": 133,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#preguntas.section",
+      "tag": "section",
+      "top": 4813,
+      "height": 702,
+      "words": 187,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que suelen preguntarme.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 88,
+      "textLeft": 31,
+      "textRight": 88,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "footer.site-footer",
+      "tag": "footer",
+      "top": 5515,
+      "height": 713,
+      "words": 41,
+      "media": 0,
+      "middle": 239,
+      "heading": {
+       "text": "Tienda",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 31,
+      "textLeft": 31,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "size": 40,
+      "top": 172,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [
+     {
+      "text": "TPU flexible",
+      "side": "left",
+      "px": 0
+     },
+     {
+      "text": "Más de 20 colores",
+      "side": "right",
+      "px": 0
+     }
+    ],
+    "edges": [
+     {
+      "x": 31,
+      "n": 18
+     },
+     {
+      "x": 56,
+      "n": 13
+     }
+    ],
+    "leftBlocks": 31,
+    "bodySize": 16,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 9,
+   "filled": [
+    0.67,
+    0.62,
+    0.85,
+    1,
+    0.87,
+    0.44,
+    0.66,
+    0.89,
+    0.99
+   ],
+   "motion": {
+    "elements": 24,
+    "css": 1,
+    "transitions": 23,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 7207,
+     "screens": 8.5,
+     "words": 607,
+     "img": 3,
+     "video": 0,
+     "canvas": 0,
+     "svg": 13,
+     "sections": 6,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 2,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "mate-azul-oro.webp?v=6",
+      "figura-cerebro.webp?v=6"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "chars": 44,
+     "lines": 3,
+     "size": 40,
+     "vw": 10.3,
+     "font": "Space Grotesk",
+     "weight": 600,
+     "tracking": -0.04,
+     "leading": 0.98,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "left",
+     "position": "center",
+     "widthRatio": 0.9,
+     "top": 166,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Objetos que dan ganas. Impresos uno por uno.",
+     "words": 8,
+     "lines": 3,
+     "size": 40,
+     "font": "Space Grotesk"
+    },
+    "headings": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "words": 8,
+      "chars": 44,
+      "lines": 3,
+      "size": 40,
+      "vw": 10.3,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.04,
+      "leading": 0.98,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 166,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que está saliendo de la impresora.",
+      "words": 7,
+      "chars": 37,
+      "lines": 2,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 1153,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Tres plásticos. Ninguno de relleno.",
+      "words": 5,
+      "chars": 35,
+      "lines": 2,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 2164,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "PLA",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.12,
+      "top": 2441,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "PETG",
+      "words": 1,
+      "chars": 4,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.16,
+      "top": 2821,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "TPU",
+      "words": 1,
+      "chars": 3,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 700,
+      "tracking": -0.03,
+      "leading": 1,
+      "upper": true,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.13,
+      "top": 3201,
+      "tag": "span",
+      "kind": "heading"
+     },
+     {
+      "text": "Elegís. Confirmamos. Llega a tu casa.",
+      "words": 6,
+      "chars": 37,
+      "lines": 2,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.73,
+      "top": 3675,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Contanos qué querés.",
+      "words": 3,
+      "chars": 20,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 4472,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "Lo que suelen preguntarme.",
+      "words": 4,
+      "chars": 26,
+      "lines": 2,
+      "size": 28,
+      "vw": 7.2,
+      "font": "Space Grotesk",
+      "weight": 600,
+      "tracking": -0.025,
+      "leading": 1.06,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 5754,
+      "tag": "h2",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 9,
+     "maxLines": 3,
+     "over2Lines": 1,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 4,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.75,
+       "mono": false
+      },
+      {
+       "family": "Space Grotesk",
+       "share": 0.25,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      13,
+      15,
+      16,
+      18,
+      20,
+      24,
+      28,
+      40
+     ],
+     "sizeCount": 8,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 16,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 44,
+     "max": {
+      "size": 40,
+      "vw": 10.3,
+      "font": "Space Grotesk",
+      "text": "Objetos que dan ganas."
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 15,
+     "microLabelShare": 0.042,
+     "microSamples": [
+      "Objetos impresos en 3D",
+      "Catálogo",
+      "Materiales",
+      "El más lindo",
+      "El más resistente",
+      "El flexible"
+     ],
+     "upperShare": 0.08,
+     "centerShare": 0.02,
+     "smallText": 0
+    },
+    "eyebrows": [
+     {
+      "text": "Objetos impresos en 3D",
+      "above": "Objetos que dan ganas. Impresos uno por ",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 125
+     },
+     {
+      "text": "Catálogo",
+      "above": "Lo que está saliendo de la impresora.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 1112
+     },
+     {
+      "text": "Materiales",
+      "above": "Tres plásticos. Ninguno de relleno.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 2123
+     },
+     {
+      "text": "Cómo comprar",
+      "above": "Elegís. Confirmamos. Llega a tu casa.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 3634
+     },
+     {
+      "text": "Preguntas",
+      "above": "Lo que suelen preguntarme.",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 13,
+      "top": 5713
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#070f1f",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.63,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#93a6c4",
+       "share": 0.45
+      },
+      {
+       "color": "#d3dcec",
+       "share": 0.28
+      },
+      {
+       "color": "#f3f6fc",
+       "share": 0.12
+      },
+      {
+       "color": "#a9bad6",
+       "share": 0.07
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#d23c14",
+      "hsl": {
+       "h": 13,
+       "s": 0.83,
+       "l": 0.45
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": "pill",
+     "height": 48,
+     "withShadow": 2,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Saltar al contenido",
+      "Ver productos",
+      "Encargar algo a medida"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 3,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "a.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px",
+      "div.form-card.is-visible → rgba(0, 0, 0, 0.3) 0px 1px 2px 0px",
+      "button.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px"
+     ],
+     "gradients": 1,
+     "scrims": 1,
+     "gradientSamples": [
+      "div.process.is-visible → linear-gradient(160deg, rgb(13, 32, 64) 0%, rgb(8, 20, 40) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 14,
+     "hairlineSamples": [
+      "div.materials 390px",
+      "section#materiales.section.section--tint 390px",
+      "div.step 284px",
+      "div.step 284px",
+      "div.step 284px"
+     ],
+     "outlinedBoxes": 8,
+     "dashed": 0,
+     "blurred": 4,
+     "roundedBoxes": 9,
+     "boxRadius": 16,
+     "squareMedia": 0,
+     "roundedMedia": 1,
+     "mediaRadius": 24,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 2415
+      },
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 3766
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 0.16
+     }
+    ],
+    "nav": {
+     "links": 1,
+     "fixed": true,
+     "height": 77,
+     "floatingPill": false,
+     "blur": true
+    },
+    "fontsLoaded": [
+     "inter",
+     "space grotesk"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 7207,
+    "margins": {
+     "left": 20,
+     "right": 21
+    },
+    "sections": [
+     {
+      "sel": "section.hero",
+      "tag": "section",
+      "top": 77,
+      "height": 921,
+      "words": 52,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "Objetos que dan ganas.",
+       "size": 40,
+       "tag": "h1"
+      },
+      "left": 20,
+      "right": 27,
+      "textLeft": 20,
+      "textRight": 27,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#productos.section",
+      "tag": "section",
+      "top": 1056,
+      "height": 1010,
+      "words": 72,
+      "media": 2,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que está saliendo de la impresora.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 32,
+      "textLeft": 20,
+      "textRight": 32,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#materiales.section.section--tint",
+      "tag": "section",
+      "top": 2066,
+      "height": 1479,
+      "words": 146,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Tres plásticos. Ninguno de relleno.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 38,
+      "textLeft": 20,
+      "textRight": 38,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#como-comprar.section",
+      "tag": "section",
+      "top": 3545,
+      "height": 830,
+      "words": 85,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Elegís. Confirmamos. Llega a tu casa.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 53,
+      "right": 53,
+      "textLeft": 53,
+      "textRight": 53,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#pedido.section",
+      "tag": "section",
+      "top": 4375,
+      "height": 1282,
+      "words": 81,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Contanos qué querés.",
+       "size": 24,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 21,
+      "textLeft": 20,
+      "textRight": 21,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section#preguntas.section",
+      "tag": "section",
+      "top": 5657,
+      "height": 800,
+      "words": 187,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Lo que suelen preguntarme.",
+       "size": 28,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 26,
+      "textLeft": 20,
+      "textRight": 26,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "footer.site-footer",
+      "tag": "footer",
+      "top": 6457,
+      "height": 750,
+      "words": 41,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Tienda",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 50,
+      "textLeft": 20,
+      "textRight": 50,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Objetos que dan ganas. Impresos uno por uno.",
+      "size": 40,
+      "top": 166,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [
+     {
+      "text": "TPU flexible",
+      "side": "left",
+      "px": 0
+     },
+     {
+      "text": "PETG translúcido",
+      "side": "right",
+      "px": 0
+     }
+    ],
+    "edges": [
+     {
+      "x": 20,
+      "n": 18
+     },
+     {
+      "x": 45,
+      "n": 13
+     }
+    ],
+    "leftBlocks": 31,
+    "bodySize": 16,
+    "stage": false,
+    "explains": true,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "eyebrow",
+   "width": 1440,
+   "message": "5 eyebrow/kicker label(s) above headings: \"Objetos impresos en 3D\" above \"Objetos que dan ganas. Impresos uno por \"; \"Catálogo\" above \"Lo que está saliendo de la impresora.\"; \"Materiales\" above \"Tres plásticos. Ninguno de relleno.\"; \"Cómo comprar\" above \"Elegís. Confirmamos. Llega a tu casa.\"; \"Preguntas\" above \"Lo que suelen preguntarme.\"",
+   "fix": "Delete them. If the label carried real information, fold it into the headline or the supporting sentence.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "micro-label",
+   "width": 1440,
+   "message": "15 tiny uppercase letter-spaced labels (e.g. \"Objetos impresos en 3D\", \"Catálogo\", \"Materiales\", \"El más lindo\").",
+   "fix": "Use sentence-case text at a readable size, or delete the label.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "1 gradient fill(s): div.process.is-visible → linear-gradient(160deg, rgb(13, 32, 64) 0%, rgb(8, 20, 40) 100%)",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "shadow",
+   "width": 1440,
+   "message": "3 box-shadow(s) on elements at rest: a.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px | div.form-card.is-visible → rgba(0, 0, 0, 0.3) 0px 1px 2px 0px | button.btn.btn--primary → rgba(255, 106, 61, 0.4) 0px 10px 30px -10px",
+   "fix": "Remove. Separate surfaces with a tone step or space. Shadows are for things that really float (menus, dialogs, sticky bars).",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "button-fx",
+   "width": 1440,
+   "message": "Buttons with shadow/glow.",
+   "fix": "Flat fill, one colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "hairline",
+   "width": 1440,
+   "message": "14 thin rule(s)/divider line(s): div.materials 1440px | section#materiales.section.section--tint 1440px | div.step 313px | div.step 313px",
+   "fix": "Delete. Separate with space, a tone change, or scale. Lines are only for real tables and form fields.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "outlined-box",
+   "width": 1440,
+   "message": "8 boxes drawn with a 1px outline.",
+   "fix": "Define a surface by its fill (one tone step from the page) or leave the content unboxed.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "glass",
+   "width": 1440,
+   "message": "4 backdrop-blur surfaces.",
+   "fix": "One blurred sticky bar at most; glass cards are a tell.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "card-rows",
+   "width": 1440,
+   "message": "2 rows of identical boxed cards.",
+   "fix": "Vary the composition; not every section is a card grid.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "palette-terracotta",
+   "width": 1440,
+   "message": "Terracotta / rust-orange accent (button #d23c14).",
+   "fix": "Use the accent from the drawn palette.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "few-pictures",
+   "width": 1440,
+   "message": "Only 2 picture(s) on the page (2 photographs, footage or raster images, 0 interface fragments). Drawings in SVG do not count.",
+   "fix": "Find real pictures of the subject's world with scripts/assets.mjs (photographs, archival images, maps, engravings, footage), download them to assets/ and give them room: a hero picture, one per section that has a subject, a full-width band. At least four, usually six to twelve."
+  },
+  {
+   "level": "WARN",
+   "id": "no-footage",
+   "width": 1440,
+   "message": "No video anywhere on the page.",
+   "fix": "Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject."
+  },
+  {
+   "level": "FAIL",
+   "id": "focal-point",
+   "width": 1440,
+   "message": "The first screen has no dominant element: the largest type is 58px (4vw) and no single picture holds a third of the viewport.",
+   "fix": "Make one thing lead: the headline at display size, or one large picture. A grid of many small pictures is not one thing; in blind tests jurors marked a first screen without a headline down every time. On the strongest studied sites the largest type has a median of 8.4vw."
+  },
+  {
+   "level": "FAIL",
+   "id": "edge-text",
+   "width": 768,
+   "message": "2 text block(s) sit within 16px of the screen edge: \"TPU flexible\" (0px from the left); \"Más de 20 colores\" (0px from the right)",
+   "fix": "Keep text inside the page margin (16–32px or more). Only display type deliberately bled past the edge may touch it.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "headline-lines",
+   "width": 390,
+   "message": "1 headline(s) wrap past two lines at 390px: \"Objetos que dan ganas. Impresos uno por uno.\" → 3 lines (8 words, 40px)",
+   "fix": "Cut words first (a headline is a title, not a sentence). Then give it a wider measure. Lower the size only as a last resort and never below the scale you chose. A real statement paragraph belongs in a <p> or <blockquote> at 24px or less."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/desktop-fold.jpg",
+   "pages": [
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/desktop-page-01.jpg",
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/desktop-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/tablet-fold.jpg",
+   "pages": [
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/tablet-page-01.jpg",
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/tablet-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/mobile-fold.jpg",
+   "pages": [
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/mobile-page-01.jpg",
+    "/Users/gastonagresti/Documents/Agresti 3D/Pagina Web/.taste-skill/before/mobile-page-02.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

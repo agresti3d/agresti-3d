@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "agresti-3d"
+  },
+  "targets": {
+    "agresti-3d": {
+      "hosting": {
+        "principal": [
+          "agresti3d"
+        ],
+        "anterior": [
+          "agresti-3d"
+        ]
+      }
+    }
+  }
+}

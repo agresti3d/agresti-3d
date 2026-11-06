@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agresti.3D — Propuesta de identidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0d0d0f; --paper:#f4f4f2; --line:#e2e2df; --mute:#7a7a76;
+    --accent:#ff5c33; --accent2:#12d6c2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.55}
+  .wrap{max-width:1080px;margin:0 auto;padding:56px 32px 96px}
+  .eyebrow{font-family:"Space Grotesk",sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin:0 0 10px}
+  h1{font-family:"Space Grotesk",sans-serif;font-size:40px;line-height:1.05;letter-spacing:-.02em;margin:0 0 14px;font-weight:600}
+  .lede{font-size:17px;color:#4b4b47;max-width:62ch;margin:0 0 12px}
+  section{margin-top:64px}
+  h2{font-family:"Space Grotesk",sans-serif;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:600;margin:0 0 22px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px}
+  .dark{background:#0d0d0f;border-color:#0d0d0f;color:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .strip{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap}
+  .strip figure{margin:0;text-align:center}
+  .strip figcaption{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-top:10px}
+  .dark .strip figcaption{color:#5f5f5c}
+  .problems{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+  .problems li{display:grid;grid-template-columns:26px 1fr;gap:12px;font-size:14px;color:#3d3d3a}
+  .problems b{display:block;color:var(--ink);font-weight:600}
+  .num{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",sans-serif;font-weight:600;margin-top:2px}
+  .markbox{display:flex;align-items:center;justify-content:center;padding:34px 0}
+  .markbox img{width:132px;height:132px;display:block}
+  .sizes{display:flex;gap:18px;align-items:flex-end;border-top:1px dashed var(--line);padding-top:18px}
+  .dark .sizes{border-color:#232322}
+  .sizes img{display:block}
+  .s40{width:40px;height:40px}.s24{width:24px;height:24px}.s16{width:16px;height:16px}
+  .dark .sizes img,.dark .markbox img{filter:invert(1)}
+  .tag{display:inline-block;font-family:"Space Grotesk",sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:#eee;color:#555}
+  .dark .tag{background:#1c1c1b;color:#9a9a96}
+  .lockup{display:flex;align-items:center;gap:18px;justify-content:center;padding:24px 0}
+  .lockup img{width:58px;height:58px;display:block}
+  .word{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:34px;letter-spacing:-.035em;line-height:1}
+  .word .dot3d{color:var(--accent)}
+  .dark .word .dot3d{color:var(--accent)}
+  .note{font-size:13px;color:var(--mute);margin-top:14px}
+  .swatches{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .sw{width:88px}
+  .sw i{display:block;height:56px;border-radius:12px;margin-bottom:8px}
+  .sw span{font-size:11px;color:var(--mute);font-family:"Space Grotesk",sans-serif;letter-spacing:.04em}
+  .rec{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 14px 14px 0;padding:20px 24px}
+  .rec p{margin:0;font-size:14px;color:#3d3d3a}
+  .rec strong{color:var(--ink)}
+  @media (max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Agresti.3D · Identidad</p>
+  <h1>Qué le pasa al logo<br>y para dónde ir.</h1>
+  <p class="lede">Revisé tu archivo original. La idea de fondo está bien: la A atravesada por el filamento. El problema no es el concepto, es la ejecución. Abajo está el diagnóstico concreto y dos caminos posibles.</p>
+
+  <section>
+    <h2>01 · Diagnóstico</h2>
+    <div class="grid2">
+      <div class="card">
+        <span class="tag">Logo actual</span>
+        <div class="markbox"><img src="../assets/logo/logo-a-original.svg?v=7" alt=""></div>
+        <div class="sizes">
+          <img class="s40" src="../assets/logo/logo-a-original.svg?v=7" alt="">
+          <img class="s24" src="../assets/logo/logo-a-original.svg?v=7" alt="">
+          <img class="s16" src="../assets/logo/logo-a-original.svg?v=7" alt="">
+          <figcaption style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">40 · 24 · 16 px</figcaption>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center">
+        <ol class="problems">
+          <li><span class="num">1</span><span><b>Se desarma en chico</b>A 32 px o menos el filamento, el doble contorno y las patas se funden en una mancha.</span></li>
+          <li><span class="num">2</span><span><b>Hay dos ideas peleando</b>La A doble sugiere volumen; las patas de abajo son un elemento aparte que no cierra el significado.</span></li>
+          <li><span class="num">3</span><span><b>Cuatro grosores distintos</b>A redondeada, contorno interno en punta, hilo ondulado y patas rectas: no hay un sistema.</span></li>
+          <li><span class="num">4</span><span><b>El nombre ya no coincide</b>El archivo dice “Impresión 3D” y el sitio se llama Agresti.3D.</span></li>
+          <li><span class="num">5</span><span><b>Falla técnica</b>El SVG tiene el arte casi pegado al borde (x hasta 1012 de 1024) y se recorta al usarlo.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>02 · Dos direcciones</h2>
+    <div class="grid2">
+
+      <div class="card">
+        <span class="tag">Opción A · Limpia</span>
+        <div class="markbox"><img src="../assets/logo/mark-limpia.svg?v=7" alt=""></div>
+        <div class="sizes">
+          <img class="s40" src="../assets/logo/mark-limpia.svg?v=7" alt="">
+          <img class="s24" src="../assets/logo/mark-limpia.svg?v=7" alt="">
+          <img class="s16" src="../assets/logo/mark-limpia.svg?v=7" alt="">
+        </div>
+        <p class="note">Sin adornos. Una sola A de trazo parejo, con el travesaño apenas sobresalido. Es la más segura: funciona igual a 16 px que en un cartel, y no compite con las fotos de tus impresiones.</p>
+      </div>
+
+      <div class="card dark">
+        <span class="tag">Opción B · Capas</span>
+        <div class="markbox"><img src="../assets/logo/mark-capas.svg?v=7" alt=""></div>
+        <div class="sizes">
+          <img class="s40" src="../assets/logo/mark-capas.svg?v=7" alt="">
+          <img class="s24" src="../assets/logo/mark-capas.svg?v=7" alt="">
+          <img class="s16" src="../assets/logo/mark-capas.svg?v=7" alt="">
+        </div>
+        <p class="note" style="color:#8a8a86">La A tiene el vértice construido con capas de impresión. De cerca se lee el guiño al rubro; de lejos y en chico se comporta como una A sólida. Es la más propia, pero más difícil de usar en tamaños mínimos.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>03 · Cómo se ve con el nombre</h2>
+    <div class="grid2">
+      <div class="card">
+        <div class="lockup"><img src="../assets/logo/mark-limpia.svg?v=7" alt=""><div class="word">AGRESTI<span class="dot3d">.3D</span></div></div>
+        <p class="note" style="text-align:center">Opción A con Space Grotesk.</p>
+      </div>
+      <div class="card dark">
+        <div class="lockup"><img src="../assets/logo/mark-capas.svg?v=7" alt=""><div class="word">AGRESTI<span class="dot3d">.3D</span></div></div>
+        <p class="note" style="text-align:center;color:#6e6e6a">Opción B, fondo oscuro.</p>
+      </div>
+    </div>
+    <p class="note">El “.3D” en color hace el trabajo de decir el rubro, así que ya no hace falta el subtítulo “Impresión 3D” debajo. El nombre queda en una sola línea y se lee de un golpe.</p>
+  </section>
+
+  <section>
+    <h2>04 · Color</h2>
+    <div class="card">
+      <p style="margin:0 0 18px;font-size:14px;color:#3d3d3a">Hoy el logo es negro puro, sin color. Para un negocio de impresión 3D conviene un acento único y fuerte, aplicado solo en detalles (el “.3D”, botones, links). Dos candidatos:</p>
+      <div class="swatches">
+        <div class="sw"><i style="background:#0d0d0f"></i><span>#0D0D0F · tinta</span></div>
+        <div class="sw"><i style="background:#ff5c33"></i><span>#FF5C33 · naranja</span></div>
+        <div class="sw"><i style="background:#12d6c2"></i><span>#12D6C2 · turquesa</span></div>
+        <div class="sw"><i style="background:#f4f4f2;border:1px solid #e2e2df"></i><span>#F4F4F2 · papel</span></div>
+      </div>
+      <p class="note">El naranja transmite energía y “creación”. El turquesa se siente más técnico y preciso. Con cualquiera de los dos, el negro deja de ser el único color de la marca.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>05 · Recomendación</h2>
+    <div class="rec">
+      <p><strong>Ir con la Opción A + naranja.</strong> Resuelve el problema real (que el logo no se entienda en chico) sin perder la A, y es la que mejor convive con fotos de piezas impresas, que es lo que va a vender el sitio. La B es más linda de cerca, pero en la pestaña del navegador y en el avatar de Instagram pierde detalle. Si te gusta la B, la podemos usar como versión “grande” y la A como versión reducida.</p>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

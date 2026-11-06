@@ -1,0 +1,239 @@
+/* ==========================================================================
+   Agresti.3D — tema "noche" (inspirado en Spark de macOS)
+   Solo se activa con la clase .theme-noche en <html>.
+   No reemplaza styles.css: lo re-tematiza desde los tokens.
+   ========================================================================== */
+
+html.theme-noche {
+  color-scheme: dark;
+
+  --ink:          #f3f6fc;
+  --ink-soft:     #d3dcec;
+  --muted:        #93a6c4;
+  --muted-light:  #6f83a3;
+
+  --paper:        #0a1628;
+  --surface:      rgba(255, 255, 255, .055);
+  --surface-2:    rgba(255, 255, 255, .035);
+  --dialog-surface: #0d1a30;
+  --dialog-choice-surface: #13233b;
+  --line:         rgba(255, 255, 255, .10);
+  --line-strong:  rgba(255, 255, 255, .20);
+
+  --accent:       #ff6a3d;
+  --accent-ink:   #ff6a3d;
+  --accent-deep:  #ff8a63;
+  --accent-wash:  rgba(255, 106, 61, .16);
+  --accent-ring:  rgba(255, 106, 61, .40);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .30);
+  --shadow:    0 18px 40px -16px rgba(0, 0, 0, .55);
+  --shadow-lg: 0 40px 80px -30px rgba(0, 0, 0, .65);
+}
+
+/* Fondo: degradado profundo fijo, como el de Spark */
+html.theme-noche body { background: #070f1f; }
+
+html.theme-noche body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(95% 62% at 10% -12%, rgba(46, 112, 210, .45), transparent 62%),
+    radial-gradient(75% 55% at 92% -4%, rgba(104, 78, 226, .30), transparent 68%),
+    linear-gradient(180deg, #0a1a33 0%, #070f1f 55%, #050a14 100%);
+}
+
+/* Header translúcido */
+html.theme-noche .site-header {
+  background: rgba(8, 17, 33, .72);
+  backdrop-filter: saturate(160%) blur(16px);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
+}
+
+html.theme-noche .site-header[data-stuck="true"] {
+  background: rgba(8, 17, 33, .88);
+  border-bottom-color: var(--line);
+}
+
+/* Hero: el collage conserva el marco del tema noche */
+html.theme-noche .hero__visual {
+  background:
+    radial-gradient(120% 100% at 70% 0%, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, .03) 55%, rgba(0, 0, 0, .18) 100%);
+  border-color: var(--line-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+html.theme-noche .hero__visual::after {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, .07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, .07) 1px, transparent 1px);
+}
+
+/* Tarjetas de producto: el vidrio va alrededor y la foto ya no trae fondo propio
+   (WEBP con transparencia), así que el producto flota sobre la misma superficie
+   de la tarjeta: no hay rectángulo ni borde de foto. La etiqueta y el corazón
+   pasan a fondo oscuro con texto claro. */
+html.theme-noche .product { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+html.theme-noche .product__media {
+  background:
+    radial-gradient(70% 62% at 50% 40%, rgba(255, 255, 255, .07), transparent 70%);
+}
+html.theme-noche .product:hover { border-color: rgba(255, 255, 255, .28); }
+
+html.theme-noche .product__marca { color: #dbe4f3; opacity: .5; }
+html.theme-noche .product:hover .product__marca { opacity: .78; }
+
+html.theme-noche .product__tag {
+  background: rgba(10, 20, 38, .72);
+  border-color: rgba(255, 255, 255, .14);
+  color: #dbe4f3;
+  backdrop-filter: blur(10px);
+}
+
+html.theme-noche button.product__tag:hover,
+html.theme-noche button.product__tag:focus-visible {
+  background: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .42);
+  color: #fff;
+}
+
+html.theme-noche .product__fav {
+  background: rgba(10, 20, 38, .72);
+  border-color: rgba(255, 255, 255, .14);
+  color: #dbe4f3;
+  backdrop-filter: blur(10px);
+}
+
+html.theme-noche .product__fav:hover,
+html.theme-noche .product__fav[aria-pressed="true"] {
+  color: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+/* Flechas y puntos de la galería de la ficha */
+html.theme-noche .product__flecha {
+  background: rgba(10, 20, 38, .72);
+  border-color: rgba(255, 255, 255, .14);
+  color: #dbe4f3;
+  backdrop-filter: blur(10px);
+}
+
+html.theme-noche .product__flecha:hover {
+  color: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+html.theme-noche .product__puntos i { background: rgba(255, 255, 255, .4); }
+html.theme-noche .product__puntos i.is-activa { background: rgba(255, 255, 255, .95); }
+
+/* Chips y botones */
+html.theme-noche .chip.is-active { background: #fff; border-color: #fff; color: #0a1628; }
+html.theme-noche .chip.is-active .chip__count { background: rgba(10, 22, 40, .12); color: #0a1628; }
+
+html.theme-noche .btn--ghost { border-color: var(--line-strong); }
+html.theme-noche .btn--ghost:hover { background: rgba(255, 255, 255, .08); border-color: #fff; }
+
+html.theme-noche .btn--dark { background: #fff; color: #0a1628; }
+html.theme-noche .btn--dark:hover { background: #e8eef8; }
+
+/* Texto blanco sobre naranja claro da 3.5:1 y no pasa AA. El botón lleno usa
+   el naranja profundo de la marca (5.2:1); el naranja vivo queda para acentos
+   y texto sobre el fondo oscuro. */
+html.theme-noche .btn--primary {
+  background: #d23c14;
+  box-shadow: 0 10px 30px -10px var(--accent-ring);
+}
+
+html.theme-noche .btn--primary:hover { background: #b8330f; }
+
+html.theme-noche .skip-link { background: #fff; color: #0a1628; }
+
+/* Bloque oscuro "Cómo comprar": pasa a un azul más profundo */
+html.theme-noche .process {
+  background: linear-gradient(160deg, #0d2040 0%, #081428 100%);
+  border: 1px solid var(--line);
+}
+
+html.theme-noche .process .eyebrow { color: var(--muted); }
+html.theme-noche .step { border-top-color: rgba(255, 255, 255, .14); }
+html.theme-noche .step p { color: #a9bad6; }
+
+/* Formulario */
+html.theme-noche .form-card {
+  background: rgba(255, 255, 255, .06);
+  border-color: var(--line-strong);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+html.theme-noche .field input,
+html.theme-noche .field select,
+html.theme-noche .field textarea {
+  background: rgba(4, 10, 20, .55);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+html.theme-noche .field input:focus,
+html.theme-noche .field select:focus,
+html.theme-noche .field textarea:focus {
+  background: rgba(4, 10, 20, .80);
+  border-color: var(--accent);
+}
+
+html.theme-noche .field input[aria-invalid="true"],
+html.theme-noche .field select[aria-invalid="true"],
+html.theme-noche .field textarea[aria-invalid="true"] {
+  background: rgba(120, 20, 15, .28);
+  border-color: #ff6b5e;
+}
+
+/* El shorthand background: del bloque de arriba borra el repeat/position/size,
+   así que hay que reponerlos acá o la flecha se multiplica. */
+html.theme-noche .field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393a6c4' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .875rem center;
+  background-size: 16px;
+  color: var(--ink);
+}
+
+html.theme-noche .field select option {
+  background: #0a1628;
+  color: #f3f6fc;
+}
+
+/* Redes y footer */
+html.theme-noche .socials a:hover { background: #fff; border-color: #fff; color: #0a1628; }
+html.theme-noche .site-footer { background: rgba(255, 255, 255, .03); }
+
+/* Migas y contador de favoritos */
+html.theme-noche .breadcrumbs button:hover { color: #fff; }
+html.theme-noche .chip__count { background: var(--accent-wash); color: #ffb59f; }
+
+/* Selección y foco */
+html.theme-noche ::selection { background: var(--accent-ink); color: #0a1628; }
+html.theme-noche :focus-visible { outline-color: #fff; }
+
+/* --------------------------------------------------------------------------
+   Variante: acento azul eléctrico (más cerca de Spark puro)
+   -------------------------------------------------------------------------- */
+html.theme-noche.theme-azul {
+  --accent:       #4f8cff;
+  --accent-ink:   #2f7bff;
+  --accent-deep:  #6ea2ff;
+  --accent-wash:  rgba(79, 140, 255, .18);
+  --accent-ring:  rgba(47, 123, 255, .45);
+}
+
+html.theme-noche.theme-azul .chip__count {
+  background: rgba(79, 140, 255, .20);
+  color: #a9c6ff;
+}
+
+html.theme-noche.theme-azul .hero__title em { color: #7fb0ff; }
+html.theme-noche.theme-azul .product__price small { color: #93a6c4; }

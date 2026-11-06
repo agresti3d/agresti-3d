@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es-AR" class="theme-noche">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Agresti.3D — Objetos impresos en 3D para regalar y usar</title>
+  <meta name="description" content="Deco, organizadores, juguetes y regalos personalizados impresos en 3D. Solo PLA, PETG y TPU. Elegí tu modelo y color; lo imprimimos a pedido y lo enviamos.">
+  <meta name="theme-color" content="#070f1f">
+
+  <script>document.documentElement.classList.add("js");</script>
+  <script>
+    (() => {
+      const navegacion = performance.getEntriesByType("navigation")[0];
+      if (navegacion?.type !== "reload" || (location.hash && location.hash !== "#")) return;
+      const restauracionAnterior = history.scrollRestoration;
+      history.scrollRestoration = "manual";
+      window.addEventListener("pageshow", () => {
+        window.setTimeout(() => {
+          const raiz = document.documentElement;
+          const comportamientoAnterior = raiz.style.scrollBehavior;
+          raiz.style.scrollBehavior = "auto";
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+          raiz.style.scrollBehavior = comportamientoAnterior;
+          history.scrollRestoration = restauracionAnterior;
+        }, 100);
+      }, { once: true });
+    })();
+  </script>
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Agresti.3D — Objetos impresos en 3D">
+  <meta property="og:description" content="Deco, juguetes y regalos hechos capa por capa. PLA, PETG y TPU.">
+  <!-- Vista previa del link (WhatsApp, Instagram, Facebook): assets/og.jpg,
+       1200×630. Si algún día cambia el dominio, actualizar estas dos URLs. -->
+  <meta property="og:url" content="https://agresti3d.web.app/">
+  <link rel="canonical" href="https://agresti3d.web.app/">
+  <meta property="og:image" content="https://agresti3d.web.app/assets/og-disenos.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Agresti.3D — Diseños que cobran vida: perro bulldog con taza y mate azul y oro">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/styles.css?v=30">
+  <link rel="stylesheet" href="css/theme.css?v=8">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"¿Solo imprimen en PLA, PETG y TPU?","acceptedAnswer":{"@type":"Answer","text":"Sí. Son los tres materiales que mejor funcionan para objetos de deco y uso diario. No hacemos piezas técnicas ni trabajamos con materiales industriales."}},
+    {"@type":"Question","name":"¿Puedo elegir el color?","acceptedAnswer":{"@type":"Answer","text":"Sí. Hay más de 20 colores y varios acabados (mate, seda, translúcido). Algunos tonos dependen del stock; te confirmo la disponibilidad cuando hacés el pedido."}},
+    {"@type":"Question","name":"¿Cuánto tarda un pedido?","acceptedAnswer":{"@type":"Answer","text":"Un objeto de catálogo suele estar entre 2 y 5 días hábiles. Si es personalizado o una serie, entre 4 y 7. El plazo exacto te lo confirmo con el presupuesto."}},
+    {"@type":"Question","name":"¿Hacen envíos?","acceptedAnswer":{"@type":"Answer","text":"Sí, a todo el país por correo o mensajería. También podés retirar en el taller coordinando antes."}},
+    {"@type":"Question","name":"¿Puedo pedir un modelo que vi en MakerWorld u otra página?","acceptedAnswer":{"@type":"Answer","text":"Sí, mandame el link. Primero verifico que la licencia del modelo permita vender la pieza impresa. Si no lo permite, te propongo una alternativa o lo diseñamos desde cero con la misma idea."}},
+    {"@type":"Question","name":"¿Sirven para uso real o son solo de adorno?","acceptedAnswer":{"@type":"Answer","text":"Depende del material y del diseño. Para deco va PLA; para algo que se usa seguido, PETG; para lo que tiene que ceder, TPU. Te asesoro según lo que necesites. Ninguno es apto para horno ni microondas."}}
+  ]
+}
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<!-- ============================================================ HEADER -->
+<header class="site-header" id="header">
+  <div class="wrap header__inner">
+
+    <a class="logo" href="#" aria-label="Agresti.3D — inicio">
+      <span class="logo__mark" aria-hidden="true"></span>
+      <span class="logo__type">
+        <span class="logo__name">AGRESTI<span class="logo__dot">.3D</span></span>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Navegación principal">
+      <a class="nav__link" href="#productos">Productos</a>
+      <button class="nav__link nav__link--button" type="button" data-gift-open>Encontrá tu regalo</button>
+      <a class="nav__link" href="#materiales">Materiales</a>
+      <a class="nav__link" href="#como-comprar">Cómo comprar</a>
+      <a class="nav__link" href="#preguntas">Preguntas</a>
+      <a class="btn btn--primary" href="#pedido">Hacer un pedido</a>
+    </nav>
+
+    <div class="header__actions">
+      <button class="cart-btn" id="cartToggle" type="button" aria-label="Ver carrito de compras" title="Carrito de compras">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="cart-btn__badge" id="cartBadge" hidden>0</span>
+      </button>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="nav" aria-label="Abrir menú">
+        <span></span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ========================================================== HERO -->
+  <section class="hero">
+    <div class="wrap hero__grid">
+
+      <div class="hero__copy">
+        <p class="eyebrow">Objetos impresos en 3D</p>
+
+        <h1 class="hero__title">
+          Diseños que <em>cobran vida</em>.
+        </h1>
+
+        <p class="lead">
+          Deco, organizadores, juguetes y regalos personalizados. Elegís el modelo
+          y el color; lo imprimimos en PLA, PETG o TPU y te lo mandamos a casa.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#productos">
+            Ver productos
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <button class="btn btn--ghost" type="button" data-gift-open>Encontrá tu regalo</button>
+          <a class="btn btn--ghost" href="#pedido">Encargar algo a medida</a>
+        </div>
+
+        <p class="hero__note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          Hecho a pedido · Envíos a todo el país
+        </p>
+      </div>
+
+      <div class="hero__visual" id="heroCampaign" data-campaign="general">
+        <div class="hero__collage" id="heroCollage" role="group" aria-label="Productos destacados del catálogo">
+          <a class="hero__product hero__product--left" href="#productos" aria-label="Ver Despertando a la mañana - Oso">
+            <img src="img/productos/despertando-oso.webp?v=6" alt="" width="600" height="600" fetchpriority="high">
+          </a>
+          <a class="hero__product hero__product--lead" href="#productos" aria-label="Ver Mate azul y oro">
+            <img src="img/productos/mate-azul-oro.webp?v=6" alt="" width="600" height="600" fetchpriority="high">
+          </a>
+          <a class="hero__product hero__product--right" href="#productos" aria-label="Ver Set de posavasos vinilo">
+            <img src="img/productos/posavasos-vinilo.webp?v=7" alt="" width="600" height="600" fetchpriority="high">
+          </a>
+        </div>
+        <div class="hero__campaign-note">
+          <p class="hero__campaign-copy" id="heroCampaignCopy">Ideas para usar, regalar y disfrutar.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================================================== MATERIALES -->
+  <div class="materials" aria-hidden="true">
+    <div class="materials__track">
+      <span class="materials__item">PLA</span>
+      <span class="materials__item">PETG</span>
+      <span class="materials__item">TPU flexible</span>
+      <span class="materials__item">PLA mate</span>
+      <span class="materials__item">PLA seda</span>
+      <span class="materials__item">PETG translúcido</span>
+      <span class="materials__item">Más de 20 colores</span>
+      <span class="materials__item">PLA</span>
+      <span class="materials__item">PETG</span>
+      <span class="materials__item">TPU flexible</span>
+      <span class="materials__item">PLA mate</span>
+      <span class="materials__item">PLA seda</span>
+      <span class="materials__item">PETG translúcido</span>
+      <span class="materials__item">Más de 20 colores</span>
+    </div>
+  </div>
+
+  <!-- ===================================================== PRODUCTOS -->
+  <section class="section" id="productos">
+    <div class="wrap">
+
+      <div class="section__head">
+        <div>
+          <p class="eyebrow" data-reveal>Catálogo</p>
+          <h2 data-reveal>Lo que está saliendo de la impresora.</h2>
+        </div>
+        <p class="lead" data-reveal>
+          Una selección de objetos listos para imprimir. Elegís color y te lo mandamos.
+          Si algo no está en la lista, también se puede hacer.
+        </p>
+      </div>
+
+      <div class="catalog-nav" id="catalogNav" data-reveal>
+        <nav class="breadcrumbs" id="breadcrumbs" aria-label="Ruta de categorías" hidden></nav>
+        <div class="catalog-nav__row">
+          <div class="filters" id="filters" role="group" aria-label="Filtrar productos por categoría"></div>
+          <button class="chip chip--fav" id="favToggle" type="button" aria-pressed="false" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1Z"/></svg>
+            Favoritos <span class="chip__count" id="favCount">0</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="category-overview" id="categoryOverview" aria-labelledby="categoryOverviewTitle" hidden>
+        <div class="category-overview__head">
+          <h3 id="categoryOverviewTitle">Elegí por dónde empezar</h3>
+          <p>Seleccioná una categoría para explorar sus productos.</p>
+        </div>
+        <div class="category-overview__grid" id="categoryGrid"></div>
+      </div>
+
+      <p class="sr-only" id="filterStatus" aria-live="polite"></p>
+
+      <section class="product-detail" id="productDetail" aria-labelledby="productDetailTitle" hidden></section>
+
+      <div class="products" id="productGrid">
+        <noscript>
+          <p class="products__empty">Este catálogo necesita JavaScript para mostrarse. Escribinos por WhatsApp o por email y te pasamos la lista completa.</p>
+        </noscript>
+      </div>
+
+      <nav class="catalog-pagination" id="catalogPagination" aria-label="Páginas de productos" hidden>
+        <button class="chip catalog-pagination__button" type="button" data-page="-1" aria-label="Ver productos anteriores">Anterior</button>
+        <span class="catalog-pagination__status" id="paginationStatus"></span>
+        <button class="chip catalog-pagination__button" type="button" data-page="1" aria-label="Ver productos siguientes">Siguiente</button>
+      </nav>
+
+      <div class="catalog-actions" id="catalogActions" hidden>
+        <a class="btn btn--primary" id="favOrder" href="#pedido">
+          Pedir mis favoritos por WhatsApp
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <p class="products__note" data-reveal>
+        Los precios dependen del tamaño, el color y el material.
+        <a href="#pedido">Escribime</a> y te paso el valor exacto en el día.
+      </p>
+
+    </div>
+  </section>
+
+  <!-- ===================================================== MATERIALES -->
+  <section class="section section--tint" id="materiales">
+    <div class="wrap">
+
+      <div class="section__head">
+        <div>
+          <p class="eyebrow" data-reveal>Materiales</p>
+          <h2 data-reveal>Tres plásticos. Ninguno de relleno.</h2>
+        </div>
+        <p class="lead" data-reveal>
+          No hacemos piezas técnicas: hacemos objetos para usar, regalar y mirar.
+          Por eso trabajamos solo con los tres materiales que mejor rinden para eso.
+        </p>
+      </div>
+
+      <div class="material-grid">
+
+        <article class="material-card" data-reveal>
+          <div class="material-card__head">
+            <span class="material-card__code">PLA</span>
+            <span class="material-card__tag">El más lindo</span>
+          </div>
+          <h3>Para deco y figuras</h3>
+          <p>Rígido, liviano y con terminación muy prolija. Es el que mejor se ve en un estante.</p>
+          <ul class="material-card__list">
+            <li>Ideal: jarrones, figuras, adornos</li>
+            <li>Acabados: mate, seda y colores sólidos</li>
+            <li>Evitá: sol directo, auto y fuentes de calor</li>
+          </ul>
+        </article>
+
+        <article class="material-card" data-reveal>
+          <div class="material-card__head">
+            <span class="material-card__code">PETG</span>
+            <span class="material-card__tag">El más resistente</span>
+          </div>
+          <h3>Para el día a día</h3>
+          <p>Más tenaz y un poco flexible. Aguanta golpes, humedad y uso seguido sin drama.</p>
+          <ul class="material-card__list">
+            <li>Ideal: organizadores, posavasos, macetas</li>
+            <li>Acabados: sólido, translúcido y satinado</li>
+            <li>También anda bien en exterior</li>
+          </ul>
+        </article>
+
+        <article class="material-card" data-reveal>
+          <div class="material-card__head">
+            <span class="material-card__code">TPU</span>
+            <span class="material-card__tag">El flexible</span>
+          </div>
+          <h3>Para lo que se dobla</h3>
+          <p>Blandito y elástico. Vuelve a su forma y no marca lo que toca.</p>
+          <ul class="material-card__list">
+            <li>Ideal: fundas, agarres, bases antideslizantes</li>
+            <li>Acabados: mate, en colores intensos</li>
+            <li>Se puede combinar con PLA o PETG</li>
+          </ul>
+        </article>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =================================================== CÓMO COMPRAR -->
+  <section class="section" id="como-comprar">
+    <div class="wrap">
+      <div class="process" data-reveal>
+
+        <p class="eyebrow">Cómo comprar</p>
+        <h2>Elegís. Confirmamos. Llega a tu casa.</h2>
+
+        <div class="steps">
+          <div class="step">
+            <span class="step__num">Paso 01</span>
+            <h3>Elegí el objeto</h3>
+            <p>Mirá el catálogo o mandanos una idea, una foto o el link de un modelo que te haya gustado.</p>
+          </div>
+          <div class="step">
+            <span class="step__num">Paso 02</span>
+            <h3>Definimos color y precio</h3>
+            <p>Te confirmamos material, tamaño, color y plazo. Si es a medida, ves el diseño antes de imprimir.</p>
+          </div>
+          <div class="step">
+            <span class="step__num">Paso 03</span>
+            <h3>Lo imprimimos y te lo enviamos</h3>
+            <p>Entre 2 y 7 días hábiles: 2 a 5 si es de catálogo, 4 a 7 si es a medida. Envío a todo el país o retiro en el taller.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= PEDIDO -->
+  <section class="section" id="pedido">
+    <div class="wrap quote">
+
+      <div>
+        <p class="eyebrow" data-reveal>Pedidos</p>
+        <h2 data-reveal>Contanos qué querés.</h2>
+        <p class="lead" data-reveal style="margin-top:1rem">
+          Puede ser algo del catálogo, un regalo con nombre o una idea que todavía
+          no existe.           Completá el formulario y después elegí a qué sucursal enviar el mensaje.
+        </p>
+
+        <ul class="contact-list" data-reveal>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.9L3 21l1.9-5a8.4 8.4 0 0 1-.9-3.8 8.4 8.4 0 0 1 8.4-8.4 8.4 8.4 0 0 1 8.6 7.7Z"/></svg>
+            <span><strong>WhatsApp</strong><a href="#pedido" data-wa-message="¡Hola Agresti.3D! Quiero hacer una consulta.">Elegir sucursal</a></span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <span><strong>Email</strong><a href="mailto:agresti.3d@gmail.com">agresti.3d@gmail.com</a></span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/></svg>
+            <span><strong>Instagram</strong><a href="https://www.instagram.com/agresti.3d/" target="_blank" rel="noopener">@agresti.3d</a></span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span><strong>Taller</strong>Buenos Aires, Argentina</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span><strong>Horario</strong>Lunes a viernes, 9 a 18 h</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="form-card" data-reveal>
+        <form id="quoteForm" novalidate>
+
+          <div class="field--row">
+            <div class="field">
+              <label for="name">Nombre</label>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Tu nombre" aria-describedby="name-error" required>
+              <p class="field__error" id="name-error" role="alert"></p>
+            </div>
+            <div class="field">
+              <label for="contact">Email o WhatsApp</label>
+              <input id="contact" name="contact" type="text" inputmode="email" autocomplete="email" placeholder="tu@email.com o 11 5555-5555" aria-describedby="contact-error" required>
+              <p class="field__error" id="contact-error" role="alert"></p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="kind">¿Qué querés?</label>
+            <select id="kind" name="kind" aria-describedby="kind-error" required>
+              <option value="" disabled selected>Elegí una opción</option>
+              <option>Un producto del catálogo</option>
+              <option>Algo personalizado</option>
+              <option>Regalo o souvenir para un evento</option>
+              <option>Una figura o modelo que vi online</option>
+              <option>Otra cosa</option>
+            </select>
+            <p class="field__error" id="kind-error" role="alert"></p>
+          </div>
+
+          <div class="field">
+            <label for="details">Contanos un poco más</label>
+            <textarea id="details" name="details" placeholder="Qué te gustaría, para quién es, colores que te gustan, medidas aproximadas…" aria-describedby="details-error" required></textarea>
+            <p class="field__error" id="details-error" role="alert"></p>
+          </div>
+
+          <button class="btn btn--primary" type="submit">
+            Pedir por WhatsApp
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+
+          <p class="form-note">Elegí la sucursal y se abre WhatsApp con el mensaje ya escrito. No guardamos los datos en esta página.</p>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================== PREGUNTAS -->
+  <section class="section" id="preguntas">
+    <div class="wrap">
+
+      <div class="section__head">
+        <div>
+          <p class="eyebrow" data-reveal>Preguntas</p>
+          <h2 data-reveal>Lo que suelen preguntarme.</h2>
+        </div>
+        <p class="lead" data-reveal>
+          Si te queda alguna duda que no está acá, escribime y la agrego.
+        </p>
+      </div>
+
+      <div class="faq" data-reveal>
+        <details>
+          <summary>¿Solo imprimen en PLA, PETG y TPU?</summary>
+          <p>Sí. Son los tres materiales que mejor funcionan para objetos de deco y uso diario. No hacemos piezas técnicas ni trabajamos con materiales industriales.</p>
+        </details>
+        <details>
+          <summary>¿Puedo elegir el color?</summary>
+          <p>Sí. Hay más de 20 colores y varios acabados (mate, seda, translúcido). Algunos tonos dependen del stock; te confirmo la disponibilidad cuando hacés el pedido.</p>
+        </details>
+        <details>
+          <summary>¿Cuánto tarda un pedido?</summary>
+          <p>Un objeto de catálogo suele estar entre 2 y 5 días hábiles. Si es personalizado o una serie, entre 4 y 7. El plazo exacto te lo confirmo con el presupuesto.</p>
+        </details>
+        <details>
+          <summary>¿Hacen envíos?</summary>
+          <p>Sí, a todo el país por correo o mensajería. También podés retirar en el taller coordinando antes.</p>
+        </details>
+        <details>
+          <summary>¿Puedo pedir un modelo que vi en MakerWorld u otra página?</summary>
+          <p>Sí, mandame el link. Primero verifico que la licencia del modelo permita vender la pieza impresa. Si no lo permite, te propongo una alternativa o lo diseñamos desde cero con la misma idea.</p>
+        </details>
+        <details>
+          <summary>¿Sirven para uso real o son solo de adorno?</summary>
+          <p>Depende del material y del diseño. Para deco va PLA; para algo que se usa seguido, PETG; para lo que tiene que ceder, TPU. Te asesoro según lo que necesites. Ninguno es apto para horno ni microondas.</p>
+        </details>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================ FOOTER -->
+<footer class="site-footer">
+  <div class="wrap">
+
+    <div class="footer__grid">
+
+      <div class="footer__brand">
+        <a class="logo" href="#" aria-label="Agresti.3D — inicio">
+          <span class="logo__mark" aria-hidden="true"></span>
+          <span class="logo__type">
+            <span class="logo__name">AGRESTI<span class="logo__dot">.3D</span></span>
+          </span>
+        </a>
+        <p>Objetos impresos en 3D, hechos a pedido. Deco, hogar, juguetes y regalos en PLA, PETG y TPU.</p>
+      </div>
+
+      <div>
+        <h2 class="footer__title">Tienda</h2>
+        <ul class="footer__links">
+          <li><a href="#productos">Productos</a></li>
+          <li><a href="#materiales">Materiales</a></li>
+          <li><a href="#como-comprar">Cómo comprar</a></li>
+          <li><a href="#preguntas">Preguntas</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="footer__title">Contacto</h2>
+        <ul class="footer__links">
+          <li><a href="#pedido">Hacer un pedido</a></li>
+          <li><a href="#pedido" data-wa-message="¡Hola Agresti.3D! Quiero hacer una consulta.">WhatsApp</a></li>
+          <li><a href="https://www.instagram.com/agresti.3d/" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a href="mailto:agresti.3d@gmail.com">agresti.3d@gmail.com</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer__bottom">
+      <span>© <span id="year">2026</span> Agresti.3D. Todos los derechos reservados.</span>
+      <span>Hecho en Buenos Aires.</span>
+    </div>
+
+  </div>
+</footer>
+
+<a class="wa-float" href="#pedido" data-wa-message="¡Hola Agresti.3D! Quiero hacer una consulta." aria-label="Escribinos por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2Zm0 2a8 8 0 1 1-4.2 14.8l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 0 1 12 4Zm-3.1 4c-.2 0-.5 0-.7.3-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.7 4.2 3.7 2 .8 2.5.7 2.9.6.5 0 1.4-.6 1.6-1.1.2-.6.2-1 .2-1.1 0-.1-.2-.2-.4-.3l-1.5-.7c-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-1.9-1.2 7.3 7.3 0 0 1-1.3-1.7c-.1-.2 0-.3.1-.4l.4-.5.2-.4c0-.1 0-.3 0-.4L9.6 8.5c-.2-.4-.4-.4-.7-.4Z"/></svg>
+</a>
+
+<dialog class="wa-dialog" id="whatsappDialog" aria-labelledby="whatsappDialogTitle">
+  <div class="wa-dialog__head">
+    <div>
+      <h2 id="whatsappDialogTitle">¿A quién querés escribirle?</h2>
+      <p>Elegí la sucursal que va a atender tu pedido.</p>
+    </div>
+    <form method="dialog">
+      <button class="wa-dialog__close" type="submit" aria-label="Cerrar selector de sucursal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </form>
+  </div>
+  <p class="wa-dialog__status" id="whatsappStatus" role="status" aria-live="polite"></p>
+  <div class="wa-dialog__choices" id="whatsappChoices"></div>
+</dialog>
+
+<dialog class="cart-dialog" id="cartDialog" aria-labelledby="cartDialogTitle">
+  <div class="cart-dialog__head">
+    <div>
+      <h2 id="cartDialogTitle">Tu carrito de compras</h2>
+      <p class="cart-dialog__subtitle" id="cartSubtitle">0 productos seleccionados</p>
+    </div>
+    <form method="dialog">
+      <button class="cart-dialog__close" type="submit" aria-label="Cerrar carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </form>
+  </div>
+  <div class="cart-dialog__body" id="cartBody"></div>
+  <div class="cart-dialog__foot" id="cartFoot">
+    <p class="cart-dialog__note" data-cart-note hidden></p>
+    <div class="cart-dialog__total-row">
+      <span>Total estimado:</span>
+      <strong id="cartTotal">$0</strong>
+    </div>
+    <div class="cart-dialog__actions">
+      <button class="btn btn--primary cart-dialog__order-btn" id="cartOrderButton" type="button">Pedir carrito por WhatsApp</button>
+      <button class="btn btn--ghost" id="cartClearButton" type="button">Vaciar carrito</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="gift-dialog" id="giftDialog" aria-labelledby="giftDialogTitle">
+  <div class="gift-dialog__head">
+    <div>
+      <p class="eyebrow">Ideas para regalar</p>
+      <h2 id="giftDialogTitle">Encontrá tu regalo</h2>
+      <p class="gift-dialog__lead">Tres preguntas y te propongo opciones del catálogo.</p>
+    </div>
+    <form method="dialog">
+      <button class="gift-dialog__close" type="submit" aria-label="Cerrar buscador de regalos">✕</button>
+    </form>
+  </div>
+  <div class="gift-dialog__fields">
+    <label class="field">
+      <span>¿Para quién es?</span>
+      <select id="giftWho">
+        <option value="el">Para él</option>
+        <option value="ella">Para ella</option>
+        <option value="chicos">Para chicos</option>
+        <option value="hogar">Para el hogar</option>
+        <option value="cualquiera">Para cualquiera</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>¿Qué ocasión?</span>
+      <select id="giftOccasion">
+        <option value="cumple">Cumpleaños</option>
+        <option value="aniversario">Aniversario</option>
+        <option value="laboral">Regalo laboral</option>
+        <option value="especial">Fecha especial</option>
+        <option value="cualquiera">Solo quiero ideas</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Presupuesto</span>
+      <select id="giftBudget">
+        <option value="0-10000">Hasta $10.000</option>
+        <option value="10000-20000">$10.000 a $20.000</option>
+        <option value="20000-35000">$20.000 a $35.000</option>
+        <option value="35000-9999999">Más de $35.000</option>
+        <option value="cualquiera">Sin límite</option>
+      </select>
+    </label>
+  </div>
+  <div class="gift-dialog__actions">
+    <button class="btn btn--primary" id="giftSearch" type="button">Ver ideas</button>
+    <a class="btn btn--ghost" href="#pedido" data-gift-close>¿No encontrás nada? Pedí a medida</a>
+  </div>
+  <div class="gift-results" id="giftResults" aria-live="polite"></div>
+</dialog>
+<div class="cart-toast" id="cartToast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/seasons.js?v=3"></script>
+<script src="js/main.js?v=8"></script>
+<script src="js/campaigns.js?v=1"></script>
+<script src="js/catalog.js?v=32"></script>
+<script src="js/gift-finder.js?v=1"></script>
+</body>
+</html>
