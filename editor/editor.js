@@ -707,6 +707,46 @@
     }
   };
 
+
+  const dispararSeo = async () => {
+    try {
+      const config = await db.collection("config").doc("github").get();
+      const token = config.exists ? String(config.data().token || "") : "";
+      if (!token) {
+        setStatus(
+          els.saveStatus,
+          "Catálogo publicado. Falta configurar el token de GitHub para regenerar el SEO automáticamente.",
+          "success"
+        );
+        return;
+      }
+      const respuesta = await fetch(
+        "https://api.github.com/repos/agresti3d/agresti-3d/actions/workflows/deploy.yml/dispatches",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ref: "main" }),
+        }
+      );
+      if (!respuesta.ok) throw new Error(`GitHub respondió ${respuesta.status}`);
+      setStatus(
+        els.saveStatus,
+        "Catálogo publicado. Actualizando páginas SEO en segundo plano…",
+        "success"
+      );
+    } catch (error) {
+      setStatus(
+        els.saveStatus,
+        "Catálogo publicado. No se pudo iniciar la actualización SEO; el sitio ya muestra los cambios.",
+        "success"
+      );
+    }
+  };
+
   const publicar = async () => {
     if (saving) return;
     if (!window.confirm("¿Publicar el catálogo en la web? Los cambios se verán en el sitio.")) return;
@@ -733,6 +773,7 @@
       dirty = false;
       setStatus(els.saveStatus, "Catálogo publicado en la web.", "success");
       toast("Catálogo publicado. El sitio ya muestra los cambios.");
+      dispararSeo();
     } catch (error) {
       setStatus(els.saveStatus, `No se publicó: ${firebaseErrorMessage(error)}`, "error");
       toast(`No se publicó: ${firebaseErrorMessage(error)}`, "error");

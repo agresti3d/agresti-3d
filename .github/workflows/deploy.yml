@@ -56,4 +56,4 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
 
       - name: Publicar Hosting
-        run: firebase deploy --only hosting --project agresti-3d --non-interactive
+        run: firebase deploy --only hosting,firestore:rules --project agresti-3d --non-interactive

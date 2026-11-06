@@ -17,5 +17,12 @@ service cloud.firestore {
     match /catalogo/borrador {
       allow read, write: if esAdmin();
     }
+
+    // Configuración privada (token de GitHub para disparar el SEO).
+    // Solo el administrador puede leerla; se escribe desde la consola.
+    match /config/{documento} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
   }
 }
