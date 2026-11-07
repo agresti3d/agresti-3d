@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/styles.css?v=20">
   <link rel="stylesheet" href="../../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=26">
+  <link rel="stylesheet" href="editor.css?v=27">
   <style>
     [data-editor-tab="productos"], [data-editor-tab="categorias"], [data-editor-tab="sucursales"],
     #connect, #saveCatalogButton, #publishButton, .local-warning, #fallbackImport,
@@ -372,9 +372,11 @@
             <p class="instagram-hint" id="instagramHint">Vista previa 1080 × 1080</p>
           </div>
           <div class="instagram-controls">
-            <label class="field">
+            <label class="field instagram-product-field">
               <span>Producto</span>
+              <input id="instagramProductSearch" type="search" placeholder="Buscar producto o categoría…" autocomplete="off">
               <select id="instagramProduct"></select>
+              <small class="instagram-product-count" id="instagramProductCount"></small>
             </label>
             <label class="field">
               <span>Formato</span>
@@ -550,7 +552,7 @@
 
   <script src="../../js/config.js?v=1"></script>
   <script src="../../data/catalog.js?v=1"></script>
-  <script src="editor.js?v=34"></script>
+  <script src="editor.js?v=35"></script>
   <script>
     const params = new URLSearchParams(location.search);
     if (params.get("embed") === "1") document.body.classList.add("tools-embed");

@@ -1210,3 +1210,6 @@ body {
   font-size: var(--t-micro);
   line-height: 1.4;
 }
+
+.instagram-product-field .instagram-product-count { color: var(--muted); font-size: var(--t-micro); }
+.instagram-product-field input[type="search"] { margin-bottom: -.2rem; }

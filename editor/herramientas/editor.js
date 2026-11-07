@@ -53,6 +53,8 @@
     addBranch: $("#addBranchButton"),
     saveBranches: $("#saveBranchesButton"),
     instagramSelect: $("#instagramProduct"),
+    instagramSearch: $("#instagramProductSearch"),
+    instagramProductCount: $("#instagramProductCount"),
     instagramCanvas: $("#instagramCanvas"),
     instagramCaption: $("#instagramCaption"),
     instagramHashtags: $("#instagramHashtags"),
@@ -2268,6 +2270,46 @@
     );
   };
 
+
+  const igNormalizar = (texto) =>
+    String(texto || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  const filtrarInstagramProductos = () => {
+    if (!els.instagramSelect || !catalog) return;
+    const termino = igNormalizar(els.instagramSearch?.value || "");
+    const categoriaDe = (producto) =>
+      catalog.categorias.find((categoria) => categoria.id === producto.categoria)?.nombre || "";
+    let productos = catalog.productos.filter(
+      (producto) =>
+        !termino ||
+        igNormalizar(producto.nombre).includes(termino) ||
+        igNormalizar(categoriaDe(producto)).includes(termino)
+    );
+    const actual = instagramProductoId || els.instagramSelect.value;
+    const seleccionado = catalog.productos.find((producto) => producto.id === actual);
+    if (seleccionado && !productos.some((producto) => producto.id === actual)) {
+      productos = [seleccionado, ...productos];
+    }
+    els.instagramSelect.innerHTML = productos.length
+      ? productos
+          .map(
+            (producto) =>
+              `<option value="${esc(producto.id)}">${esc(producto.nombre)}${producto.id === actual ? " · seleccionado" : ""}</option>`
+          )
+          .join("")
+      : '<option value="" disabled>Sin resultados</option>';
+    if (actual && productos.some((producto) => producto.id === actual)) {
+      els.instagramSelect.value = actual;
+    }
+    if (els.instagramProductCount) {
+      els.instagramProductCount.textContent = `${productos.length} de ${catalog.productos.length} productos`;
+    }
+  };
+
   const prepararInstagram = () => {
     if (!els.instagramSelect) return;
     if (!catalog) {
@@ -2275,12 +2317,10 @@
       return;
     }
     const anterior = instagramProductoId;
-    els.instagramSelect.innerHTML = catalog.productos
-      .map((producto) => `<option value="${esc(producto.id)}">${esc(producto.nombre)}</option>`)
-      .join("");
     const candidatos = [selectedId, anterior, catalog.productos[0]?.id];
     instagramProductoId =
       candidatos.find((id) => id && catalog.productos.some((producto) => producto.id === id)) || "";
+    filtrarInstagramProductos();
     els.instagramSelect.value = instagramProductoId;
     if (els.instagramFormat) els.instagramFormat.value = instagramFormato;
     const cambioProducto = !instagramPreparado || anterior !== instagramProductoId;
@@ -2556,6 +2596,7 @@
     igActualizarTexto();
     igActualizar();
   });
+  els.instagramSearch?.addEventListener("input", filtrarInstagramProductos);
   els.instagramFormat?.addEventListener("change", () => {
     instagramFormato = els.instagramFormat.value;
     instagramSlide = 1;
@@ -2597,6 +2638,8 @@
     const abrir = event.target.closest("[data-ig-open]");
     if (abrir) {
       instagramProductoId = abrir.dataset.igOpen;
+      if (els.instagramSearch) els.instagramSearch.value = "";
+      filtrarInstagramProductos();
       if (els.instagramSelect) els.instagramSelect.value = instagramProductoId;
       igActualizarTexto();
       igActualizar();
