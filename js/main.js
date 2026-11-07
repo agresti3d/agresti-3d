@@ -419,7 +419,22 @@ if (mobileNav) {
   syncMobileNav();
 }
 
-// ---------- 10. Ocultar el WhatsApp flotante sobre el catálogo ----------
+// ---------- 10. Buscador del hero ----------
+const heroSearch = document.getElementById("heroSearch");
+heroSearch?.addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  const termino = document.getElementById("heroSearchInput")?.value.trim() || "";
+  location.hash = "productos";
+  window.setTimeout(() => {
+    const buscador = document.getElementById("catalogSearch");
+    if (!buscador) return;
+    buscador.value = termino;
+    buscador.dispatchEvent(new Event("input", { bubbles: true }));
+    buscador.focus();
+  }, 120);
+});
+
+// ---------- 11. Ocultar el WhatsApp flotante sobre el catálogo ----------
 const waFloat = document.querySelector(".wa-float");
 const catalogSection = document.getElementById("productos");
 if (waFloat && catalogSection && "IntersectionObserver" in window) {

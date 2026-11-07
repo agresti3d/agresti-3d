@@ -2841,3 +2841,41 @@ body.is-catalog-visible .wa-float {
   -webkit-line-clamp: unset;
   overflow: visible;
 }
+
+/* Buscador del hero y banda de regalos */
+.hero-search {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  width: min(100%, 480px);
+  margin-top: var(--s-5);
+  padding: .3rem .3rem .3rem .8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.hero-search svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
+.hero-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: .86rem;
+  outline: none;
+}
+.hero-search button { min-height: 42px; padding: .45rem .9rem; font-size: .78rem; }
+
+.gift-band { padding-block: var(--s-8); background: var(--surface-2); }
+.gift-band__inner { display: grid; grid-template-columns: minmax(0, 1.4fr) auto; gap: var(--s-6); align-items: center; }
+.gift-band h2 { margin: .3rem 0 0; font-size: var(--t-h2); }
+.gift-band p:not(.eyebrow) { max-width: 52ch; margin: .6rem 0 0; color: var(--muted); line-height: 1.55; }
+.gift-band__actions { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: flex-end; }
+@media (max-width: 700px) {
+  .gift-band__inner { grid-template-columns: 1fr; gap: var(--s-4); }
+  .gift-band__actions { justify-content: flex-start; }
+  .hero-search button { padding-inline: .75rem; }
+}

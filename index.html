@@ -49,7 +49,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=45">
+  <link rel="stylesheet" href="css/styles.css?v=46">
   <link rel="stylesheet" href="css/theme.css?v=8">
 <script type="application/ld+json">
 {
@@ -124,6 +124,12 @@
           Deco, organizadores, juguetes y regalos personalizados. Elegís el modelo
           y el color; lo imprimimos en PLA, PETG o TPU y te lo mandamos a casa.
         </p>
+
+        <form class="hero-search" id="heroSearch" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg>
+          <input id="heroSearchInput" type="search" placeholder="Buscar un producto…" aria-label="Buscar productos" autocomplete="off">
+          <button class="btn btn--primary" type="submit">Buscar</button>
+        </form>
 
         <div class="hero__actions">
           <a class="btn btn--primary" href="#productos">
@@ -281,6 +287,21 @@
         <a href="#pedido">Escribime</a> y te paso el valor exacto en el día.
       </p>
 
+    </div>
+  </section>
+
+  <!-- ======================================================== REGALOS -->
+  <section class="section gift-band" id="regalos">
+    <div class="wrap gift-band__inner">
+      <div>
+        <p class="eyebrow">Ideas para regalar</p>
+        <h2>No sabés qué regalar.</h2>
+        <p>Tres preguntas y te propongo opciones reales del catálogo. Si ninguna encaja, lo hacemos a medida.</p>
+      </div>
+      <div class="gift-band__actions">
+        <button class="btn btn--primary" type="button" data-gift-open>Encontrá tu regalo</button>
+        <a class="btn btn--ghost" href="#pedido">Pedir a medida</a>
+      </div>
     </div>
   </section>
 
@@ -689,7 +710,7 @@
 <div class="cart-toast" id="cartToast" role="status" aria-live="polite" hidden></div>
 
 <script src="js/seasons.js?v=4"></script>
-<script src="js/main.js?v=14"></script>
+<script src="js/main.js?v=15"></script>
 <script src="js/campaigns.js?v=1"></script>
 <script src="js/analytics.js?v=1"></script>
 <script src="js/catalog.js?v=46"></script>
