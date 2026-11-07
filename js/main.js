@@ -418,3 +418,13 @@ if (mobileNav) {
   window.addEventListener("hashchange", syncMobileNav);
   syncMobileNav();
 }
+
+// ---------- 10. Ocultar el WhatsApp flotante sobre el catálogo ----------
+const waFloat = document.querySelector(".wa-float");
+const catalogSection = document.getElementById("productos");
+if (waFloat && catalogSection && "IntersectionObserver" in window) {
+  new IntersectionObserver(
+    ([entry]) => document.body.classList.toggle("is-catalog-visible", entry.isIntersecting),
+    { rootMargin: "-80px 0px -18% 0px" }
+  ).observe(catalogSection);
+}

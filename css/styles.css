@@ -2786,3 +2786,29 @@ body.is-quote-visible .wa-float {
     align-self: start;
   }
 }
+
+/* El flotante no compite con las cards del catálogo */
+.wa-float { transition: opacity .2s ease, transform .2s ease; }
+body.is-catalog-visible .wa-float {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px) scale(.96);
+}
+
+/* Footer de seguimiento */
+.tracking-footer {
+  border-top: 1px solid var(--line);
+  padding-block: var(--s-5);
+}
+.tracking-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+.tracking-footer__inner .logo { min-height: 44px; }
+.tracking-footer nav { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+.tracking-footer nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); font-size: .82rem; }
+.tracking-footer nav a:hover { color: var(--ink); }
+.tracking-footer p { margin: 0; color: var(--muted); font-size: .75rem; }
