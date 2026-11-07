@@ -2812,3 +2812,32 @@ body.is-catalog-visible .wa-float {
 .tracking-footer nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--muted); font-size: .82rem; }
 .tracking-footer nav a:hover { color: var(--ink); }
 .tracking-footer p { margin: 0; color: var(--muted); font-size: .75rem; }
+
+.product-detail__description.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+  overflow: hidden;
+}
+.product-description-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: .25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.product-detail__description.is-clamped.is-expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}

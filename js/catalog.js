@@ -744,7 +744,10 @@
             <button class="product-share" type="button" data-share-product="${esc(producto.id)}" aria-label="Compartir ${esc(producto.nombre)}">Compartir</button>
           </div>
           ${beneficiosHtml}
-          <p class="product-detail__description">${esc(descripcion)}</p>
+          <div class="product-detail__description-wrap">
+            <p class="product-detail__description${descripcion.length > 420 ? " is-clamped" : ""}" data-description>${esc(descripcion)}</p>
+            ${descripcion.length > 420 ? '<button class="product-description-toggle" type="button" data-description-toggle aria-expanded="false">Leer más</button>' : ""}
+          </div>
           ${incluyeHtml}
           ${coloresHtml}
           ${disponibilidadHtml}
@@ -1170,6 +1173,14 @@
           const actual = Number(salida.textContent) || 1;
           salida.textContent = String(Math.min(99, Math.max(1, actual + Number(pasoCantidad.dataset.qtyStep))));
         }
+        return;
+      }
+      const descripcionToggle = e.target.closest("[data-description-toggle]");
+      if (descripcionToggle) {
+        const texto = el.detail.querySelector("[data-description]");
+        const expandido = texto?.classList.toggle("is-expanded");
+        descripcionToggle.setAttribute("aria-expanded", String(Boolean(expandido)));
+        descripcionToggle.textContent = expandido ? "Leer menos" : "Leer más";
         return;
       }
       const compartir = e.target.closest("[data-share-product]");

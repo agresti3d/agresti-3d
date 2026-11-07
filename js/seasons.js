@@ -98,15 +98,28 @@ const findPhoto = (folder, name) =>
   });
 
 const collectPhotos = async (folder) => {
-  const photos = [];
+  // Manifiesto opcional: evita sondear 4 extensiones por cada slot cuando la
+  // temporada está vacía. Si existe photos.json, manda ese listado.
+  try {
+    const respuesta = await fetch(`img/${folder}/photos.json?v=${PHOTO_CACHE}`, { cache: "no-cache" });
+    if (respuesta.ok) {
+      const data = await respuesta.json();
+      if (Array.isArray(data?.photos)) {
+        return data.photos
+          .filter((foto) => typeof foto === "string" && foto.trim())
+          .map((foto) => `img/${folder}/${foto.trim()}?v=${PHOTO_CACHE}`);
+      }
+    }
+  } catch (error) {
+    // Sin manifiesto: se mantiene el sondeo anterior.
+  }
 
+  const photos = [];
   for (let i = 1; i <= PHOTO_SLOTS; i += 1) {
     const photo = await findPhoto(folder, String(i).padStart(2, "0"));
     if (!photo) break;
     photos.push(photo);
   }
-
-  // Si no hay ninguna ficha, la temporada está vacía: no se toca nada.
   return photos;
 };
 
