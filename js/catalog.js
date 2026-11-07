@@ -725,8 +725,8 @@
             <h2 id="productDetailTitle" tabindex="-1">${esc(producto.nombre)}</h2>
             <button class="product-share" type="button" data-share-product="${esc(producto.id)}" aria-label="Compartir ${esc(producto.nombre)}">Compartir</button>
           </div>
-          <p class="product-detail__description">${esc(descripcion)}</p>
           ${beneficiosHtml}
+          <p class="product-detail__description">${esc(descripcion)}</p>
           ${disponibilidadHtml}
           ${alertaStockHtml}
           ${variantesHtml}

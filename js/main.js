@@ -407,7 +407,9 @@ if (mobileNav) {
     const hash = location.hash;
     const activo = hash.startsWith("#p=") || hash.startsWith("#cat=") || hash === "#productos"
       ? "catalogo"
-      : "";
+      : hash
+        ? ""
+        : "inicio";
     mobileNav.querySelectorAll("[data-mobile-nav]").forEach((item) => {
       if (item.dataset.mobileNav === activo) item.setAttribute("aria-current", "page");
       else item.removeAttribute("aria-current");
