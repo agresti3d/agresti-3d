@@ -2728,3 +2728,13 @@ body.is-quote-visible .wa-float {
   .hero__actions .btn--primary { flex: 1 1 100%; }
   .mobile-nav__item { font-size: .75rem; }
 }
+
+@media (max-width: 520px) {
+  .hero__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s-2);
+  }
+  .hero__actions .btn { width: 100%; }
+  .hero__actions .btn:nth-child(3) { display: none; }
+}
