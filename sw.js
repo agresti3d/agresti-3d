@@ -1,4 +1,4 @@
-const CACHE = "agresti-3d-v16";
+const CACHE = "agresti-3d-v17";
 const SHELL = [
   "/",
   "/index.html",
