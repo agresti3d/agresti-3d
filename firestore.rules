@@ -37,6 +37,25 @@ service cloud.firestore {
         && request.resource.data.foto.size() <= 500;
     }
 
+    // Analítica anónima: nadie puede leerla desde la web, solo el administrador.
+    match /eventos/{evento} {
+      allow create: if request.resource.data.evento is string
+        && request.resource.data.evento.size() > 0
+        && request.resource.data.evento.size() <= 60;
+      allow read: if esAdmin();
+    }
+
+    // Avisos de reposición: se crean sin cuenta y los lee el administrador.
+    match /avisosStock/{aviso} {
+      allow create: if request.resource.data.productoId is string
+        && request.resource.data.productoId.size() > 0
+        && request.resource.data.contacto is string
+        && request.resource.data.contacto.size() > 0
+        && request.resource.data.contacto.size() <= 120
+        && request.resource.data.estado == 'pendiente';
+      allow read: if esAdmin();
+    }
+
     match /resenas/{resena} {
       allow create: if resenaValida();
       allow read, update, delete: if esAdmin();

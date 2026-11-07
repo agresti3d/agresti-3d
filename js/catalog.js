@@ -646,6 +646,28 @@
       .map(encodeURIComponent)
       .join("/");
     const { relacionados, vistos } = sugerenciasProducto(producto);
+    const sinStock = estaSinStock(producto);
+    const alertaStockHtml = sinStock
+      ? `<section class="stock-alert" id="stockAlert" aria-labelledby="stockAlertTitle">
+          <h3 id="stockAlertTitle">Sin stock por ahora</h3>
+          <p>Dejanos tu email o WhatsApp y te avisamos cuando lo repongamos.</p>
+          <form data-stock-form data-producto-id="${esc(producto.id)}" novalidate>
+            <label class="sr-only" for="stockContact">Email o WhatsApp</label>
+            <input id="stockContact" name="contacto" type="text" autocomplete="email" placeholder="tu@email.com o 11 5555-5555" required>
+            <button class="btn btn--ghost" type="submit">Avísame</button>
+            <p class="stock-alert__status" data-stock-status role="status" aria-live="polite"></p>
+          </form>
+        </section>`
+      : "";
+    const stickyHtml = `<div class="product-sticky" aria-label="Compra rápida">
+      <div class="product-sticky__price">${precio}${nota}</div>
+      <div class="product-sticky__actions">
+        ${sinStock
+          ? `<a class="btn btn--primary" href="#stockAlert">Avísame</a>`
+          : `<button class="btn btn--ghost" type="button" data-add-cart="${esc(producto.id)}" aria-label="Agregar ${esc(producto.nombre)} al carrito">${iconoCarrito} Carrito</button>
+             <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)}>WhatsApp</a>`}
+      </div>
+    </div>`;
     const relacionadosHtml = relacionados.length
       ? `<section class="product-suggestions" aria-labelledby="relacionadosTitle">
           <h3 id="relacionadosTitle">También te puede gustar</h3>
@@ -670,9 +692,13 @@
         </div>
         <div class="product-detail__copy">
           ${categoria ? `<span class="product-detail__category">${esc(categoria.nombre)}</span>` : ""}
-          <h2 id="productDetailTitle" tabindex="-1">${esc(producto.nombre)}</h2>
+          <div class="product-detail__heading">
+            <h2 id="productDetailTitle" tabindex="-1">${esc(producto.nombre)}</h2>
+            <button class="product-share" type="button" data-share-product="${esc(producto.id)}" aria-label="Compartir ${esc(producto.nombre)}">Compartir</button>
+          </div>
           <p class="product-detail__description">${esc(descripcion)}</p>
           ${disponibilidadHtml}
+          ${alertaStockHtml}
           ${variantesHtml}
           ${specsHtml}
           ${resenasHtml}
@@ -686,6 +712,7 @@
           </div>
         </div>
       </div>
+      ${stickyHtml}
       ${relacionadosHtml}
       ${vistosHtml}`;
   };
@@ -1069,7 +1096,25 @@
   };
 
   if (el.detail) {
-    el.detail.addEventListener("click", (e) => {
+    el.detail.addEventListener("click", async (e) => {
+      const compartir = e.target.closest("[data-share-product]");
+      if (compartir) {
+        const producto = productos.find((item) => item.id === compartir.dataset.shareProduct);
+        if (producto) {
+          const url = urlDe(producto);
+          try {
+            if (navigator.share) {
+              await navigator.share({ title: `${producto.nombre} — Agresti.3D`, text: producto.nombre, url });
+            } else if (navigator.clipboard) {
+              await navigator.clipboard.writeText(url);
+              mostrarToast("Link copiado para compartir.");
+            }
+          } catch (error) {
+            /* el usuario canceló el diálogo de compartir */
+          }
+        }
+        return;
+      }
       const agregar = e.target.closest("[data-add-cart]");
       if (agregar) {
         e.preventDefault();
