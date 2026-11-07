@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=10">
+  <link rel="stylesheet" href="editor.css?v=11">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -318,11 +318,13 @@
       </section>
 
       <section class="cloud-panel cloud-tool" id="panelInstagram" role="tabpanel" aria-labelledby="tabInstagram" hidden>
-        <iframe class="cloud-tool-frame" src="herramientas/?tool=instagram&embed=1" data-src="herramientas/?tool=instagram&embed=1" title="Generador de Instagram" loading="lazy"></iframe>
+        <div class="cloud-tool-loading" data-tool-loading>Preparando Instagram…</div>
+        <iframe class="cloud-tool-frame" data-src="herramientas/?tool=instagram&embed=1&v=36" title="Generador de Instagram" loading="lazy"></iframe>
       </section>
 
       <section class="cloud-panel cloud-tool" id="panelEtiquetas" role="tabpanel" aria-labelledby="tabEtiquetas" hidden>
-        <iframe class="cloud-tool-frame" src="herramientas/?tool=etiquetas&embed=1" data-src="herramientas/?tool=etiquetas&embed=1" title="Generador de etiquetas" loading="lazy"></iframe>
+        <div class="cloud-tool-loading" data-tool-loading>Preparando etiquetas…</div>
+        <iframe class="cloud-tool-frame" data-src="herramientas/?tool=etiquetas&embed=1&v=36" title="Generador de etiquetas" loading="lazy"></iframe>
       </section>
     </main>
   </div>
@@ -333,6 +335,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=17"></script>
+  <script src="editor.js?v=18"></script>
 </body>
 </html>

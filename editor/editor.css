@@ -686,3 +686,30 @@
 .cloud-order__foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; justify-content: space-between; }
 .cloud-order__foot label { display: flex; align-items: center; gap: .4rem; color: var(--cloud-muted); font-size: .78rem; }
 .cloud-order__foot select { min-height: 38px; padding: .3rem .5rem; border: 1px solid var(--cloud-line-strong); border-radius: 7px; background: rgba(7,15,31,.55); color: var(--cloud-ink); font: inherit; font-size: .78rem; }
+
+/* Carga diferida de las herramientas */
+.cloud-tool { position: relative; min-height: 72vh; }
+.cloud-tool-frame { width: 100%; min-height: 72vh; border: 0; opacity: 0; transition: opacity .2s ease; }
+.cloud-tool.is-ready .cloud-tool-frame { opacity: 1; }
+.cloud-tool-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-height: 72vh;
+  color: var(--cloud-muted);
+  font-size: .85rem;
+  background: rgba(7, 15, 31, .35);
+}
+.cloud-tool-loading::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  margin-right: .6rem;
+  border: 2px solid rgba(255,255,255,.16);
+  border-top-color: var(--cloud-accent);
+  border-radius: 50%;
+  animation: cloud-spin .8s linear infinite;
+}
+.cloud-tool.is-ready .cloud-tool-loading { display: none; }
+@keyframes cloud-spin { to { transform: rotate(360deg); } }

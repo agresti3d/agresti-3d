@@ -1575,7 +1575,17 @@
     if (nombre === "pedidos") cargarPedidos();
     const panelActivo = paneles[nombre];
     const iframe = panelActivo?.querySelector("iframe[data-src]");
-    if (iframe && !iframe.getAttribute("src")) iframe.src = iframe.dataset.src;
+    if (iframe && !iframe.getAttribute("src")) {
+      panelActivo.classList.remove("is-ready");
+      iframe.addEventListener(
+        "load",
+        () => panelActivo.classList.add("is-ready"),
+        { once: true }
+      );
+      iframe.src = iframe.dataset.src;
+    } else if (iframe) {
+      panelActivo.classList.add("is-ready");
+    }
     if (nombre === "productos" && selectedId) {
       const producto = catalog?.productos?.find((item) => item.id === selectedId);
       if (producto) renderBranches(producto);
