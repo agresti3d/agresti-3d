@@ -1,0 +1,65 @@
+name: Publicar sitio y regenerar SEO
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Cada 6 horas (UTC). El sitio se actualiza al instante por Firestore;
+    # esto regenera las páginas estáticas de producto para Google.
+    - cron: "0 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-agresti
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generar páginas de producto, sitemap y robots
+        run: python3 tools/generar-paginas-productos.py
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build nueva home
+        working-directory: web
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Instalar Firebase CLI
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          for intento in 1 2 3; do
+            if npm install -g firebase-tools; then
+              break
+            fi
+            echo "Reintentando instalación de Firebase CLI ($intento/3)…"
+            sleep 15
+          done
+
+      - name: Credenciales de Firebase
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Publicar Hosting
+        run: firebase deploy --only hosting,firestore:rules --project agresti-3d --non-interactive
