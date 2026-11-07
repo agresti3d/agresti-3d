@@ -676,3 +676,13 @@
 .cloud-pending { display: grid; gap: .5rem; padding: var(--cloud-s3); border: 1px solid var(--cloud-line); border-radius: 9px; background: rgba(255,255,255,.025); }
 .cloud-pending img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; }
 .cloud-pending__actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.cloud-order-list { display: grid; gap: var(--cloud-s3); }
+.cloud-order { display: grid; gap: .5rem; padding: var(--cloud-s3); border: 1px solid var(--cloud-line); border-radius: 9px; background: rgba(255,255,255,.025); }
+.cloud-order__head { display: flex; justify-content: space-between; gap: .7rem; flex-wrap: wrap; align-items: baseline; }
+.cloud-order__head strong { font-family: "Space Grotesk", sans-serif; letter-spacing: .06em; }
+.cloud-order__head small { color: var(--cloud-muted); }
+.cloud-order ul { margin: 0; padding-left: 1rem; color: var(--cloud-muted); font-size: .8rem; }
+.cloud-order__foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; justify-content: space-between; }
+.cloud-order__foot label { display: flex; align-items: center; gap: .4rem; color: var(--cloud-muted); font-size: .78rem; }
+.cloud-order__foot select { min-height: 38px; padding: .3rem .5rem; border: 1px solid var(--cloud-line-strong); border-radius: 7px; background: rgba(7,15,31,.55); color: var(--cloud-ink); font: inherit; font-size: .78rem; }

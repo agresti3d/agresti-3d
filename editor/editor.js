@@ -59,6 +59,9 @@
     pendingReviewsList: $("#pendingReviewsList"),
     pendingReviewsStatus: $("#pendingReviewsStatus"),
     reloadPendingReviews: $("#reloadPendingReviews"),
+    pedidosList: $("#pedidosList"),
+    pedidosStatus: $("#pedidosStatus"),
+    reloadPedidos: $("#reloadPedidos"),
     branchList: $("#branchList"),
     addBranch: $("#addBranch"),
     saveBranches: $("#saveBranches"),
@@ -1560,6 +1563,7 @@
       productos: $("#panelProductos"),
       categorias: $("#panelCategorias"),
       sucursales: $("#panelSucursales"),
+      pedidos: $("#panelPedidos"),
       instagram: $("#panelInstagram"),
       etiquetas: $("#panelEtiquetas"),
     };
@@ -1568,6 +1572,7 @@
     });
     if (nombre === "categorias") renderCategorias();
     if (nombre === "sucursales") renderSucursales();
+    if (nombre === "pedidos") cargarPedidos();
     const panelActivo = paneles[nombre];
     const iframe = panelActivo?.querySelector("iframe[data-src]");
     if (iframe && !iframe.getAttribute("src")) iframe.src = iframe.dataset.src;
@@ -1611,6 +1616,74 @@
     editarProducto(id);
     programarAutoguardado();
     toast("Producto duplicado. Guardá el borrador para confirmarlo.");
+  };
+
+
+  const ESTADOS_PEDIDO = [
+    ["pendiente", "Pedido recibido"],
+    ["confirmado", "Confirmado"],
+    ["en_produccion", "En producción"],
+    ["listo", "Listo"],
+    ["enviado", "Enviado"],
+    ["entregado", "Entregado"],
+    ["cancelado", "Cancelado"],
+  ];
+
+  const cargarPedidos = async () => {
+    if (!db || !els.pedidosList) return;
+    try {
+      setStatus(els.pedidosStatus, "Cargando pedidos…");
+      const snap = await db.collection("pedidos").orderBy("creado", "desc").limit(50).get();
+      if (snap.empty) {
+        els.pedidosList.innerHTML = '<p class="cloud-muted">Todavía no hay pedidos con seguimiento.</p>';
+        setStatus(els.pedidosStatus, "");
+        return;
+      }
+      els.pedidosList.innerHTML = snap.docs
+        .map((doc) => {
+          const pedido = doc.data();
+          const items = Array.isArray(pedido.items) ? pedido.items : [];
+          const fecha = pedido.creado?.toDate ? pedido.creado.toDate().toLocaleString("es-AR") : "";
+          const opciones = ESTADOS_PEDIDO.map(
+            ([valor, label]) => `<option value="${valor}" ${pedido.estado === valor ? "selected" : ""}>${label}</option>`
+          ).join("");
+          return `<article class="cloud-order" data-order="${escapeHTML(doc.id)}">
+            <div class="cloud-order__head">
+              <strong>${escapeHTML(pedido.codigo || doc.id)}</strong>
+              <small>${escapeHTML(fecha)}</small>
+            </div>
+            <ul>${items.map((item) => `<li>${escapeHTML(item.nombre || "Producto")} ×${item.cantidad || 1}</li>`).join("")}</ul>
+            <div class="cloud-order__foot">
+              <span>Total: $${Number(pedido.total || 0).toLocaleString("es-AR")}</span>
+              <label>Estado <select data-order-status>${opciones}</select></label>
+              <button class="btn btn--primary" type="button" data-save-order>Guardar estado</button>
+            </div>
+          </article>`;
+        })
+        .join("");
+      setStatus(els.pedidosStatus, `${snap.size} pedido(s).`, "success");
+    } catch (error) {
+      setStatus(els.pedidosStatus, `No se pudieron cargar: ${firebaseErrorMessage(error)}`, "error");
+    }
+  };
+
+  const guardarEstadoPedido = async (boton) => {
+    const fila = boton.closest("[data-order]");
+    const codigo = fila?.dataset.order;
+    const estado = fila?.querySelector("[data-order-status]")?.value;
+    if (!codigo || !estado) return;
+    boton.disabled = true;
+    try {
+      await db.collection("pedidos").doc(codigo).update({
+        estado,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      setStatus(els.pedidosStatus, "Estado actualizado. El cliente ya puede verlo.", "success");
+    } catch (error) {
+      setStatus(els.pedidosStatus, `No se actualizó: ${firebaseErrorMessage(error)}`, "error");
+    } finally {
+      boton.disabled = false;
+    }
   };
 
   const iniciarSesionUI = () => {
@@ -1660,6 +1733,13 @@
     if (els.importCatalog) els.importCatalog.addEventListener("click", importarCatalogo);
     if (els.addVariant) els.addVariant.addEventListener("click", agregarVariante);
     if (els.addReview) els.addReview.addEventListener("click", agregarResena);
+    if (els.reloadPedidos) els.reloadPedidos.addEventListener("click", cargarPedidos);
+    if (els.pedidosList) {
+      els.pedidosList.addEventListener("click", (event) => {
+        const boton = event.target.closest("[data-save-order]");
+        if (boton) guardarEstadoPedido(boton);
+      });
+    }
     if (els.reloadPendingReviews) {
       els.reloadPendingReviews.addEventListener("click", cargarResenasPendientes);
     }

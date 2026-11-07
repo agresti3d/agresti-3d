@@ -1543,18 +1543,75 @@
     }
   };
 
-  const pedirCarrito = () => {
+
+  const PEDIDOS_API = "https://firestore.googleapis.com/v1/projects/agresti-3d/databases/(default)/documents/pedidos";
+  const PEDIDOS_KEY = "AIzaSyCjBR_K_Wk4Kiy7HBMnt0_bfFup45R8na0";
+
+  const generarCodigoPedido = () => {
+    const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = new Uint8Array(6);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+    return `AG-${[...bytes].map((byte) => letras[byte % letras.length]).join("")}`;
+  };
+
+  const crearPedido = async (items, total) => {
+    const codigo = generarCodigoPedido();
+    const campos = {
+      codigo: { stringValue: codigo },
+      estado: { stringValue: "pendiente" },
+      total: { integerValue: String(total) },
+      creado: { timestampValue: new Date().toISOString() },
+      actualizado: { timestampValue: new Date().toISOString() },
+      items: {
+        arrayValue: {
+          values: items.map(({ producto, cantidad }) => ({
+            mapValue: {
+              fields: {
+                productoId: { stringValue: producto.id },
+                nombre: { stringValue: producto.nombre },
+                cantidad: { integerValue: String(cantidad) },
+                precio: { integerValue: String(precioNumero(producto.precio) || 0) },
+              },
+            },
+          })),
+        },
+      },
+    };
+    try {
+      const respuesta = await fetch(`${PEDIDOS_API}?documentId=${encodeURIComponent(codigo)}&key=${PEDIDOS_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: campos }),
+      });
+      if (!respuesta.ok) return null;
+      window.agrestiTrack?.("order_created", { codigo });
+      return codigo;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const pedirCarrito = async () => {
     const items = carrito
       .map((item) => ({ ...item, producto: productoDe(item.id) }))
       .filter((item) => item.producto);
     if (!items.length) return;
+    const total = items.reduce(
+      (suma, { producto, cantidad }) => suma + (precioNumero(producto.precio) || 0) * cantidad,
+      0
+    );
+    const codigo = await crearPedido(items, total);
     const lineas = items.map(
       ({ producto, cantidad }) => `• ${producto.nombre} ×${cantidad}\n${urlDe(producto)}`
     );
     const mensaje =
       `¡Hola Agresti.3D! Quiero pedir estos productos:\n\n` +
       `${lineas.join("\n\n")}\n\n` +
-      `¿Me confirmás precio, colores disponibles y plazo?`;
+      `¿Me confirmás precio, colores disponibles y plazo?` +
+      (codigo
+        ? `\n\n*Código de seguimiento:* ${codigo}\nhttps://agresti3d.web.app/seguimiento.html?codigo=${codigo}`
+        : "");
     if (cartEl.dialog?.open) cartEl.dialog.close();
     if (typeof requestWhatsApp === "function") requestWhatsApp(mensaje);
     else window.location.href = "#pedido";

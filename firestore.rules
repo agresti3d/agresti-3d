@@ -37,6 +37,21 @@ service cloud.firestore {
         && request.resource.data.foto.size() <= 500;
     }
 
+    // Pedidos: se crean desde el carrito sin cuenta. Se puede leer un pedido
+    // puntual con su código, pero no listar todos; el admin sí puede listar
+    // y actualizar estados.
+    match /pedidos/{codigo} {
+      allow get: if true;
+      allow list: if esAdmin();
+      allow create: if request.resource.data.codigo == codigo
+        && request.resource.data.estado == 'pendiente'
+        && request.resource.data.total is int
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 100;
+      allow update, delete: if esAdmin();
+    }
+
     // Analítica anónima: nadie puede leerla desde la web, solo el administrador.
     match /eventos/{evento} {
       allow create: if request.resource.data.evento is string
