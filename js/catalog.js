@@ -34,6 +34,8 @@
     favCount: document.getElementById("favCount"),
     actions: document.getElementById("catalogActions"),
     favOrder: document.getElementById("favOrder"),
+    search: document.getElementById("catalogSearch"),
+    searchClear: document.getElementById("catalogSearchClear"),
   };
 
   let categorias = [];
@@ -46,6 +48,7 @@
   let ruta = [];
   let paginaActual = 0;
   let ordenCatalogo = "relevancia";
+  let busqueda = "";
   let verFavoritos = false;
   let favoritos = new Set();
 
@@ -58,6 +61,20 @@
       '"': "&quot;",
       "'": "&#39;",
     }[c]));
+
+  const normalizar = (texto) =>
+    String(texto || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  const coincideBusqueda = (producto, termino) => {
+    const categoria = catPorId.get(producto.categoria);
+    return normalizar(
+      [producto.nombre, producto.descripcion, producto.descripcionLarga, categoria?.nombre].join(" ")
+    ).includes(termino);
+  };
 
   const copiarEstadoActual = () =>
     history.state && typeof history.state === "object" ? { ...history.state } : {};
@@ -287,7 +304,7 @@
       .filter((c) => !c.padre || !catPorId.has(c.padre))
       .filter((c) => conProductos.get(c.id));
 
-    el.categoryOverview.hidden = verFavoritos || ruta.length > 0 || raices.length === 0;
+    el.categoryOverview.hidden = verFavoritos || ruta.length > 0 || raices.length === 0 || Boolean(normalizar(busqueda));
     el.categoryGrid.innerHTML = raices
       .map((categoria) => {
         const ids = ramaCompleta(categoria.id);
@@ -702,11 +719,14 @@
   const mensajeVacio = () =>
     verFavoritos
       ? "Todavía no guardaste ningún favorito. Tocá el corazón de un producto para tenerlo a mano."
-      : "Todavía no hay productos en esta categoría.";
+      : normalizar(busqueda)
+        ? `No encontramos productos para “${busqueda.trim()}”. Probá con otra palabra o pedinos algo a medida.`
+        : "Todavía no hay productos en esta categoría.";
 
   const renderProductos = (categoriasRaiz) => {
+    const termino = normalizar(busqueda);
     const mostrarCategorias =
-      !verFavoritos && ruta.length === 0 && categoriasRaiz.length > 0;
+      !verFavoritos && ruta.length === 0 && categoriasRaiz.length > 0 && !termino;
     grid.hidden = mostrarCategorias;
 
     if (mostrarCategorias) {
@@ -724,6 +744,12 @@
     } else {
       const alcance = ruta.length ? ramaCompleta(ruta[ruta.length - 1]) : null;
       lista = productos.filter((p) => !alcance || alcance.has(p.categoria));
+    }
+
+    if (termino) lista = lista.filter((producto) => coincideBusqueda(producto, termino));
+
+    if (termino && el.status) {
+      el.status.textContent = `${lista.length} ${lista.length === 1 ? "producto encontrado" : "productos encontrados"} para “${busqueda.trim()}”.`;
     }
 
     if (ordenCatalogo !== "relevancia") {
@@ -1534,6 +1560,24 @@
       grid.innerHTML =
         '<p class="products__empty">No pudimos cargar el catálogo. Escribinos por WhatsApp y te pasamos la lista completa.</p>';
     });
+
+  el.search?.addEventListener("input", () => {
+    busqueda = el.search.value;
+    if (el.searchClear) el.searchClear.hidden = !busqueda.trim();
+    paginaActual = 0;
+    renderProductos(renderCategorias());
+  });
+
+  el.searchClear?.addEventListener("click", () => {
+    busqueda = "";
+    if (el.search) {
+      el.search.value = "";
+      el.search.focus();
+    }
+    el.searchClear.hidden = true;
+    paginaActual = 0;
+    renderProductos(renderCategorias());
+  });
 
   document.getElementById("catalogSort")?.addEventListener("change", (evento) => {
     ordenCatalogo = evento.target.value;

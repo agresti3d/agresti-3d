@@ -49,7 +49,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/styles.css?v=33">
+  <link rel="stylesheet" href="css/styles.css?v=34">
   <link rel="stylesheet" href="css/theme.css?v=8">
 <script type="application/ld+json">
 {
@@ -198,6 +198,12 @@
       <div class="catalog-nav" id="catalogNav" data-reveal>
         <nav class="breadcrumbs" id="breadcrumbs" aria-label="Ruta de categorías" hidden></nav>
         <div class="catalog-nav__row">
+          <label class="catalog-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg>
+            <span class="sr-only">Buscar productos</span>
+            <input id="catalogSearch" type="search" placeholder="Buscar por nombre, categoría o descripción…" autocomplete="off">
+            <button class="catalog-search__clear" id="catalogSearchClear" type="button" aria-label="Limpiar búsqueda" hidden>×</button>
+          </label>
           <div class="filters" id="filters" role="group" aria-label="Filtrar productos por categoría"></div>
           <label class="catalog-sort">
             <span>Ordenar</span>
@@ -631,7 +637,7 @@
 <script src="js/seasons.js?v=3"></script>
 <script src="js/main.js?v=11"></script>
 <script src="js/campaigns.js?v=1"></script>
-<script src="js/catalog.js?v=35"></script>
+<script src="js/catalog.js?v=36"></script>
 <script src="js/gift-finder.js?v=1"></script>
 <script src="js/reviews.js?v=1"></script>
 </body>

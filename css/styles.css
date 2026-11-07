@@ -2366,3 +2366,58 @@ body.is-quote-visible .wa-float {
 .product-review-form__status[data-state="error"] { color: #ff9b8b; }
 .product-review-form__status[data-state="success"] { color: #9fe3b0; }
 @media (max-width: 480px) { .product-review-form__row { grid-template-columns: 1fr; } }
+
+/* Buscador del catálogo */
+.catalog-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex: 1 1 100%;
+  min-height: 48px;
+  padding: 0 .8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.catalog-search svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
+.catalog-search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: .9rem;
+  outline: none;
+}
+.catalog-search input::placeholder { color: var(--muted); }
+.catalog-search input::-webkit-search-cancel-button { display: none; }
+.catalog-search__clear {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  color: var(--ink);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* El botón del menú móvil hereda el aspecto de los enlaces, no el de un botón. */
+.nav__link--button { appearance: none; text-align: left; }
+@media (max-width: 820px) {
+  .nav[data-open="true"] .nav__link--button {
+    width: 100%;
+    padding: var(--s-4) 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
+  }
+}
