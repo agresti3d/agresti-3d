@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --accent-strong: #e55227;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #070f1f; color: #edf2fb; }
+* { box-sizing: border-box; }
+::selection { background: rgba(255,106,61,.35); color: #fff; }
+.swiper { padding-bottom: 8px; }
+.swiper-slide { height: auto; }
+.swiper-slide > a { height: 100%; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 2px solid #ff6a3d; outline-offset: 3px; }
