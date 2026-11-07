@@ -1370,6 +1370,27 @@
       urlPopstate = null;
       return;
     }
+    // Los enlaces del menú (#productos, #materiales, #pedido, etc.) no son
+    // rutas del catálogo: el navegador ya hizo el scroll. Si veníamos de una
+    // ficha, primero cerramos la ficha y después llevamos al destino.
+    if (!location.hash.startsWith("#cat=") && !location.hash.startsWith("#p=")) {
+      if (document.body.classList.contains("is-product-detail")) {
+        const destino = location.hash;
+        ruta = [];
+        verFavoritos = false;
+        paginaActual = 0;
+        render();
+        const seccion = document.getElementById(destino.slice(1));
+        if (seccion) {
+          const raiz = document.documentElement;
+          const anterior = raiz.style.scrollBehavior;
+          raiz.style.scrollBehavior = "auto";
+          seccion.scrollIntoView({ block: "start" });
+          raiz.style.scrollBehavior = anterior;
+        }
+      }
+      return;
+    }
     volverALeer();
   });
 

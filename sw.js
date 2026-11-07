@@ -1,4 +1,4 @@
-const CACHE = "agresti-3d-v8";
+const CACHE = "agresti-3d-v9";
 const SHELL = [
   "/",
   "/index.html",
@@ -7,7 +7,7 @@ const SHELL = [
   "/css/styles.css?v=37",
   "/css/theme.css",
   "/js/main.js?v=11",
-  "/js/catalog.js?v=39",
+  "/js/catalog.js?v=40",
   "/js/seasons.js?v=3",
   "/js/campaigns.js?v=1",
   "/js/gift-finder.js?v=1",
