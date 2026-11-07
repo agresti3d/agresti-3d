@@ -46,17 +46,17 @@
   };
 
   const raicesPorPersona = {
-    el: ["figuras", "escritorio", "mates", "juguetes"],
-    ella: ["deco", "floreros", "macetas", "cocina", "mates"],
-    chicos: ["juguetes", "figuras", "escritorio"],
-    hogar: ["hogar", "deco", "cocina"],
+    el: ["figuras", "escritorio", "mates", "juguetes", "funko-pop", "accesorios", "llaveros", "cosplay-disfraces"],
+    ella: ["deco", "floreros", "macetas", "cocina", "mates", "accesorios", "estilo-crochet", "adornos"],
+    chicos: ["juguetes", "figuras", "funko-pop", "llaveros", "juegos-de-mesa", "accesorios"],
+    hogar: ["hogar", "deco", "cocina", "adornos", "floreros", "macetas", "portalatas", "utensilios"],
     cualquiera: [],
   };
   const raicesPorOcasion = {
-    cumple: ["figuras", "juguetes", "deco"],
-    aniversario: ["deco", "floreros", "mates"],
-    laboral: ["escritorio", "utensilios", "organizadores"],
-    especial: ["figuras", "deco"],
+    cumple: ["figuras", "juguetes", "funko-pop", "deco", "accesorios"],
+    aniversario: ["deco", "floreros", "mates", "adornos"],
+    laboral: ["escritorio", "utensilios", "portalatas", "organizadores"],
+    especial: ["figuras", "deco", "floreros", "adornos"],
     cualquiera: [],
   };
 
@@ -65,23 +65,25 @@
     if (categorias.length) return;
     const lista = window.AGRESTI_CATALOG_DATA?.categorias || [];
     const mapa = new Map(lista.map((c) => [c.id, c]));
-    const raiz = (id) => {
+    const camino = (id) => {
+      const ids = [];
       let actual = mapa.get(id);
       let guard = 0;
-      while (actual?.padre && guard < 20) {
+      while (actual && guard < 20) {
+        ids.unshift(actual.id);
         actual = mapa.get(actual.padre);
         guard += 1;
       }
-      return actual?.id || id;
+      return ids.length ? ids : [id];
     };
-    lista.forEach((c) => categorias.push({ id: c.id, raiz: raiz(c.id) }));
+    lista.forEach((c) => categorias.push({ id: c.id, camino: camino(c.id) }));
   };
 
   const perteneceA = (categoriaId, raices) => {
     if (!raices.length) return false;
     construirCategorias();
     const item = categorias.find((c) => c.id === categoriaId);
-    return Boolean(item && raices.includes(item.raiz));
+    return Boolean(item && item.camino.some((id) => raices.includes(id)));
   };
 
   const buscar = () => {
@@ -104,8 +106,26 @@
       const categoriasProducto = Array.isArray(producto.categorias) && producto.categorias.length
         ? producto.categorias
         : [producto.categoria];
-      if (categoriasProducto.some((id) => perteneceA(id, raicesPersona))) puntos += 3;
-      if (categoriasProducto.some((id) => perteneceA(id, raicesOcasion))) puntos += 2;
+      const publico = Array.isArray(producto.publico) ? producto.publico : [];
+      const ocasiones = Array.isArray(producto.ocasiones) ? producto.ocasiones : [];
+      const publicoOk =
+        quien === "cualquiera" ||
+        !publico.length ||
+        publico.includes(quien) ||
+        publico.includes("cualquiera");
+      const ocasionOk =
+        ocasion === "cualquiera" ||
+        !ocasiones.length ||
+        ocasiones.includes(ocasion);
+      if (!publicoOk || !ocasionOk) return { producto, puntos: -99 };
+      if (quien !== "cualquiera") {
+        if (publico.length) puntos += 3;
+        else if (categoriasProducto.some((id) => perteneceA(id, raicesPersona))) puntos += 3;
+      }
+      if (ocasion !== "cualquiera") {
+        if (ocasiones.length) puntos += 2;
+        else if (categoriasProducto.some((id) => perteneceA(id, raicesOcasion))) puntos += 2;
+      }
       const precio = precioNumero(producto.precio);
       if (precio === null) {
         if (presupuesto === "cualquiera") puntos += 1;
@@ -123,7 +143,11 @@
     const respaldo = puntuados
       .filter((item) => item.producto.precio && item.puntos <= 0)
       .sort((a, b) => (precioNumero(a.producto.precio) || 0) - (precioNumero(b.producto.precio) || 0));
-    giftResultados = (coincidencias.length ? coincidencias : respaldo).map((item) => item.producto);
+    const sinCriterios =
+      quien === "cualquiera" && ocasion === "cualquiera" && presupuesto === "cualquiera";
+    giftResultados = sinCriterios
+      ? [...productos]
+      : (coincidencias.length ? coincidencias : respaldo).map((item) => item.producto);
 
     if (!giftResultados.length) {
       resultados.innerHTML = '<p class="gift-results__empty">No encontré una combinación exacta. Probá con otro presupuesto o pedime algo a medida.</p>';

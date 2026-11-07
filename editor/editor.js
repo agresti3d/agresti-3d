@@ -34,6 +34,8 @@
     productName: $("#productName"),
     productId: $("#productId"),
     productCategories: $("#productCategories"),
+    productAudience: $("#productAudience"),
+    productOccasions: $("#productOccasions"),
     productPrice: $("#productPrice"),
     productPriceNote: $("#productPriceNote"),
     productBranches: $("#productBranches"),
@@ -196,6 +198,17 @@
     if (!els.productCategories) return;
     const set = new Set(ids);
     els.productCategories.querySelectorAll("input[type=checkbox]").forEach((input) => {
+      input.checked = set.has(input.value);
+    });
+  };
+
+  const leerChecks = (contenedor) =>
+    [...(contenedor?.querySelectorAll("input:checked") || [])].map((input) => input.value);
+
+  const marcarChecks = (contenedor, valores = []) => {
+    if (!contenedor) return;
+    const set = new Set(valores);
+    contenedor.querySelectorAll("input[type=checkbox]").forEach((input) => {
       input.checked = set.has(input.value);
     });
   };
@@ -549,6 +562,8 @@
     if (els.productId) els.productId.value = producto.id || "";
     renderCategorias();
     marcarCategorias(categoriasProducto(producto));
+    marcarChecks(els.productAudience, Array.isArray(producto.publico) ? producto.publico : []);
+    marcarChecks(els.productOccasions, Array.isArray(producto.ocasiones) ? producto.ocasiones : []);
     els.productPrice.value = producto.precio || "";
     if (els.productPriceNote) els.productPriceNote.value = producto.notaPrecio || "";
     els.productDescription.value = producto.descripcion || "";
@@ -583,6 +598,8 @@
     els.productForm.reset();
     renderCategorias();
     marcarCategorias([]);
+    marcarChecks(els.productAudience, []);
+    marcarChecks(els.productOccasions, []);
     if (els.productId) els.productId.value = "";
     activarFormTab("medios");
     renderBranches({ sucursalesDisponibles: catalog?.sucursales?.map((s) => s.id) || [] });
@@ -659,6 +676,8 @@
       nombre,
       categoria: principal,
       categorias: categoriasSeleccionadas,
+      publico: leerChecks(els.productAudience),
+      ocasiones: leerChecks(els.productOccasions),
       precio: els.productPrice.value.trim(),
       notaPrecio: els.productPriceNote?.value.trim() || "",
       descripcion: els.productDescription.value.trim(),
@@ -687,6 +706,8 @@
     if (variantes.length) producto.variantes = variantes;
     else delete producto.variantes;
     if (!producto.notaPrecio) delete producto.notaPrecio;
+    if (!producto.publico.length) delete producto.publico;
+    if (!producto.ocasiones.length) delete producto.ocasiones;
     if (!Object.keys(detalles).length) delete producto.detalles;
     return producto;
   };
@@ -1781,6 +1802,20 @@
     if (els.categoryForm) els.categoryForm.addEventListener("submit", agregarCategoria);
     if (els.importCatalog) els.importCatalog.addEventListener("click", importarCatalogo);
     if (els.addVariant) els.addVariant.addEventListener("click", agregarVariante);
+    if (els.productAudience) {
+      els.productAudience.addEventListener("change", (evento) => {
+        if (!evento.target.matches("input[type=checkbox]")) return;
+        if (evento.target.value === "cualquiera" && evento.target.checked) {
+          els.productAudience.querySelectorAll("input:not([value=cualquiera])").forEach((input) => {
+            input.checked = false;
+          });
+        }
+        if (evento.target.value !== "cualquiera" && evento.target.checked) {
+          const universal = els.productAudience.querySelector('input[value="cualquiera"]');
+          if (universal) universal.checked = false;
+        }
+      });
+    }
     if (els.addReview) els.addReview.addEventListener("click", agregarResena);
     if (els.reloadPedidos) els.reloadPedidos.addEventListener("click", cargarPedidos);
     if (els.pedidosList) {
