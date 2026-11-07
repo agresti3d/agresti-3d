@@ -298,7 +298,7 @@
   const renderChips = () => {
     if (!el.filters) return;
 
-    el.filters.hidden = !verFavoritos && ruta.length === 0;
+    el.filters.hidden = !categorias.length;
 
     const actual = ruta.length ? ruta[ruta.length - 1] : "";
     const nivelDe = (padre) =>
@@ -604,12 +604,30 @@
     const medidasBeneficio = [detallesBeneficios.altura, detallesBeneficios.ancho, detallesBeneficios.largo]
       .filter(Boolean)
       .join(" × ");
+    const beneficios = [
+      { icono: iconoBeneficios.material, valor: detallesBeneficios.material, etiqueta: "Material" },
+      { icono: iconoBeneficios.medida, valor: medidasBeneficio, etiqueta: "Medidas" },
+      { icono: iconoBeneficios.produccion, valor: "A pedido", etiqueta: "Producción" },
+      { icono: iconoBeneficios.envio, valor: "Todo el país", etiqueta: "Envío" },
+    ].filter((beneficio) => beneficio.valor);
     const beneficiosHtml = `<div class="product-benefits" aria-label="Datos del producto">
-      <div class="product-benefit">${iconoBeneficios.material}<strong>${esc(detallesBeneficios.material || "PLA")}</strong><span>Material</span></div>
-      <div class="product-benefit">${iconoBeneficios.medida}<strong>${esc(medidasBeneficio || "A medida")}</strong><span>Medidas</span></div>
-      <div class="product-benefit">${iconoBeneficios.produccion}<strong>A pedido</strong><span>Producción</span></div>
-      <div class="product-benefit">${iconoBeneficios.envio}<strong>Todo el país</strong><span>Envío</span></div>
+      ${beneficios.map((beneficio) => `<div class="product-benefit">${beneficio.icono}<strong>${esc(beneficio.valor)}</strong><span>${beneficio.etiqueta}</span></div>`).join("")}
     </div>`;
+    const incluye = String(detallesBeneficios.contenido || "")
+      .replace(/^incluye\s+/i, "")
+      .trim();
+    const coloresDetalle = String(detallesBeneficios.colores || "")
+      .split(/[,/]/)
+      .map((color) => color.trim())
+      .filter(Boolean);
+    const incluyeHtml = incluye
+      ? `<p class="product-detail__includes"><strong>Incluye:</strong> ${esc(incluye)}</p>`
+      : "";
+    const coloresHtml = `<p class="product-detail__includes"><strong>Colores:</strong> ${
+      coloresDetalle.length ? coloresDetalle.map(esc).join(", ") : "a coordinar por WhatsApp"
+    }</p>`;
+    const etiquetaConsulta = producto.precio ? "Consultar por WhatsApp" : "Consultar precio";
+    const etiquetaSticky = producto.precio ? "WhatsApp" : "Precio";
     const formResenaHtml = `
       <details class="product-review-form">
         <summary>Dejá tu reseña</summary>
@@ -694,7 +712,7 @@
         ${sinStock
           ? `<a class="btn btn--primary" href="#stockAlert">Avísame</a>`
           : `<button class="btn btn--ghost" type="button" data-add-cart="${esc(producto.id)}" aria-label="Agregar ${esc(producto.nombre)} al carrito">${iconoCarrito} Carrito</button>
-             <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)}>WhatsApp</a>`}
+             <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)}>${esc(etiquetaSticky)}</a>`}
       </div>
     </div>`;
     const relacionadosHtml = relacionados.length
@@ -727,6 +745,8 @@
           </div>
           ${beneficiosHtml}
           <p class="product-detail__description">${esc(descripcion)}</p>
+          ${incluyeHtml}
+          ${coloresHtml}
           ${disponibilidadHtml}
           ${alertaStockHtml}
           ${variantesHtml}
@@ -745,7 +765,7 @@
             </div>
             <div class="product-detail__purchase-actions">
               <button class="btn btn--ghost" type="button" data-add-cart="${esc(producto.id)}" aria-label="Agregar ${esc(producto.nombre)} al carrito">${iconoCarrito} Agregar al carrito</button>
-              <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)} aria-label="Consultar por ${esc(producto.nombre)} por WhatsApp">Consultar por WhatsApp</a>
+              <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)} aria-label="${esc(etiquetaConsulta)} de ${esc(producto.nombre)}">${esc(etiquetaConsulta)}</a>
             </div>
           </div>
         </div>
