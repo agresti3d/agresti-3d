@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es-AR" class="theme-noche">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070f1f">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Editor cloud — Agresti.3D</title>
+  <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css?v=28">
+  <link rel="stylesheet" href="../css/theme.css?v=6">
+  <link rel="stylesheet" href="editor.css?v=14">
+</head>
+<body class="cloud-body">
+  <a class="skip-link" href="#appView">Saltar al editor</a>
+
+  <section class="login" id="loginView" aria-labelledby="loginTitle">
+    <form class="login__card" id="loginForm">
+      <img class="login__logo" src="../assets/logo/agresti-a-claro.svg" alt="" width="54" height="54">
+      <p class="login__eyebrow">AGRESTI.3D</p>
+      <h1 id="loginTitle">Editor de catálogo</h1>
+      <p class="login__lead">Ingresá con la cuenta de administrador para editar el catálogo desde cualquier dispositivo.</p>
+
+      <label class="field">
+        <span>Email</span>
+        <input id="loginEmail" type="email" autocomplete="username" required placeholder="agresti.3d@gmail.com">
+      </label>
+      <label class="field">
+        <span>Contraseña</span>
+        <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Tu contraseña">
+      </label>
+
+      <button class="btn btn--primary login__submit" id="loginButton" type="submit">Ingresar</button>
+      <button class="login__link" id="resetPassword" type="button">Olvidé mi contraseña</button>
+      <p class="login__status" id="loginStatus" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <div class="cloud-app" id="appView" hidden>
+    <header class="cloud-header">
+      <div class="cloud-header__brand">
+        <a href="../index.html" class="cloud-logo" aria-label="Volver a Agresti.3D">
+          <img src="../assets/logo/agresti-a-claro.svg" alt="" width="34" height="34">
+          <span>AGRESTI<span>.3D</span></span>
+        </a>
+        <span class="cloud-header__divider" aria-hidden="true"></span>
+        <p>Editor cloud</p>
+      </div>
+      <div class="cloud-header__actions">
+        <span class="cloud-user" id="userEmail"></span>
+        <button class="btn btn--ghost" id="logoutButton" type="button">Salir</button>
+      </div>
+    </header>
+
+    <nav class="cloud-tabs" role="tablist" aria-label="Secciones del editor">
+      <button class="cloud-tabs__tab" id="tabProductos" type="button" role="tab" data-cloud-tab="productos" aria-selected="true" aria-controls="panelProductos">Productos</button>
+      <button class="cloud-tabs__tab" id="tabCategorias" type="button" role="tab" data-cloud-tab="categorias" aria-selected="false" aria-controls="panelCategorias" tabindex="-1">Categorías</button>
+      <button class="cloud-tabs__tab" id="tabSucursales" type="button" role="tab" data-cloud-tab="sucursales" aria-selected="false" aria-controls="panelSucursales" tabindex="-1">Sucursales</button>
+      <button class="cloud-tabs__tab" id="tabPedidos" type="button" role="tab" data-cloud-tab="pedidos" aria-selected="false" aria-controls="panelPedidos" tabindex="-1">Pedidos</button>
+      <button class="cloud-tabs__tab" id="tabInstagram" type="button" role="tab" data-cloud-tab="instagram" aria-selected="false" aria-controls="panelInstagram" tabindex="-1">Instagram</button>
+      <button class="cloud-tabs__tab" id="tabEtiquetas" type="button" role="tab" data-cloud-tab="etiquetas" aria-selected="false" aria-controls="panelEtiquetas" tabindex="-1">Etiquetas</button>
+    </nav>
+
+    <main class="cloud-main-wrap" id="editor">
+      <section class="cloud-panel cloud-shell" id="panelProductos" role="tabpanel" aria-labelledby="tabProductos">
+      <aside class="cloud-sidebar" aria-label="Productos">
+        <div class="cloud-sidebar__head">
+          <div>
+            <h2>Productos</h2>
+            <p class="cloud-muted" id="productCount">0 productos</p>
+          </div>
+          <button class="cloud-icon-btn" id="newProduct" type="button" aria-label="Crear producto">+</button>
+        </div>
+        <label class="search-field">
+          <span class="sr-only">Buscar producto</span>
+          <input id="searchProducts" type="search" placeholder="Buscar por nombre…" autocomplete="off">
+        </label>
+        <label class="field cloud-category-filter">
+          <span class="sr-only">Filtrar por categoría</span>
+          <select id="categoryFilter">
+            <option value="">Todas las categorías</option>
+          </select>
+        </label>
+        <div class="cloud-product-list" id="productList"></div>
+
+
+
+        <button class="btn btn--ghost" id="importCatalog" type="button">Importar catálogo actual</button>
+        <p class="cloud-status" id="importStatus" role="status" aria-live="polite"></p>
+      </aside>
+
+      <section class="cloud-main">
+        <div class="cloud-empty" id="emptyState">
+          <img src="../assets/logo/agresti-a-claro.svg" alt="" width="46" height="46">
+          <h2>Elegí un producto</h2>
+          <p>Seleccioná un producto de la lista o creá uno nuevo para empezar.</p>
+          <button class="btn btn--primary" id="emptyNewProduct" type="button">Crear producto</button>
+        </div>
+
+        <form class="cloud-form" id="productForm" hidden>
+          <div class="cloud-form__head">
+            <div>
+              <p class="cloud-eyebrow" id="formEyebrow">Producto</p>
+              <h2 id="formTitle">Editar producto</h2>
+            </div>
+            <div class="cloud-form__head-actions">
+              <button class="cloud-danger" id="duplicateProduct" type="button">Duplicar</button>
+              <button class="cloud-danger" id="deleteProduct" type="button">Eliminar</button>
+            </div>
+          </div>
+
+          <div class="cloud-form__actions cloud-form__actions--sticky">
+            <button class="btn btn--primary" id="saveDraft" type="submit">Guardar borrador</button>
+            <button class="btn btn--ghost" id="publishCatalog" type="button">Publicar en la web</button>
+            <span class="cloud-status" id="saveStatus" role="status" aria-live="polite"></span>
+          </div>
+
+          <div class="cloud-form-tabs" role="tablist" aria-label="Secciones de la ficha">
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="medios" aria-selected="true">Fotos y videos</button>
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="datos" aria-selected="false" tabindex="-1">Datos</button>
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="precio" aria-selected="false" tabindex="-1">Precio y stock</button>
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="detalles" aria-selected="false" tabindex="-1">Detalles</button>
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="variantes" aria-selected="false" tabindex="-1">Variantes</button>
+            <button class="cloud-form-tab" type="button" role="tab" data-form-tab="resenas" aria-selected="false" tabindex="-1">Reseñas</button>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="medios">
+            <section class="cloud-media" aria-labelledby="photosTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="photosTitle">Fotos del producto</h3>
+                  <p class="cloud-muted">Se recorta el fondo automáticamente en el navegador y se suben a Cloudinary.</p>
+                </div>
+                <label class="btn btn--ghost cloud-file-btn">
+                  Agregar fotos
+                  <input id="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
+                </label>
+              </div>
+              <div class="cloud-dropzone" id="imageDropzone" data-dropzone="image">
+                <strong>Arrastrá fotos acá</strong>
+                <span>o pegá con Cmd+V / Ctrl+V</span>
+              </div>
+              <div class="cloud-image-list" id="imageList"></div>
+              <p class="cloud-status" id="imageStatus" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="cloud-media" aria-labelledby="videosTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="videosTitle">Videos del producto (opcional)</h3>
+                  <p class="cloud-muted">MP4, WEBM o MOV de hasta 50 MB. Se suben a Cloudinary.</p>
+                </div>
+                <label class="btn btn--ghost cloud-file-btn">
+                  Agregar video
+                  <input id="videoFiles" type="file" accept="video/mp4,video/webm,video/quicktime">
+                </label>
+              </div>
+              <div class="cloud-dropzone cloud-dropzone--video" id="videoDropzone" data-dropzone="video">
+                <strong>Arrastrá un video acá</strong>
+                <span>MP4, WEBM o MOV</span>
+              </div>
+              <div class="cloud-video-list" id="videoList"></div>
+              <p class="cloud-status" id="videoStatus" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="datos" hidden>
+            <div class="cloud-grid">
+              <label class="field">
+                <span>Nombre del producto</span>
+                <input id="productName" type="text" maxlength="120" required>
+              </label>
+              <label class="field">
+                <span>ID del producto</span>
+                <input id="productId" type="text" readonly>
+              </label>
+              <div class="field cloud-field-wide">
+                <span>Categorías</span>
+                <p class="cloud-muted">Marcá todas las categorías donde tiene que aparecer. La primera de la lista será la principal.</p>
+                <div class="cloud-category-checks" id="productCategories" role="group" aria-label="Categorías del producto"></div>
+              </div>
+              <div class="field cloud-field-wide">
+                <span>Público</span>
+                <p class="cloud-muted">Para quién es. Se usa en “Encontrá tu regalo”.</p>
+                <div class="cloud-tag-checks" id="productAudience" role="group" aria-label="Público del producto">
+                  <label><input type="checkbox" value="el"><span>Él</span></label>
+                  <label><input type="checkbox" value="ella"><span>Ella</span></label>
+                  <label><input type="checkbox" value="chicos"><span>Chicos</span></label>
+                  <label><input type="checkbox" value="hogar"><span>Hogar</span></label>
+                  <label><input type="checkbox" value="cualquiera"><span>Cualquiera</span></label>
+                </div>
+              </div>
+              <div class="field cloud-field-wide">
+                <span>Ocasiones</span>
+                <p class="cloud-muted">Para qué tipo de regalo sirve. Si no marcás ninguna, se usa la categoría.</p>
+                <div class="cloud-tag-checks" id="productOccasions" role="group" aria-label="Ocasiones del producto">
+                  <label><input type="checkbox" value="cumple"><span>Cumpleaños</span></label>
+                  <label><input type="checkbox" value="aniversario"><span>Aniversario</span></label>
+                  <label><input type="checkbox" value="laboral"><span>Laboral</span></label>
+                  <label><input type="checkbox" value="especial"><span>Fecha especial</span></label>
+                </div>
+              </div>
+              <label class="field cloud-field-wide">
+                <span>Descripción corta</span>
+                <textarea id="productDescription" rows="3" maxlength="900"></textarea>
+              </label>
+              <label class="field cloud-field-wide">
+                <span>Descripción completa</span>
+                <textarea id="productLongDescription" rows="8" maxlength="5000"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="precio" hidden>
+            <div class="cloud-grid">
+              <label class="field">
+                <span>Precio</span>
+                <input id="productPrice" type="text" maxlength="40" placeholder="Vacío = A consultar">
+              </label>
+              <label class="field">
+                <span>Nota del precio</span>
+                <input id="productPriceNote" type="text" maxlength="100" placeholder="Ej.: según color y tamaño">
+              </label>
+              <fieldset class="field cloud-branches cloud-field-wide">
+                <legend>Sucursales donde está disponible</legend>
+                <p class="cloud-muted">Elegí en cuáles se vende y cuántas unidades hay.</p>
+                <div id="productBranches"></div>
+              </fieldset>
+            </div>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="detalles" hidden>
+            <div class="cloud-grid">
+              <label class="field"><span>Altura</span><input id="productHeight" type="text" maxlength="80" placeholder="Ej.: 17 cm"></label>
+              <label class="field"><span>Ancho</span><input id="productWidth" type="text" maxlength="80" placeholder="Ej.: 8 cm"></label>
+              <label class="field"><span>Largo</span><input id="productLength" type="text" maxlength="80" placeholder="Ej.: 12 cm"></label>
+              <label class="field"><span>Peso</span><input id="productWeight" type="text" maxlength="80" placeholder="Ej.: 120 g"></label>
+              <label class="field"><span>Material</span><input id="productMaterial" type="text" maxlength="100" placeholder="Ej.: PLA"></label>
+              <label class="field"><span>Colores disponibles</span><input id="productColors" type="text" maxlength="180" placeholder="Separalos con comas"></label>
+              <label class="field"><span>Capacidad o tamaño</span><input id="productCapacity" type="text" maxlength="120" placeholder="Ej.: 500 ml"></label>
+              <label class="field"><span>Opciones y personalización</span><input id="productOptions" type="text" maxlength="180" placeholder="Variantes o cambios disponibles"></label>
+              <label class="field"><span>Contenido</span><input id="productContents" type="text" maxlength="180" placeholder="Qué incluye el producto"></label>
+              <label class="field"><span>Cuidados y uso</span><input id="productCare" type="text" maxlength="180" placeholder="Recomendaciones de uso"></label>
+            </div>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="resenas" hidden>
+            <section class="cloud-media" aria-labelledby="reviewsTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="reviewsTitle">Reseñas de clientes</h3>
+                  <p class="cloud-muted">Se muestran en la ficha del producto, con foto opcional.</p>
+                </div>
+                <button class="btn btn--ghost" id="addReview" type="button">Agregar reseña</button>
+              </div>
+              <div class="cloud-review-list" id="reviewList"></div>
+              <p class="cloud-status" id="reviewStatus" role="status" aria-live="polite"></p>
+            </section>
+            <section class="cloud-pending-reviews" aria-labelledby="pendingReviewsTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="pendingReviewsTitle">Reseñas pendientes de aprobación</h3>
+                  <p class="cloud-muted">Las enviadas desde la ficha del producto. Aprobá solo las reales.</p>
+                </div>
+                <button class="btn btn--ghost" id="reloadPendingReviews" type="button">Actualizar</button>
+              </div>
+              <div id="pendingReviewsList" class="cloud-pending-list"></div>
+              <p class="cloud-status" id="pendingReviewsStatus" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+
+          <div class="cloud-form-tab-panel" data-form-panel="variantes" hidden>
+            <section class="cloud-media" aria-labelledby="variantsTitle">
+              <div class="cloud-media__head">
+                <div>
+                  <h3 id="variantsTitle">Variantes de precio y tamaño</h3>
+                  <p class="cloud-muted">Opciones con precio propio, por ejemplo tamaños o colores.</p>
+                </div>
+                <button class="btn btn--ghost" id="addVariant" type="button">Agregar variante</button>
+              </div>
+              <div class="cloud-variant-list" id="variantList"></div>
+            </section>
+          </div>
+        </form>
+      </section>
+      </section>
+
+      <section class="cloud-panel cloud-manager" id="panelCategorias" role="tabpanel" aria-labelledby="tabCategorias" hidden>
+        <div class="cloud-manager__head">
+          <div>
+            <p class="cloud-eyebrow">Catálogo</p>
+            <h2>Administrar categorías y subcategorías</h2>
+            <p class="cloud-muted">Creá, renombrá, mové y eliminá categorías. Los cambios se guardan con el catálogo.</p>
+          </div>
+        </div>
+        <div class="cloud-category-list" id="categoryList"></div>
+        <form class="cloud-category-form" id="categoryForm">
+          <label class="field">
+            <span>Nueva categoría</span>
+            <input id="categoryName" type="text" maxlength="60" placeholder="Ej.: Llaveros" required>
+          </label>
+          <label class="field">
+            <span>Dentro de</span>
+            <select id="categoryParent"></select>
+          </label>
+          <button class="btn btn--ghost" type="submit">Agregar categoría</button>
+        </form>
+      </section>
+
+      <section class="cloud-panel cloud-manager" id="panelSucursales" role="tabpanel" aria-labelledby="tabSucursales" hidden>
+        <div class="cloud-manager__head">
+          <div>
+            <p class="cloud-eyebrow">Catálogo</p>
+            <h2>Sucursales de WhatsApp</h2>
+            <p class="cloud-muted">Quienes visiten la tienda eligen a qué sucursal enviar cada pedido. Completá nombre, localidad y teléfono.</p>
+          </div>
+          <div class="cloud-branch-actions">
+            <button class="btn btn--ghost" id="addBranch" type="button">Agregar sucursal</button>
+            <button class="btn btn--primary" id="saveBranches" type="button">Guardar sucursales</button>
+          </div>
+        </div>
+        <div class="cloud-branch-list" id="branchList"></div>
+        <p class="cloud-status" id="branchStatus" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="cloud-panel cloud-manager" id="panelPedidos" role="tabpanel" aria-labelledby="tabPedidos" hidden>
+        <div class="cloud-manager__head">
+          <div>
+            <p class="cloud-eyebrow">Operación</p>
+            <h2>Pedidos</h2>
+            <p class="cloud-muted">Los pedidos creados desde el carrito. Actualizá el estado para que el cliente lo vea en el seguimiento.</p>
+          </div>
+          <button class="btn btn--ghost" id="reloadPedidos" type="button">Actualizar</button>
+        </div>
+        <div class="cloud-order-list" id="pedidosList"></div>
+        <p class="cloud-status" id="pedidosStatus" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="cloud-panel cloud-tool" id="panelInstagram" role="tabpanel" aria-labelledby="tabInstagram" hidden>
+        <div class="cloud-tool-loading" data-tool-loading>Preparando Instagram…</div>
+        <iframe class="cloud-tool-frame" data-src="herramientas/?tool=instagram&embed=1&v=38" title="Generador de Instagram" loading="lazy"></iframe>
+      </section>
+
+      <section class="cloud-panel cloud-tool" id="panelEtiquetas" role="tabpanel" aria-labelledby="tabEtiquetas" hidden>
+        <div class="cloud-tool-loading" data-tool-loading>Preparando etiquetas…</div>
+        <iframe class="cloud-tool-frame" data-src="herramientas/?tool=etiquetas&embed=1&v=36" title="Generador de etiquetas" loading="lazy"></iframe>
+      </section>
+    </main>
+  </div>
+
+  <div class="cloud-toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="cloud-config.js?v=1"></script>
+  <script src="editor.js?v=21"></script>
+</body>
+</html>
