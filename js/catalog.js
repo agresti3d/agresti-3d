@@ -112,6 +112,12 @@
 
   const iconoFlecha = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
 
+  const iconoBeneficios = {
+    material: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>`,
+    medida: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><path d="M7 7v4M11 7v5M15 7v4M19 7v5"/></svg>`,
+    produccion: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 8 4.5v9L12 22l-8-6.5v-9L12 2Z"/><path d="m4 6.5 8 4.5 8-4.5M12 11v11"/></svg>`,
+    envio: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>`,
+  };
   const iconoCarrito = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`;
 
   const hijos = (id) => hijosDe.get(id) || [];
@@ -594,6 +600,16 @@
             .join("")}</ul>
         </section>`
       : "";
+    const detallesBeneficios = producto.detalles || {};
+    const medidasBeneficio = [detallesBeneficios.altura, detallesBeneficios.ancho, detallesBeneficios.largo]
+      .filter(Boolean)
+      .join(" × ");
+    const beneficiosHtml = `<div class="product-benefits" aria-label="Datos del producto">
+      <div class="product-benefit">${iconoBeneficios.material}<strong>${esc(detallesBeneficios.material || "PLA")}</strong><span>Material</span></div>
+      <div class="product-benefit">${iconoBeneficios.medida}<strong>${esc(medidasBeneficio || "A medida")}</strong><span>Medidas</span></div>
+      <div class="product-benefit">${iconoBeneficios.produccion}<strong>A pedido</strong><span>Producción</span></div>
+      <div class="product-benefit">${iconoBeneficios.envio}<strong>Todo el país</strong><span>Envío</span></div>
+    </div>`;
     const formResenaHtml = `
       <details class="product-review-form">
         <summary>Dejá tu reseña</summary>
@@ -710,6 +726,7 @@
             <button class="product-share" type="button" data-share-product="${esc(producto.id)}" aria-label="Compartir ${esc(producto.nombre)}">Compartir</button>
           </div>
           <p class="product-detail__description">${esc(descripcion)}</p>
+          ${beneficiosHtml}
           ${disponibilidadHtml}
           ${alertaStockHtml}
           ${variantesHtml}
@@ -718,6 +735,14 @@
           ${formResenaHtml}
           <div class="product-detail__purchase">
             <span class="product__price">${precio}${nota}</span>
+            <div class="product-detail__qty" data-qty>
+              <span>Cantidad</span>
+              <div class="qty-stepper">
+                <button type="button" data-qty-step="-1" aria-label="Restar una unidad">−</button>
+                <output data-qty-value aria-live="polite">1</output>
+                <button type="button" data-qty-step="1" aria-label="Sumar una unidad">+</button>
+              </div>
+            </div>
             <div class="product-detail__purchase-actions">
               <button class="btn btn--ghost" type="button" data-add-cart="${esc(producto.id)}" aria-label="Agregar ${esc(producto.nombre)} al carrito">${iconoCarrito} Agregar al carrito</button>
               <a class="btn btn--primary" href="#pedido" data-wa-message="${esc(mensaje)}" ${atributosSucursalesWA(producto)} aria-label="Consultar por ${esc(producto.nombre)} por WhatsApp">Consultar por WhatsApp</a>
@@ -960,6 +985,11 @@
     const total = favoritos.size;
 
     if (el.favCount) el.favCount.textContent = String(total);
+    const mobileFav = document.getElementById("mobileFavCount");
+    if (mobileFav) {
+      mobileFav.textContent = String(total);
+      mobileFav.hidden = total === 0;
+    }
 
     if (el.favToggle) {
       el.favToggle.hidden = total === 0 && !verFavoritos;
@@ -1112,6 +1142,16 @@
 
   if (el.detail) {
     el.detail.addEventListener("click", async (e) => {
+      const pasoCantidad = e.target.closest("[data-qty-step]");
+      if (pasoCantidad) {
+        const caja = pasoCantidad.closest("[data-qty]");
+        const salida = caja?.querySelector("[data-qty-value]");
+        if (salida) {
+          const actual = Number(salida.textContent) || 1;
+          salida.textContent = String(Math.min(99, Math.max(1, actual + Number(pasoCantidad.dataset.qtyStep))));
+        }
+        return;
+      }
       const compartir = e.target.closest("[data-share-product]");
       if (compartir) {
         const producto = productos.find((item) => item.id === compartir.dataset.shareProduct);
@@ -1133,7 +1173,10 @@
       const agregar = e.target.closest("[data-add-cart]");
       if (agregar) {
         e.preventDefault();
-        agregarAlCarrito(agregar.dataset.addCart);
+        const cantidad = Number(
+          agregar.closest("#productDetail")?.querySelector("[data-qty-value]")?.textContent || 1
+        );
+        agregarAlCarrito(agregar.dataset.addCart, cantidad);
         return;
       }
 
@@ -1463,10 +1506,16 @@
   const precioFormateado = (numero) => `$${numero.toLocaleString("es-AR")}`;
 
   const actualizarBadge = () => {
-    if (!cartEl.badge) return;
     const unidades = unidadesCarrito();
-    cartEl.badge.textContent = String(unidades);
-    cartEl.badge.hidden = unidades === 0;
+    if (cartEl.badge) {
+      cartEl.badge.textContent = String(unidades);
+      cartEl.badge.hidden = unidades === 0;
+    }
+    const mobile = document.getElementById("mobileCartCount");
+    if (mobile) {
+      mobile.textContent = String(unidades);
+      mobile.hidden = unidades === 0;
+    }
   };
 
   const mostrarToast = (mensaje) => {

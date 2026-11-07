@@ -390,3 +390,29 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
     });
   });
 }
+
+// ---------- 9. Navegación inferior mobile ----------
+const mobileNav = document.getElementById("mobileNav");
+if (mobileNav) {
+  mobileNav.querySelector("[data-mobile-cart]")?.addEventListener("click", () => {
+    document.getElementById("cartToggle")?.click();
+  });
+  mobileNav.querySelector("[data-mobile-fav]")?.addEventListener("click", () => {
+    if (!location.hash.startsWith("#p=") && location.hash !== "#productos") {
+      location.hash = "productos";
+    }
+    window.setTimeout(() => document.getElementById("favToggle")?.click(), 120);
+  });
+  const syncMobileNav = () => {
+    const hash = location.hash;
+    const activo = hash.startsWith("#p=") || hash.startsWith("#cat=") || hash === "#productos"
+      ? "catalogo"
+      : "";
+    mobileNav.querySelectorAll("[data-mobile-nav]").forEach((item) => {
+      if (item.dataset.mobileNav === activo) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    });
+  };
+  window.addEventListener("hashchange", syncMobileNav);
+  syncMobileNav();
+}
