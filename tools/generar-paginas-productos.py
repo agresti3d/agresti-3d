@@ -116,11 +116,10 @@ def main():
 </head>'''
         page = page.replace("</head>", meta, 1)
         
-        page = re.sub(
-            r'<script src="js/catalog\.js\?v=\d+"></script>',
-            f'<script>window.__AGRESTI_PRODUCTO_INICIAL__ = {json.dumps(pid)};</script>\n<script src="js/catalog.js?v=32"></script>',
-            page,
-            count=1,
+        page = page.replace(
+            '<script src="js/catalog.js?',
+            f'<script>window.__AGRESTI_PRODUCTO_INICIAL__ = {json.dumps(pid)};</script>\n<script src="js/catalog.js?',
+            1,
         )
         noscript = f'''<noscript><article style="max-width:760px;margin:2rem auto;padding:1rem;font-family:Arial,sans-serif"><h1>{html.escape(nombre)}</h1><img src="{html.escape(imagen)}" alt="{html.escape(nombre)}" style="max-width:320px"><p>{html.escape(descripcion)}</p><p><strong>Precio:</strong> {html.escape(p.get('precio') or 'A consultar')}</p><p><a href="https://wa.me/5491169957575">Consultar por WhatsApp</a></p></article></noscript>'''
         page = page.replace("<body>", "<body>\n" + noscript, 1)
