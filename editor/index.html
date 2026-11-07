@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=11">
+  <link rel="stylesheet" href="editor.css?v=12">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -177,10 +177,11 @@
                 <span>ID del producto</span>
                 <input id="productId" type="text" readonly>
               </label>
-              <label class="field">
-                <span>Categoría</span>
-                <select id="productCategory" required></select>
-              </label>
+              <div class="field cloud-field-wide">
+                <span>Categorías</span>
+                <p class="cloud-muted">Marcá todas las categorías donde tiene que aparecer. La primera de la lista será la principal.</p>
+                <div class="cloud-category-checks" id="productCategories" role="group" aria-label="Categorías del producto"></div>
+              </div>
               <label class="field cloud-field-wide">
                 <span>Descripción corta</span>
                 <textarea id="productDescription" rows="3" maxlength="900"></textarea>
@@ -335,6 +336,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=18"></script>
+  <script src="editor.js?v=19"></script>
 </body>
 </html>

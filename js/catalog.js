@@ -76,9 +76,9 @@
       .trim();
 
   const coincideBusqueda = (producto, termino) => {
-    const categoria = catPorId.get(producto.categoria);
+    const categorias = categoriasDe(producto).map((id) => catPorId.get(id)?.nombre || "");
     return normalizar(
-      [producto.nombre, producto.descripcion, producto.descripcionLarga, categoria?.nombre].join(" ")
+      [producto.nombre, producto.descripcion, producto.descripcionLarga, ...categorias].join(" ")
     ).includes(termino);
   };
 
@@ -124,6 +124,14 @@
       ? new Set(producto.sucursalesDisponibles)
       : null;
     return sucursales.filter((sucursal) => !ids || ids.has(sucursal.id));
+  };
+
+  const categoriasDe = (producto) => {
+    const ids = Array.isArray(producto?.categorias)
+      ? producto.categorias.filter((id) => catPorId.has(id))
+      : [];
+    if (!ids.length && producto?.categoria && catPorId.has(producto.categoria)) ids.push(producto.categoria);
+    return [...new Set(ids)];
   };
 
   const etiquetaSucursal = (sucursal) => {
@@ -329,7 +337,7 @@
     el.categoryGrid.innerHTML = raices
       .map((categoria) => {
         const ids = ramaCompleta(categoria.id);
-        const lista = productos.filter((p) => ids.has(p.categoria));
+        const lista = productos.filter((p) => categoriasDe(p).some((id) => ids.has(id)));
         const primero = lista[0];
         const foto = primero && fotosDe(primero, productos.indexOf(primero))[0];
         const imagen = foto
@@ -384,7 +392,7 @@
     const fotos = fotosDe(producto, indice);
     const videos = videosDe(producto);
     const hayGaleria = fotos.length > 1;
-    const categoria = catPorId.get(producto.categoria);
+    const categoria = catPorId.get(categoriasDe(producto)[0]);
     const esFavorito = favoritos.has(producto.id);
     const precio = producto.precio ? esc(producto.precio) : "A consultar";
     const nota = producto.notaPrecio ? `<small>${esc(producto.notaPrecio)}</small>` : "";
@@ -473,7 +481,7 @@
 
   const miniProducto = (producto) => {
     const foto = fotosDe(producto, productos.indexOf(producto))[0];
-    const categoria = catPorId.get(producto.categoria);
+    const categoria = catPorId.get(categoriasDe(producto)[0]);
     return `<a class="mini-product" href="#p=${encodeURIComponent(producto.id)}">
       ${foto ? `<img src="${esc(foto.src)}" alt="${esc(foto.alt || producto.nombre)}" loading="lazy" width="300" height="300">` : ""}
       <span>${esc(producto.nombre)}</span>
@@ -482,11 +490,16 @@
   };
 
   const sugerenciasProducto = (producto) => {
-    const raiz = rutaDe(producto.categoria)[0] || producto.categoria;
+    const categoriasActuales = categoriasDe(producto);
+    const raices = new Set(categoriasActuales.map((id) => rutaDe(id)[0] || id));
     const otros = productos.filter((item) => item.id !== producto.id);
-    const mismaCategoria = otros.filter((item) => item.categoria === producto.categoria);
+    const mismaCategoria = otros.filter((item) =>
+      categoriasDe(item).some((id) => categoriasActuales.includes(id))
+    );
     const mismaRaiz = otros.filter(
-      (item) => item.categoria !== producto.categoria && (rutaDe(item.categoria)[0] || item.categoria) === raiz
+      (item) =>
+        !mismaCategoria.includes(item) &&
+        categoriasDe(item).some((id) => raices.has(rutaDe(id)[0] || id))
     );
     const resto = otros.filter(
       (item) => !mismaCategoria.includes(item) && !mismaRaiz.includes(item)
@@ -508,7 +521,7 @@
     const videos = videosDe(producto);
     const totalSlides = fotos.length + videos.length;
     const hayGaleria = totalSlides > 1;
-    const categoria = catPorId.get(producto.categoria);
+    const categoria = catPorId.get(categoriasDe(producto)[0]);
     const precio = producto.precio ? esc(producto.precio) : "A consultar";
     const nota = producto.notaPrecio ? `<small>${esc(producto.notaPrecio)}</small>` : "";
     const descripcion =
@@ -642,7 +655,7 @@
       `¡Hola Agresti.3D! Me interesa "${producto.nombre}".\n` +
       `${urlDe(producto)}\n\n` +
       `¿Me pasás precio, colores disponibles y plazo?`;
-    const rutaCategoria = rutaDe(producto.categoria)
+    const rutaCategoria = rutaDe(categoriasDe(producto)[0])
       .map(encodeURIComponent)
       .join("/");
     const { relacionados, vistos } = sugerenciasProducto(producto);
@@ -860,7 +873,9 @@
       lista = productos.filter((p) => favoritos.has(p.id));
     } else {
       const alcance = ruta.length ? ramaCompleta(ruta[ruta.length - 1]) : null;
-      lista = productos.filter((p) => !alcance || alcance.has(p.categoria));
+      lista = productos.filter(
+        (p) => !alcance || categoriasDe(p).some((id) => alcance.has(id))
+      );
     }
 
     if (termino) lista = lista.filter((producto) => coincideBusqueda(producto, termino));
@@ -1242,7 +1257,7 @@
     if (!producto) return false;
 
     verFavoritos = false;
-    ruta = rutaDe(producto.categoria);
+    ruta = rutaDe(categoriasDe(producto)[0]);
     if (location.hash !== `#p=${encodeURIComponent(id)}`) {
       history.replaceState(history.state, "", `#p=${encodeURIComponent(id)}`);
     }
@@ -1316,7 +1331,7 @@
 
   const volverAListaDesdeFicha = () => {
     const producto = productos.find((item) => item.id === leerProducto());
-    ruta = producto ? rutaDe(producto.categoria) : [];
+    ruta = producto ? rutaDe(categoriasDe(producto)[0]) : [];
     verFavoritos = false;
     paginaActual = 0;
 
@@ -1758,7 +1773,7 @@
         if (visitados.has(id)) return false;
         visitados.add(id);
 
-        const propios = productos.some((p) => p.categoria === id);
+        const propios = productos.some((p) => categoriasDe(p).includes(id));
         const enHijos = hijos(id).some((h) => calcular(h.id, visitados));
         const resultado = propios || enHijos;
 
@@ -1817,7 +1832,7 @@
       .filter((producto) => normalizar(producto.nombre).includes(termino))
       .slice(0, 5)
       .forEach((producto) => {
-        const categoria = catPorId.get(producto.categoria);
+        const categoria = catPorId.get(categoriasDe(producto)[0]);
         agregar("producto", producto.id, producto.nombre, categoria?.nombre || "Producto");
       });
     return resultados.slice(0, 6);

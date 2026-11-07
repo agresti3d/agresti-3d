@@ -92,8 +92,11 @@
 
     const puntuados = productos.map((producto) => {
       let puntos = 0;
-      if (perteneceA(producto.categoria, raicesPersona)) puntos += 3;
-      if (perteneceA(producto.categoria, raicesOcasion)) puntos += 2;
+      const categoriasProducto = Array.isArray(producto.categorias) && producto.categorias.length
+        ? producto.categorias
+        : [producto.categoria];
+      if (categoriasProducto.some((id) => perteneceA(id, raicesPersona))) puntos += 3;
+      if (categoriasProducto.some((id) => perteneceA(id, raicesOcasion))) puntos += 2;
       const precio = precioNumero(producto.precio);
       if (precio === null) {
         if (presupuesto === "cualquiera") puntos += 1;

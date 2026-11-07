@@ -713,3 +713,18 @@
 }
 .cloud-tool.is-ready .cloud-tool-loading { display: none; }
 @keyframes cloud-spin { to { transform: rotate(360deg); } }
+
+.cloud-category-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .3rem .8rem;
+  max-height: 260px;
+  overflow: auto;
+  padding: .6rem;
+  border: 1px solid var(--cloud-line);
+  border-radius: 9px;
+  background: rgba(7,15,31,.35);
+}
+.cloud-category-checks label { display: flex; align-items: center; gap: .5rem; min-height: 32px; color: var(--cloud-ink-soft); font-size: .8rem; }
+.cloud-category-checks input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--cloud-accent); }
+@media (max-width: 560px) { .cloud-category-checks { grid-template-columns: 1fr; } }

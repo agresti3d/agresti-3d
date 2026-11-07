@@ -33,7 +33,7 @@
     deleteProduct: $("#deleteProduct"),
     productName: $("#productName"),
     productId: $("#productId"),
-    productCategory: $("#productCategory"),
+    productCategories: $("#productCategories"),
     productPrice: $("#productPrice"),
     productPriceNote: $("#productPriceNote"),
     productBranches: $("#productBranches"),
@@ -169,6 +169,35 @@
       .map((categoria) => ({ ...categoria, ruta: categoryPath(categoria.id) }))
       .sort((a, b) => a.ruta.localeCompare(b.ruta, "es"));
     return (incluirTodas ? [{ id: "", ruta: "Todas las categorías" }] : []).concat(items);
+  };
+
+  const categoriasProducto = (producto) => {
+    const ids = Array.isArray(producto?.categorias) ? producto.categorias : [];
+    if (!ids.length && producto?.categoria) ids.push(producto.categoria);
+    return [...new Set(ids)];
+  };
+
+  const renderCategoriaChecks = (seleccionadas = null) => {
+    if (!els.productCategories) return;
+    const actuales = seleccionadas
+      ? new Set(seleccionadas)
+      : new Set(
+          [...els.productCategories.querySelectorAll("input:checked")].map((input) => input.value)
+        );
+    const opciones = categoryOptions();
+    els.productCategories.innerHTML = opciones
+      .map(
+        (categoria) => `<label><input type="checkbox" value="${escapeHTML(categoria.id)}" ${actuales.has(categoria.id) ? "checked" : ""}><span>${escapeHTML(categoria.ruta)}</span></label>`
+      )
+      .join("");
+  };
+
+  const marcarCategorias = (ids) => {
+    if (!els.productCategories) return;
+    const set = new Set(ids);
+    els.productCategories.querySelectorAll("input[type=checkbox]").forEach((input) => {
+      input.checked = set.has(input.value);
+    });
   };
 
   const parseDetails = (texto) => {
@@ -324,7 +353,10 @@
   const normalizarCatalogo = (data) => ({
     sucursales: Array.isArray(data?.sucursales) ? data.sucursales : [],
     categorias: Array.isArray(data?.categorias) ? data.categorias : [],
-    productos: Array.isArray(data?.productos) ? data.productos : [],
+    productos: (Array.isArray(data?.productos) ? data.productos : []).map((producto) => {
+      const categorias = categoriasProducto(producto);
+      return { ...producto, categoria: categorias[0] || "", categorias };
+    }),
   });
 
   const cargarCatalogo = async () => {
@@ -391,7 +423,7 @@
         ? producto.nombre.toLocaleLowerCase("es-AR").includes(termino)
         : true;
       const coincideCategoria = categoriasFiltro
-        ? categoriasFiltro.has(producto.categoria)
+        ? categoriasProducto(producto).some((id) => categoriasFiltro.has(id))
         : true;
       return coincideTexto && coincideCategoria;
     });
@@ -412,7 +444,7 @@
                 }
                 <span>
                   <span class="cloud-product__name">${escapeHTML(producto.nombre)}</span>
-                  <span class="cloud-product__meta">${escapeHTML(categoryPath(producto.categoria) || "Sin categoría")}</span>
+                  <span class="cloud-product__meta">${escapeHTML(categoriasProducto(producto).map(categoryPath).filter(Boolean).join(" · ") || "Sin categoría")}</span>
                 </span>
               </button>`;
           })
@@ -423,11 +455,7 @@
   const renderCategorias = () => {
     if (!catalog) return;
     const opciones = categoryOptions();
-    if (els.productCategory) {
-      els.productCategory.innerHTML = opciones
-        .map((categoria) => `<option value="${escapeHTML(categoria.id)}">${escapeHTML(categoria.ruta)}</option>`)
-        .join("");
-    }
+    renderCategoriaChecks();
     if (els.categoryFilter) {
       const valor = filterCategory;
       els.categoryFilter.innerHTML =
@@ -459,7 +487,7 @@
       els.categoryList.innerHTML = opciones.length
         ? opciones
             .map((categoria) => {
-              const productos = catalog.productos.filter((producto) => producto.categoria === categoria.id).length;
+              const productos = catalog.productos.filter((producto) => categoriasProducto(producto).includes(categoria.id)).length;
               const padres = opciones.filter(
                 (opcion) => opcion.id !== categoria.id && !esDescendiente(categoria.id, opcion.id)
               );
@@ -520,7 +548,7 @@
     els.productName.value = producto.nombre || "";
     if (els.productId) els.productId.value = producto.id || "";
     renderCategorias();
-    els.productCategory.value = producto.categoria || "";
+    marcarCategorias(categoriasProducto(producto));
     els.productPrice.value = producto.precio || "";
     if (els.productPriceNote) els.productPriceNote.value = producto.notaPrecio || "";
     els.productDescription.value = producto.descripcion || "";
@@ -554,6 +582,7 @@
     if (els.formTitle) els.formTitle.textContent = "Nuevo producto";
     els.productForm.reset();
     renderCategorias();
+    marcarCategorias([]);
     if (els.productId) els.productId.value = "";
     activarFormTab("medios");
     renderBranches({ sucursalesDisponibles: catalog?.sucursales?.map((s) => s.id) || [] });
@@ -571,7 +600,8 @@
   const leerFormulario = () => {
     const nombre = els.productName.value.trim();
     if (!nombre) throw new Error("El nombre es obligatorio.");
-    if (!els.productCategory.value) throw new Error("Elegí una categoría.");
+    const categoriasSeleccionadas = [...els.productCategories.querySelectorAll("input:checked")].map((input) => input.value);
+    if (!categoriasSeleccionadas.length) throw new Error("Elegí al menos una categoría.");
     const base = selectedId
       ? catalog.productos.find((producto) => producto.id === selectedId)
       : null;
@@ -619,11 +649,16 @@
       if (valor) detalles[clave] = valor;
       else delete detalles[clave];
     });
+    const principal =
+      base?.categoria && categoriasSeleccionadas.includes(base.categoria)
+        ? base.categoria
+        : categoriasSeleccionadas[0];
     const producto = {
       ...(base || {}),
       id,
       nombre,
-      categoria: els.productCategory.value,
+      categoria: principal,
+      categorias: categoriasSeleccionadas,
       precio: els.productPrice.value.trim(),
       notaPrecio: els.productPriceNote?.value.trim() || "",
       descripcion: els.productDescription.value.trim(),
@@ -1157,9 +1192,12 @@
     if (!creating) return Boolean(selectedId);
     if (!els.productName.value.trim()) {
       els.productName.value = "Producto sin título";
-      if (!els.productCategory.value) {
+      if (!els.productCategories.querySelector("input:checked")) {
         const primera = catalog.categorias?.[0]?.id;
-        if (primera) els.productCategory.value = primera;
+        if (primera) {
+          const check = els.productCategories.querySelector(`input[value="${primera}"]`);
+          if (check) check.checked = true;
+        }
       }
       try {
         commitFormulario();
@@ -1274,12 +1312,13 @@
     els.categoryForm.reset();
     renderCategorias();
     programarAutoguardado();
-    els.productCategory.value = id;
+    const nuevoCheck = els.productCategories.querySelector(`input[value="${id}"]`);
+    if (nuevoCheck) nuevoCheck.checked = true;
     setStatus(els.saveStatus, "Categoría agregada. Guardá el borrador para confirmarla.");
   };
 
   const eliminarCategoria = (id) => {
-    const usada = catalog.productos.some((producto) => producto.categoria === id);
+    const usada = catalog.productos.some((producto) => categoriasProducto(producto).includes(id));
     const tieneHijas = catalog.categorias.some((categoria) => categoria.padre === id);
     if (usada || tieneHijas) {
       toast("No se puede eliminar: tiene productos o subcategorías.", "error");
