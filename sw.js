@@ -1,16 +1,17 @@
-const CACHE = "agresti-3d-v2";
+const CACHE = "agresti-3d-v3";
 const SHELL = [
   "/",
   "/index.html",
   "/offline.html",
   "/manifest.webmanifest",
-  "/css/styles.css?v=32",
+  "/css/styles.css?v=33",
   "/css/theme.css",
   "/js/main.js?v=11",
   "/js/catalog.js?v=34",
   "/js/seasons.js?v=3",
   "/js/campaigns.js?v=1",
   "/js/gift-finder.js?v=1",
+  "/js/reviews.js?v=1",
   "/assets/pwa/icon-192.png",
   "/assets/pwa/icon-512.png",
   "/assets/logo/agresti-a.svg"
