@@ -5,9 +5,9 @@ firebase-debug.log
 *.log
 
 # Generado por tools/generar-paginas-productos.py
-productos/
-sitemap.xml
-robots.txt
+/productos/
+/sitemap.xml
+/robots.txt
 
 # Respaldos y configuración local
 tools/catalogo/backups/
