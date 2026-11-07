@@ -1069,6 +1069,9 @@
 
     verFavoritos = false;
     ruta = rutaDe(producto.categoria);
+    if (location.hash !== `#p=${encodeURIComponent(id)}`) {
+      history.replaceState(history.state, "", `#p=${encodeURIComponent(id)}`);
+    }
     render();
 
     const titulo = document.getElementById("productDetailTitle");
