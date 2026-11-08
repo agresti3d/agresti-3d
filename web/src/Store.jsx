@@ -314,7 +314,7 @@ function Cart({ items, products, onClose, onChange, onRemove, onCheckout }) {
   );
 }
 
-function CheckoutDialog({ open, onClose, branches, message, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto." }) {
+function CheckoutDialog({ open, onClose, branches, message, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
   useEffect(() => {
     if (!open) return undefined;
     const anterior = document.body.style.overflow;
@@ -346,7 +346,7 @@ function CheckoutDialog({ open, onClose, branches, message, eyebrow = "Cerrar pe
                 );
               })}
             </div>
-            <p className="border-t border-line px-5 py-3 text-[11px] text-muted">Al elegir una sucursal se abre WhatsApp con el pedido completo y los links.</p>
+            <p className="border-t border-line px-5 py-3 text-[11px] text-muted">{footer}</p>
           </motion.div>
         </motion.div>
       )}
@@ -551,7 +551,7 @@ export default function Store() {
       <AnimatePresence>{detail && <Detail product={detail} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
       <AnimatePresence>{cartOpen && <Cart items={cart} products={products} onClose={() => setCartOpen(false)} onChange={change} onRemove={remove} onCheckout={() => setCheckoutOpen(true)} />}</AnimatePresence>
       <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={sucursales} message={mensajePedido} />
-      <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={sucursales} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí la sucursal y el mensaje incluirá el link de este producto." />
+      <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={sucursales} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí la sucursal y el mensaje incluirá el link de este producto." footer="Al elegir una sucursal se abre WhatsApp con la consulta y el link del producto." />
       <AnimatePresence>
         {fly && (
           <motion.img
