@@ -300,10 +300,7 @@ function Hero({ onContact }) {
   }, [catalogo, campana?.id]);
 
   const visual = seleccion.length ? seleccion : HERO_FALLBACK;
-  const filaA = visual.filter((_, indice) => indice % 2 === 0).slice(0, 6);
-  const filaB = visual.filter((_, indice) => indice % 2 === 1).slice(0, 6);
-  const filas = [filaA, filaB].filter((fila) => fila.length);
-  const tamanos = ["w-24 sm:w-28 lg:w-36", "w-20 sm:w-24 lg:w-28", "w-28 sm:w-32 lg:w-40"];
+  const tamanos = ["w-48 sm:w-56 lg:w-64", "w-40 sm:w-48 lg:w-56", "w-52 sm:w-64 lg:w-72"];
 
   return (
     <section className="relative overflow-hidden pb-16 pt-8 lg:pb-24">
@@ -331,35 +328,31 @@ function Hero({ onContact }) {
 
         <div className="relative min-h-[420px] overflow-hidden lg:min-h-[560px]">
           <div className="hero-glow absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl" />
-          <div className="hero-flow absolute inset-0 z-[1]">
-            {filas.map((fila, indiceFila) => (
-              <div key={indiceFila} className={`absolute inset-x-0 flex h-[48%] items-center ${indiceFila === 0 ? "top-[1%]" : "bottom-[1%]"}`}>
-                <motion.div
-                  className="flex w-max items-center gap-5 px-5 will-change-transform sm:gap-6 lg:gap-8"
-                  animate={reduced ? undefined : { x: ["-50%", "0%"] }}
-                  transition={reduced ? undefined : { duration: 11.5 + indiceFila * 1.4, repeat: Infinity, ease: "linear" }}
-                >
-                  {[...fila, ...fila].map((item, indice) => {
-                    const duplicado = indice >= fila.length;
-                    const tamano = tamanos[(indice + indiceFila) % tamanos.length];
-                    return (
-                      <motion.a
-                        key={`${indiceFila}-${item.id}-${indice}`}
-                        href={item.href}
-                        aria-label={`Ver ${item.nombre}`}
-                        aria-hidden={duplicado || undefined}
-                        tabIndex={duplicado ? -1 : 0}
-                        className="group block flex-none"
-                        animate={reduced ? undefined : { y: [0, indice % 2 === 0 ? -8 : 7, 0], rotate: [0, indice % 2 === 0 ? -1.2 : 1.2, 0] }}
-                        transition={reduced ? undefined : { duration: 4.2 + (indice % 3) * 0.35, repeat: Infinity, ease: "easeInOut", delay: indice * 0.08 }}
-                      >
-                        <img src={item.src} alt={item.alt} width="400" height="400" loading={indiceFila === 0 && indice < 2 ? "eager" : "lazy"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
-                      </motion.a>
-                    );
-                  })}
-                </motion.div>
-              </div>
-            ))}
+          <div className="hero-flow absolute inset-0 z-[1] flex items-center">
+            <motion.div
+              className="flex w-max items-center gap-5 px-5 will-change-transform sm:gap-6 lg:gap-8"
+              animate={reduced ? undefined : { x: ["-50%", "0%"] }}
+              transition={reduced ? undefined : { duration: 11.4, repeat: Infinity, ease: "linear" }}
+            >
+              {[...visual, ...visual].map((item, indice) => {
+                const duplicado = indice >= visual.length;
+                const tamano = tamanos[indice % tamanos.length];
+                return (
+                  <motion.a
+                    key={`${item.id}-${indice}`}
+                    href={item.href}
+                    aria-label={`Ver ${item.nombre}`}
+                    aria-hidden={duplicado || undefined}
+                    tabIndex={duplicado ? -1 : 0}
+                    className="group block flex-none"
+                    animate={reduced ? undefined : { y: [0, indice % 2 === 0 ? -8 : 7, 0], rotate: [0, indice % 2 === 0 ? -1.2 : 1.2, 0] }}
+                    transition={reduced ? undefined : { duration: 4.2 + (indice % 3) * 0.35, repeat: Infinity, ease: "easeInOut", delay: indice * 0.08 }}
+                  >
+                    <img src={item.src} alt={item.alt} width="400" height="400" loading={indice < 2 ? "eager" : "lazy"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
+                  </motion.a>
+                );
+              })}
+            </motion.div>
           </div>
           <div className="absolute bottom-[5%] right-[5%] z-10 grid h-20 w-20 rotate-[-8deg] place-items-center rounded-full border border-accent/40 bg-surface/80 text-center font-display text-[10px] font-semibold leading-tight text-accent backdrop-blur">
             Impreso<br />a pedido
