@@ -78,3 +78,35 @@ html.theme-claro select option { background: #fff; color: #101b2d; }
 @media (prefers-reduced-motion: reduce) {
   .hero-flow { -webkit-mask-image: none; mask-image: none; }
 }
+
+/* Movimiento del hero en compositor: suave y sin animaciones JS por producto. */
+.hero-flow {
+  contain: layout paint;
+}
+.hero-flow__track {
+  animation: hero-flow-track 16.3s linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+.hero-flow__item {
+  animation-name: hero-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+@keyframes hero-flow-track {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes hero-float {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  to { transform: translate3d(0, -8px, 0) rotate(-1.2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-flow__track { animation: none; transform: translate3d(-25%, 0, 0); }
+  .hero-flow__item { animation: none; }
+}
