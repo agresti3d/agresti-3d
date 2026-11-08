@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight, ArrowUpRight, Boxes, Gem, Home, LayoutGrid, Layers,
   MapPin, Menu, MessageCircle, PackageSearch, Printer, Truck, X,
@@ -222,7 +222,6 @@ function Header({ onContact }) {
 
 function Hero({ onContact }) {
   const [catalogo, setCatalogo] = useState(null);
-  const reduced = useReducedMotion();
   const fecha = fechaArgentina();
   const campana = campanaDeFecha(fecha);
 
@@ -332,31 +331,25 @@ function Hero({ onContact }) {
         <div className="relative min-h-[420px] overflow-hidden lg:min-h-[560px]">
           <div className="hero-glow absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl" />
           <div className="hero-flow absolute inset-0 z-[1] flex items-center">
-            <motion.div
-              className="flex w-max shrink-0 items-center gap-5 px-5 will-change-transform sm:gap-6 lg:gap-8"
-              style={{ width: "max-content" }}
-              animate={reduced ? undefined : { x: ["-50%", "0%"] }}
-              transition={reduced ? undefined : { duration: 11.4, repeat: Infinity, ease: "linear" }}
-            >
+            <div className="hero-flow__track flex w-max shrink-0 items-center gap-5 px-5 sm:gap-6 lg:gap-8" style={{ width: "max-content" }}>
               {[...visual, ...visual].map((item, indice) => {
                 const duplicado = indice >= visual.length;
                 const tamano = tamanos[indice % tamanos.length];
                 return (
-                  <motion.a
+                  <a
                     key={`${item.id}-${indice}`}
                     href={item.href}
                     aria-label={`Ver ${item.nombre}`}
                     aria-hidden={duplicado || undefined}
                     tabIndex={duplicado ? -1 : 0}
-                    className="group block flex-none"
-                    animate={reduced ? undefined : { y: [0, indice % 2 === 0 ? -8 : 7, 0], rotate: [0, indice % 2 === 0 ? -1.2 : 1.2, 0] }}
-                    transition={reduced ? undefined : { duration: 4.2 + (indice % 3) * 0.35, repeat: Infinity, ease: "easeInOut", delay: indice * 0.08 }}
+                    className="hero-flow__item group block flex-none"
+                    style={{ animationDuration: `${4.2 + (indice % 3) * 0.35}s`, animationDelay: `${indice * 0.08}s` }}
                   >
-                    <img src={item.src} alt={item.alt} width="400" height="400" loading={indice < 2 ? "eager" : "lazy"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
-                  </motion.a>
+                    <img src={item.src} alt={item.alt} width="400" height="400" decoding="async" draggable="false" loading={indice < 2 ? "eager" : "lazy"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
+                  </a>
                 );
               })}
-            </motion.div>
+            </div>
           </div>
           <div className="absolute bottom-[5%] right-[5%] z-10 grid h-20 w-20 rotate-[-8deg] place-items-center rounded-full border border-accent/40 bg-surface/80 text-center font-display text-[10px] font-semibold leading-tight text-accent backdrop-blur">
             Impreso<br />a pedido
