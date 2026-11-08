@@ -281,20 +281,23 @@ function Hero({ onContact }) {
       });
     };
 
-    if (campana) {
-      const claves = campana.claves.map(normalizar);
-      orden.filter(({ producto }) => {
-        const texto = normalizar(`${producto.nombre} ${producto.descripcion || ""} ${nombresCategoria(producto)} ${(producto.publico || []).join(" ")} ${(producto.ocasiones || []).join(" ")}`);
-        return claves.some((clave) => texto.includes(clave));
-      }).forEach(agregar);
-    }
+    const claves = (campana?.claves || []).map(normalizar);
+    const coincideCampana = (producto) => {
+      if (!claves.length) return false;
+      const texto = normalizar(`${producto.nombre} ${producto.descripcion || ""} ${nombresCategoria(producto)} ${(producto.publico || []).join(" ")} ${(producto.ocasiones || []).join(" ")}`);
+      return claves.some((clave) => texto.includes(clave));
+    };
 
+    // Primero garantizamos una pieza de cada categoría principal.
     const raices = categorias.filter((categoria) => !categoria.padre);
     raices.forEach((raiz) => {
-      const ultimo = orden.find(({ producto }) => camino(producto.categoria).some((id) => id === raiz.id));
-      if (ultimo) agregar(ultimo);
+      const deLaRama = orden.filter(({ producto }) => camino(producto.categoria).some((id) => id === raiz.id));
+      const elegido = (claves.length ? deLaRama.find(({ producto }) => coincideCampana(producto)) : null) || deLaRama[0];
+      if (elegido) agregar(elegido);
     });
 
+    // Después se prioriza la campaña estacional y se completa con los últimos.
+    if (claves.length) orden.filter(({ producto }) => coincideCampana(producto)).forEach(agregar);
     orden.forEach(agregar);
     return elegidos;
   }, [catalogo, campana?.id]);
@@ -330,7 +333,8 @@ function Hero({ onContact }) {
           <div className="hero-glow absolute left-1/2 top-1/2 h-[78%] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl" />
           <div className="hero-flow absolute inset-0 z-[1] flex items-center">
             <motion.div
-              className="flex w-max items-center gap-5 px-5 will-change-transform sm:gap-6 lg:gap-8"
+              className="flex w-max shrink-0 items-center gap-5 px-5 will-change-transform sm:gap-6 lg:gap-8"
+              style={{ width: "max-content" }}
               animate={reduced ? undefined : { x: ["-50%", "0%"] }}
               transition={reduced ? undefined : { duration: 11.4, repeat: Infinity, ease: "linear" }}
             >
