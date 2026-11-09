@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import GiftFinder from "./GiftFinder";
-import { loadCatalog } from "./catalog";
+import { leerCatalogoCache, loadCatalog } from "./catalog";
 import BackToTop from "./BackToTop";
 import ThemeLogo from "./ThemeLogo";
 import ThemeToggle from "./ThemeToggle";
@@ -15,6 +15,14 @@ import "swiper/css";
 const money = (value) => value || "A consultar";
 const WA_URL = "https://wa.me/5491169957575?text=Hola%20Agresti.3D%2C%20quiero%20hacer%20un%20pedido.";
 const imageUrl = (src) => (!src ? "" : src.startsWith("http") ? src : `/${src.replace(/^\/+/, "")}`);
+const heroImageUrl = (src) => {
+  const url = imageUrl(src);
+  if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+    const [base, resto] = url.split("/upload/");
+    if (/^v\d+\//.test(resto)) return `${base}/upload/f_auto,q_auto,w_600/${resto}`;
+  }
+  return url;
+};
 
 const normalizar = (texto) => String(texto || "")
   .normalize("NFD")
@@ -221,7 +229,7 @@ function Header({ onContact }) {
 }
 
 function Hero({ onContact }) {
-  const [catalogo, setCatalogo] = useState(null);
+  const [catalogo, setCatalogo] = useState(() => leerCatalogoCache());
   const fecha = fechaArgentina();
   const campana = campanaDeFecha(fecha);
 
@@ -274,7 +282,7 @@ function Hero({ onContact }) {
       elegidos.push({
         id: producto.id,
         nombre: producto.nombre,
-        src: imageUrl(foto.src),
+        src: heroImageUrl(foto.src),
         alt: foto.alt || producto.nombre,
         href: `/tienda.html#p=${encodeURIComponent(producto.id)}`,
       });
@@ -345,7 +353,7 @@ function Hero({ onContact }) {
                     className="hero-flow__item group block flex-none"
                     style={{ animationDuration: `${4.2 + (indice % 3) * 0.35}s`, animationDelay: `${indice * 0.08}s` }}
                   >
-                    <img src={item.src} alt={item.alt} width="400" height="400" decoding="async" draggable="false" loading={indice < 2 ? "eager" : "lazy"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
+                    <img src={item.src} alt={item.alt} width="400" height="400" decoding="async" draggable="false" loading="eager" fetchPriority={indice < 4 ? "high" : "auto"} className={`${tamano} h-auto object-contain drop-shadow-[0_26px_24px_rgba(0,0,0,.34)] transition duration-500 group-hover:scale-105`} />
                   </a>
                 );
               })}
@@ -469,7 +477,7 @@ function Close({ onContact }) {
         if (elegido) {
           const foto = elegido.imagenes[0];
           setDestacado({
-            src: imageUrl(foto.src),
+            src: heroImageUrl(foto.src),
             alt: foto.alt || elegido.nombre,
             nombre: elegido.nombre,
             href: `/tienda.html#p=${encodeURIComponent(elegido.id)}`,
