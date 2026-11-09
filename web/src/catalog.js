@@ -1,4 +1,5 @@
 let catalogoPromise = null;
+const CACHE_KEY = "agresti:catalogo-cache-v1";
 
 const conTiempo = async (url, opciones = {}, ms = 4000) => {
   const control = new AbortController();
@@ -9,6 +10,24 @@ const conTiempo = async (url, opciones = {}, ms = 4000) => {
     clearTimeout(timer);
   }
 };
+
+export function leerCatalogoCache() {
+  try {
+    const crudo = localStorage.getItem(CACHE_KEY);
+    if (!crudo) return null;
+    const datos = JSON.parse(crudo);
+    return Array.isArray(datos?.productos) ? datos : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function recordarCatalogo(datos) {
+  try {
+    if (Array.isArray(datos?.productos)) localStorage.setItem(CACHE_KEY, JSON.stringify(datos));
+  } catch (error) {}
+  return datos;
+}
 
 async function catalogoPublicado() {
   const config = await conTiempo("/__/firebase/init.json", { cache: "no-cache" }, 2500)
@@ -36,7 +55,8 @@ export function loadCatalog() {
     catalogoPromise = catalogoPublicado()
       .then((nube) => nube || catalogoEstatico())
       .catch(() => catalogoEstatico())
-      .catch(() => ({ productos: [], categorias: [], sucursales: [] }));
+      .catch(() => ({ productos: [], categorias: [], sucursales: [] }))
+      .then(recordarCatalogo);
   }
   return catalogoPromise;
 }
