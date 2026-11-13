@@ -860,3 +860,33 @@
 @keyframes cloud-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(280%); } }
 .cloud-file-btn:has(input:disabled) { opacity: .45; pointer-events: none; }
 .cloud-dropzone[aria-busy="true"] { opacity: .55; pointer-events: none; }
+.cloud-image__preview { display: block; width: 100%; padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: zoom-in; }
+.cloud-image__preview img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; border-radius: 6px; background: rgba(255,255,255,.04); }
+.cloud-image__preview:focus-visible { outline: 2px solid var(--cloud-accent); outline-offset: 2px; }
+
+.cloud-image-editor, .cloud-image-lightbox { padding: 0; border: 1px solid var(--cloud-line-strong); border-radius: 16px; background: var(--cloud-surface); color: var(--cloud-ink); box-shadow: 0 30px 90px rgba(0,0,0,.65); }
+.cloud-image-editor::backdrop, .cloud-image-lightbox::backdrop { background: rgba(2,8,18,.82); backdrop-filter: blur(6px); }
+.cloud-image-editor { width: min(960px, calc(100vw - 24px)); max-height: calc(100vh - 24px); }
+.cloud-image-editor__inner { display: grid; gap: .7rem; padding: 1rem; max-height: calc(100vh - 24px); overflow-y: auto; }
+.cloud-image-editor__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.cloud-image-editor__head h2 { margin: .1rem 0 0; font-family: var(--cloud-display); font-size: 1.35rem; }
+.cloud-image-editor__close, .cloud-image-lightbox__close { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--cloud-line); border-radius: 50%; background: transparent; color: var(--cloud-ink); font-size: 1.4rem; cursor: pointer; }
+.cloud-image-editor__help { margin: 0; color: var(--cloud-muted); font-size: .76rem; line-height: 1.45; }
+.cloud-image-editor__stage { display: grid; place-items: center; min-height: 240px; max-height: 58vh; padding: .5rem; overflow: hidden; border: 1px solid var(--cloud-line); border-radius: 10px; background-color: #101b2d; background-image: linear-gradient(45deg, rgba(255,255,255,.06) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,.06) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,.06) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.06) 75%); background-size: 22px 22px; background-position: 0 0, 0 11px, 11px -11px, -11px 0; }
+#imageEditorCanvas { display: block; max-width: 100%; max-height: 56vh; width: auto; height: auto; touch-action: none; cursor: crosshair; }
+.cloud-image-editor__tools { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.cloud-image-editor__tools button { min-height: 44px; padding: .45rem .75rem; border: 1px solid var(--cloud-line-strong); border-radius: 7px; background: transparent; color: var(--cloud-ink); font: inherit; font-size: .72rem; cursor: pointer; }
+.cloud-image-editor__tools button.is-active { border-color: var(--cloud-accent); background: rgba(255,106,61,.12); color: var(--cloud-accent); }
+.cloud-image-editor__tools label { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; color: var(--cloud-muted); font-size: .7rem; }
+.cloud-image-editor__tools input[type="range"] { width: 120px; accent-color: var(--cloud-accent); }
+.cloud-image-editor__actions { display: flex; justify-content: flex-end; gap: .5rem; }
+.cloud-image-editor__actions .btn { min-height: 44px; }
+.cloud-image-lightbox { width: min(1100px, calc(100vw - 24px)); max-height: calc(100vh - 24px); }
+.cloud-image-lightbox img { display: block; width: 100%; max-height: calc(100vh - 110px); object-fit: contain; background: rgba(255,255,255,.04); }
+.cloud-image-lightbox p { margin: 0; padding: .6rem 1rem; color: var(--cloud-muted); font-size: .72rem; }
+.cloud-image-lightbox__close { position: absolute; top: .75rem; right: .75rem; z-index: 2; background: rgba(7,15,31,.75); }
+@media (max-width: 620px) {
+  .cloud-image-editor__stage { max-height: 48vh; }
+  #imageEditorCanvas { max-height: 46vh; }
+  .cloud-image-editor__tools input[type="range"] { width: 90px; }
+}
