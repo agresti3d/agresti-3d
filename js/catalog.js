@@ -603,9 +603,11 @@
         </section>`
       : "";
     const detallesBeneficios = producto.detalles || {};
-    const medidasBeneficio = [detallesBeneficios.altura, detallesBeneficios.ancho, detallesBeneficios.largo]
-      .filter(Boolean)
-      .join(" × ");
+    const medidasBeneficio = [
+      detallesBeneficios.altura && `Alto: ${detallesBeneficios.altura}`,
+      detallesBeneficios.ancho && `Ancho: ${detallesBeneficios.ancho}`,
+      detallesBeneficios.largo && `Largo: ${detallesBeneficios.largo}`,
+    ].filter(Boolean).join(" · ") || detallesBeneficios.medidas || "";
     const beneficios = [
       { icono: iconoBeneficios.material, valor: detallesBeneficios.material, etiqueta: "Material" },
       { icono: iconoBeneficios.medida, valor: medidasBeneficio, etiqueta: "Medidas" },
