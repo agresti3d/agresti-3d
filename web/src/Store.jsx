@@ -206,14 +206,13 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
     if (actual?.type === "image") setLightbox(true);
   };
   const detalles = product.detalles || {};
-  const medidas = [
-    detalles.altura && `Alto: ${detalles.altura}`,
-    detalles.ancho && `Ancho: ${detalles.ancho}`,
-    detalles.largo && `Largo: ${detalles.largo}`,
-  ].filter(Boolean).join(" · ") || detalles.medidas || "";
+  const medidasPartes = [
+    detalles.altura && { etiqueta: "Alto", valor: detalles.altura },
+    detalles.ancho && { etiqueta: "Ancho", valor: detalles.ancho },
+    detalles.largo && { etiqueta: "Largo", valor: detalles.largo },
+  ].filter(Boolean);
   const beneficios = [
     detalles.material && ["Material", detalles.material],
-    medidas && ["Medidas", medidas],
     detalles.capacidad && ["Capacidad", detalles.capacidad],
     detalles.peso && ["Peso", detalles.peso],
     ["Producción", "A pedido"],
@@ -257,7 +256,28 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
             <p className="mt-2 text-xl font-semibold text-accent">{money(product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
-            <div className="mt-4 grid grid-cols-2 gap-2">{beneficios.map(([label, value]) => <div key={label} className="rounded-xl border border-line p-2"><strong className="block text-xs">{value}</strong><span className="text-[10px] text-muted">{label}</span></div>)}</div>
+            {(medidasPartes.length > 0 || detalles.medidas) && (
+              <div className="mt-4 rounded-xl border border-line p-3">
+                <span className="block text-[9px] font-semibold uppercase tracking-[.14em] text-muted">Medidas</span>
+                {medidasPartes.length > 0 ? (
+                  <div className={`mt-2 grid gap-2 ${medidasPartes.length === 1 ? "grid-cols-1" : medidasPartes.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                    {medidasPartes.map(({ etiqueta, valor }) => (
+                      <div key={etiqueta} className="min-w-0 border-l border-line pl-2 first:border-l-0 first:pl-0">
+                        <span className="block text-[9px] uppercase tracking-[.1em] text-muted">{etiqueta}</span>
+                        <strong className="mt-0.5 block text-xs leading-snug">{valor}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <strong className="mt-1 block text-xs leading-snug">{detalles.medidas}</strong>
+                )}
+              </div>
+            )}
+            {beneficios.length > 0 && (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {beneficios.map(([label, value]) => <div key={label} className="rounded-xl border border-line p-2"><strong className="block text-xs leading-snug">{value}</strong><span className="mt-0.5 block text-[10px] text-muted">{label}</span></div>)}
+              </div>
+            )}
             <div className="mt-4 max-h-[30vh] overflow-y-auto pr-1 sm:max-h-[34vh]">
               <p className="whitespace-pre-line text-sm leading-relaxed text-muted">{product.descripcionLarga || product.descripcion}</p>
             </div>
