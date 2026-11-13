@@ -206,7 +206,11 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
     if (actual?.type === "image") setLightbox(true);
   };
   const detalles = product.detalles || {};
-  const medidas = detalles.medidas || [detalles.altura, detalles.ancho, detalles.largo].filter(Boolean).join(" × ");
+  const medidas = [
+    detalles.altura && `Alto: ${detalles.altura}`,
+    detalles.ancho && `Ancho: ${detalles.ancho}`,
+    detalles.largo && `Largo: ${detalles.largo}`,
+  ].filter(Boolean).join(" · ") || detalles.medidas || "";
   const beneficios = [
     detalles.material && ["Material", detalles.material],
     medidas && ["Medidas", medidas],
