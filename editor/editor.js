@@ -1311,9 +1311,10 @@
     capaCtx.drawImage(corte, 0, 0, ancho, alto);
     const corteData = capaCtx.getImageData(0, 0, ancho, alto);
     for (let i = 0; i < corteData.data.length; i += 4) {
-      // Conservamos el alfa real para no convertir el fondo claro en blanco.
-      // La brocha permite reforzar las partes claras o borrar restos.
-      originalData.data[i + 3] = corteData.data[i + 3];
+      // El modelo devuelve alfa parcial en cuerpos oscuros: lo normalizamos
+      // para que el producto quede opaco y el fondo realmente transparente.
+      const alfa = corteData.data[i + 3];
+      originalData.data[i + 3] = alfa >= 12 ? 255 : 0;
     }
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
@@ -1387,7 +1388,7 @@
     }
     // El recorte automático puede devolver alfa bajo en telas claras.
     // Usamos un umbral adaptativo y, si hace falta, conservamos cualquier píxel visible.
-    const umbrales = [8, 4, 0];
+    const umbrales = [12, 6, 0];
     let caja = null;
     for (const umbral of umbrales) {
       let minX = lienzo.width;
@@ -1431,6 +1432,13 @@
     const y = Math.round(1010 - altoFinal);
     ctxSalida.imageSmoothingQuality = "high";
     ctxSalida.drawImage(lienzo, minX, minY, ancho, alto, x, y, anchoFinal, altoFinal);
+
+    // Cuerpo opaco, fondo transparente: evitamos el efecto "fantasma" gris.
+    const pixelesSalida = ctxSalida.getImageData(0, 0, salida.width, salida.height);
+    for (let i = 3; i < pixelesSalida.data.length; i += 4) {
+      pixelesSalida.data[i] = pixelesSalida.data[i] >= 12 ? 255 : 0;
+    }
+    ctxSalida.putImageData(pixelesSalida, 0, 0);
 
     let resultado = await canvasABlob(salida, "image/webp", 0.9);
     if (resultado.size > 300 * 1024) {
