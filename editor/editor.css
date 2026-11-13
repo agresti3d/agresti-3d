@@ -890,3 +890,20 @@
   #imageEditorCanvas { max-height: 46vh; }
   .cloud-image-editor__tools input[type="range"] { width: 90px; }
 }
+.cloud-image-editor__stage { position: relative; }
+#imageEditorCanvas { cursor: none; }
+.cloud-brush-cursor {
+  position: absolute;
+  z-index: 3;
+  width: 140px;
+  height: 140px;
+  border: 2px solid rgba(255,255,255,.92);
+  border-radius: 50%;
+  background: rgba(255,106,61,.12);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.2);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cloud-brush-cursor::after { content: ""; position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.9); transform: translate(-50%, -50%); }
+.cloud-brush-cursor[data-mode="erase"] { border-color: #ff9b86; background: rgba(255,80,60,.13); }
+.cloud-brush-cursor[hidden] { display: none; }
