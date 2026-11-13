@@ -1253,6 +1253,41 @@
     if (els.imageBrushCursor) els.imageBrushCursor.hidden = true;
   };
 
+  const limpiarAlfa = (imageData, ancho, alto, erosion = 0) => {
+    const datos = imageData.data;
+    const total = ancho * alto;
+    const mascara = new Uint8Array(total);
+    for (let i = 0; i < total; i += 1) {
+      const p = i * 4;
+      const alfa = datos[p + 3];
+      if (alfa < 12) continue;
+      const r = datos[p];
+      const g = datos[p + 1];
+      const b = datos[p + 2];
+      // Halos claros semitransparentes que deja el modelo en fondos blancos.
+      if (alfa < 220 && r > 235 && g > 235 && b > 235) continue;
+      mascara[i] = 1;
+    }
+    if (erosion > 0) {
+      let actual = mascara;
+      for (let vuelta = 0; vuelta < erosion; vuelta += 1) {
+        const siguiente = new Uint8Array(actual);
+        for (let y = 1; y < alto - 1; y += 1) {
+          for (let x = 1; x < ancho - 1; x += 1) {
+            const i = y * ancho + x;
+            if (!actual[i]) continue;
+            if (!actual[i - 1] || !actual[i + 1] || !actual[i - ancho] || !actual[i + ancho]) siguiente[i] = 0;
+          }
+        }
+        actual = siguiente;
+      }
+      mascara.set(actual);
+    }
+    for (let i = 0; i < total; i += 1) {
+      datos[i * 4 + 3] = mascara[i] ? 255 : 0;
+    }
+  };
+
   const pintarRecorte = (clientX, clientY) => {
     const estado = editorRecorteState;
     if (!estado) return;
@@ -1313,9 +1348,10 @@
     for (let i = 0; i < corteData.data.length; i += 4) {
       // El modelo devuelve alfa parcial en cuerpos oscuros: lo normalizamos
       // para que el producto quede opaco y el fondo realmente transparente.
-      const alfa = corteData.data[i + 3];
-      originalData.data[i + 3] = alfa >= 12 ? 255 : 0;
+      // Conservamos el alfa original para poder detectar y quitar halos claros.
+      originalData.data[i + 3] = corteData.data[i + 3];
     }
+    limpiarAlfa(originalData, ancho, alto, 0);
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
       canvas, ctx, data: originalData, originalPixels,
@@ -1381,36 +1417,28 @@
         ctx.putImageData(recorteData, 0, 0);
       } catch (error) {}
     }
-    const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
-    let maxAlfa = 0;
-    for (let i = 3; i < datos.length; i += 4) {
-      if (datos[i] > maxAlfa) maxAlfa = datos[i];
-    }
-    // El recorte automático puede devolver alfa bajo en telas claras.
-    // Usamos un umbral adaptativo y, si hace falta, conservamos cualquier píxel visible.
-    const umbrales = [12, 6, 0];
-    let caja = null;
-    for (const umbral of umbrales) {
-      let minX = lienzo.width;
-      let minY = lienzo.height;
-      let maxX = 0;
-      let maxY = 0;
-      let encontrado = false;
-      for (let y = 0; y < lienzo.height; y += 1) {
-        for (let x = 0; x < lienzo.width; x += 1) {
-          if (datos[(y * lienzo.width + x) * 4 + 3] > umbral) {
-            encontrado = true;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-          }
+    const datosImagen = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+    limpiarAlfa(datosImagen, lienzo.width, lienzo.height, 1);
+    ctx.putImageData(datosImagen, 0, 0);
+    const datos = datosImagen.data;
+    let minX = lienzo.width;
+    let minY = lienzo.height;
+    let maxX = 0;
+    let maxY = 0;
+    let encontrado = false;
+    for (let y = 0; y < lienzo.height; y += 1) {
+      for (let x = 0; x < lienzo.width; x += 1) {
+        if (datos[(y * lienzo.width + x) * 4 + 3] > 0) {
+          encontrado = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
         }
       }
-      if (encontrado) { caja = { minX, minY, maxX, maxY }; break; }
     }
+    const caja = encontrado ? { minX, minY, maxX, maxY } : null;
     if (!caja) throw new Error("La imagen quedó vacía después de quitar el fondo.");
-    let { minX, minY, maxX, maxY } = caja;
 
     const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.04);
     minX = Math.max(0, minX - margen);
