@@ -836,3 +836,14 @@
   .cloud-cover-dialog { width: calc(100vw - 20px); max-height: calc(100vh - 20px); }
   .cloud-cover-dialog__inner { max-height: calc(100vh - 20px); padding: .75rem; }
 }
+.cloud-media__tools { display: flex; align-items: flex-end; gap: .6rem; flex: none; }
+.cloud-cutout-quality { display: grid; gap: .25rem; min-width: 142px; }
+.cloud-cutout-quality > span { color: var(--cloud-muted); font-size: .66rem; letter-spacing: .04em; text-transform: uppercase; }
+.cloud-cutout-quality select { min-height: 44px; padding: .35rem 1.7rem .35rem .5rem; border: 1px solid var(--cloud-line-strong); border-radius: 7px; background: rgba(7,15,31,.55); color: var(--cloud-ink); font: inherit; font-size: .72rem; }
+.cloud-media__tools .cloud-file-btn { min-height: 44px; }
+@media (max-width: 720px) {
+  .cloud-media__tools { width: 100%; align-items: stretch; flex-direction: column; }
+  .cloud-cutout-quality { width: 100%; }
+  .cloud-cutout-quality select { width: 100%; }
+  .cloud-media__tools .cloud-file-btn { justify-content: center; }
+}
