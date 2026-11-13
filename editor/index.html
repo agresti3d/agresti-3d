@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=19">
+  <link rel="stylesheet" href="editor.css?v=20">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -399,7 +399,7 @@
       <div class="cloud-image-editor__tools" id="imageEditorTools">
         <button class="is-active" type="button" data-brush="restore">Restaurar</button>
         <button type="button" data-brush="erase">Borrar fondo</button>
-        <label>Brocha <input id="imageBrushSize" type="range" min="12" max="220" value="70" step="2"></label>
+        <label>Brocha <input id="imageBrushSize" type="range" min="2" max="220" value="36" step="1"></label>
         <button type="button" id="imageEditorUndo">Deshacer</button>
       </div>
       <div class="cloud-image-editor__actions">
@@ -421,6 +421,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=26"></script>
+  <script src="editor.js?v=27"></script>
 </body>
 </html>
