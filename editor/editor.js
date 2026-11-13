@@ -69,6 +69,7 @@
     saveBranches: $("#saveBranches"),
     branchStatus: $("#branchStatus"),
     imageFiles: $("#imageFiles"),
+    imageCutoutQuality: $("#imageCutoutQuality"),
     imageList: $("#imageList"),
     imageStatus: $("#imageStatus"),
     videoFiles: $("#videoFiles"),
@@ -1201,25 +1202,37 @@
     const ctx = lienzo.getContext("2d", { willReadFrequently: true });
     ctx.drawImage(imagen, 0, 0);
     const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
-    let minX = lienzo.width;
-    let minY = lienzo.height;
-    let maxX = 0;
-    let maxY = 0;
-    let encontrado = false;
-    for (let y = 0; y < lienzo.height; y += 1) {
-      for (let x = 0; x < lienzo.width; x += 1) {
-        if (datos[(y * lienzo.width + x) * 4 + 3] > 12) {
-          encontrado = true;
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
+    let maxAlfa = 0;
+    for (let i = 3; i < datos.length; i += 4) {
+      if (datos[i] > maxAlfa) maxAlfa = datos[i];
+    }
+    // El recorte automático puede devolver alfa bajo en telas claras.
+    // Usamos un umbral adaptativo y, si hace falta, conservamos cualquier píxel visible.
+    const umbrales = [Math.max(2, Math.round(maxAlfa * 0.018)), 2, 0];
+    let caja = null;
+    for (const umbral of umbrales) {
+      let minX = lienzo.width;
+      let minY = lienzo.height;
+      let maxX = 0;
+      let maxY = 0;
+      let encontrado = false;
+      for (let y = 0; y < lienzo.height; y += 1) {
+        for (let x = 0; x < lienzo.width; x += 1) {
+          if (datos[(y * lienzo.width + x) * 4 + 3] > umbral) {
+            encontrado = true;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
         }
       }
+      if (encontrado) { caja = { minX, minY, maxX, maxY }; break; }
     }
-    if (!encontrado) throw new Error("La imagen quedó vacía después de quitar el fondo.");
+    if (!caja) throw new Error("La imagen quedó vacía después de quitar el fondo.");
+    let { minX, minY, maxX, maxY } = caja;
 
-    const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.04);
+    const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
     minX = Math.max(0, minX - margen);
     minY = Math.max(0, minY - margen);
     maxX = Math.min(lienzo.width - 1, maxX + margen);
@@ -1260,10 +1273,25 @@
     if (typeof modulo.removeBackground !== "function") {
       throw new Error("El modelo de recorte no se cargó.");
     }
-    const recorte = await modulo.removeBackground(file, {
-      output: { format: "image/png" },
-    });
-    return recorte;
+    const calidad = els.imageCutoutQuality?.value || "alta";
+    const modelos = calidad === "rapida"
+      ? ["isnet_quint8"]
+      : calidad === "equilibrada"
+        ? ["isnet_fp16", "isnet_quint8"]
+        : ["isnet", "isnet_fp16", "isnet_quint8"];
+    let ultimoError = null;
+    for (const modelo of modelos) {
+      try {
+        setStatus(els.imageStatus, `Preparando recorte ${modelo === "isnet" ? "de alta calidad" : modelo}…`);
+        return await modulo.removeBackground(file, {
+          model: modelo,
+          output: { format: "image/png" },
+        });
+      } catch (error) {
+        ultimoError = error;
+      }
+    }
+    throw new Error(ultimoError?.message || "El modelo de recorte no pudo procesar la foto.");
   };
 
   const subirCloudinary = async (file, tipo = "image") => {
