@@ -78,6 +78,8 @@
     imageProgressBar: $("#imageProgressBar"),
     imageEditorDialog: $("#imageEditorDialog"),
     imageEditorCanvas: $("#imageEditorCanvas"),
+    imageEditorStage: $("#imageEditorStage"),
+    imageBrushCursor: $("#imageBrushCursor"),
     imageEditorTitle: $("#imageEditorTitle"),
     imageEditorHelp: $("#imageEditorHelp"),
     imageEditorClose: $("#imageEditorClose"),
@@ -1230,6 +1232,27 @@
     if (els.imageProgress) els.imageProgress.hidden = true;
   };
 
+  const mostrarCursorBrocha = (event) => {
+    if (!editorRecorteState || !els.imageBrushCursor || !els.imageEditorStage) return;
+    const escenario = els.imageEditorStage.getBoundingClientRect();
+    const tamano = Number(els.imageBrushSize?.value || 70) * 2;
+    els.imageBrushCursor.hidden = false;
+    els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
+    els.imageBrushCursor.style.width = `${tamano}px`;
+    els.imageBrushCursor.style.height = `${tamano}px`;
+    els.imageBrushCursor.style.left = `${event.clientX - escenario.left}px`;
+    els.imageBrushCursor.style.top = `${event.clientY - escenario.top}px`;
+  };
+  const actualizarCursorBrocha = () => {
+    if (!els.imageBrushCursor || els.imageBrushCursor.hidden) return;
+    const tamano = Number(els.imageBrushSize?.value || 70) * 2;
+    els.imageBrushCursor.style.width = `${tamano}px`;
+    els.imageBrushCursor.style.height = `${tamano}px`;
+  };
+  const ocultarCursorBrocha = () => {
+    if (els.imageBrushCursor) els.imageBrushCursor.hidden = true;
+  };
+
   const pintarRecorte = (clientX, clientY) => {
     const estado = editorRecorteState;
     if (!estado) return;
@@ -1301,6 +1324,7 @@
     if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
     els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
     if (els.imageBrushSize) els.imageBrushSize.value = "70";
+    ocultarCursorBrocha();
     if (typeof els.imageEditorDialog.showModal === "function") els.imageEditorDialog.showModal();
     else els.imageEditorDialog.setAttribute("open", "");
     return new Promise((resolve) => {
@@ -1314,6 +1338,7 @@
     estado.finalizado = true;
     const resolver = estado.resolve;
     estado.resolve = null;
+    ocultarCursorBrocha();
     els.imageEditorDialog?.close();
     editorRecorteState = null;
     if (resolver) resolver(blob);
@@ -2348,6 +2373,7 @@
     }
     if (els.imageEditorCanvas) {
       const canvas = els.imageEditorCanvas;
+      canvas.addEventListener("pointerenter", (event) => mostrarCursorBrocha(event));
       canvas.addEventListener("pointerdown", (event) => {
         if (!editorRecorteState) return;
         event.preventDefault();
@@ -2355,24 +2381,28 @@
         editorRecorteState.drawing = true;
         editorRecorteState.undo.push(new ImageData(new Uint8ClampedArray(editorRecorteState.data.data), canvas.width, canvas.height));
         if (editorRecorteState.undo.length > 12) editorRecorteState.undo.shift();
+        mostrarCursorBrocha(event);
         pintarRecorte(event.clientX, event.clientY);
       });
       canvas.addEventListener("pointermove", (event) => {
+        mostrarCursorBrocha(event);
         if (editorRecorteState?.drawing) pintarRecorte(event.clientX, event.clientY);
       });
       const terminarTrazo = () => { if (editorRecorteState) editorRecorteState.drawing = false; };
       canvas.addEventListener("pointerup", terminarTrazo);
       canvas.addEventListener("pointercancel", terminarTrazo);
-      canvas.addEventListener("pointerleave", terminarTrazo);
+      canvas.addEventListener("pointerleave", () => { terminarTrazo(); ocultarCursorBrocha(); });
     }
     if (els.imageEditorTools) {
       els.imageEditorTools.addEventListener("click", (event) => {
         const boton = event.target.closest("[data-brush]");
         if (!boton || !editorRecorteState) return;
         editorRecorteState.brushMode = boton.dataset.brush === "erase" ? "erase" : "restore";
+        if (els.imageBrushCursor) els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
         els.imageEditorTools.querySelectorAll("[data-brush]").forEach((item) => item.classList.toggle("is-active", item === boton));
       });
     }
+    if (els.imageBrushSize) els.imageBrushSize.addEventListener("input", actualizarCursorBrocha);
     if (els.imageEditorUndo) {
       els.imageEditorUndo.addEventListener("click", () => {
         const estado = editorRecorteState;
