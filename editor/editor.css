@@ -847,3 +847,16 @@
   .cloud-cutout-quality select { width: 100%; }
   .cloud-media__tools .cloud-file-btn { justify-content: center; }
 }
+.cloud-image-progress { display: flex; align-items: flex-start; gap: .65rem; padding: .65rem .75rem; border: 1px solid rgba(255,106,61,.35); border-radius: 9px; background: rgba(255,106,61,.07); }
+.cloud-image-progress[hidden] { display: none; }
+.cloud-spinner { width: 18px; height: 18px; flex: none; margin-top: 1px; border: 2px solid rgba(255,106,61,.25); border-top-color: var(--cloud-accent); border-radius: 50%; animation: cloud-spin .8s linear infinite; }
+.cloud-image-progress__body { display: grid; gap: .18rem; min-width: 0; flex: 1; }
+.cloud-image-progress__body strong { color: var(--cloud-ink); font-size: .76rem; }
+.cloud-image-progress__body small { color: var(--cloud-muted); font-size: .68rem; line-height: 1.35; }
+.cloud-progress-track { display: block; width: 100%; height: 4px; margin-top: .3rem; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.1); }
+.cloud-progress-track > span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--cloud-accent); transition: width .25s ease; }
+.cloud-progress-track > span.is-indeterminate { width: 38%; animation: cloud-progress 1.1s ease-in-out infinite; }
+@keyframes cloud-spin { to { transform: rotate(360deg); } }
+@keyframes cloud-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(280%); } }
+.cloud-file-btn:has(input:disabled) { opacity: .45; pointer-events: none; }
+.cloud-dropzone[aria-busy="true"] { opacity: .55; pointer-events: none; }
