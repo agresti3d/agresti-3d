@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=15">
+  <link rel="stylesheet" href="editor.css?v=16">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -136,10 +136,20 @@
                   <h3 id="photosTitle">Fotos del producto</h3>
                   <p class="cloud-muted">Se recorta el fondo automáticamente en el navegador y se suben a Cloudinary.</p>
                 </div>
-                <label class="btn btn--ghost cloud-file-btn">
-                  Agregar fotos
-                  <input id="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
-                </label>
+                <div class="cloud-media__tools">
+                  <label class="cloud-cutout-quality">
+                    <span>Calidad de recorte</span>
+                    <select id="imageCutoutQuality" aria-label="Calidad de recorte de fotos">
+                      <option value="alta" selected>Alta (recomendada)</option>
+                      <option value="equilibrada">Equilibrada</option>
+                      <option value="rapida">Rápida</option>
+                    </select>
+                  </label>
+                  <label class="btn btn--ghost cloud-file-btn">
+                    Agregar fotos
+                    <input id="imageFiles" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
+                  </label>
+                </div>
               </div>
               <div class="cloud-dropzone" id="imageDropzone" data-dropzone="image">
                 <strong>Arrastrá fotos acá</strong>
@@ -370,6 +380,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=22"></script>
+  <script src="editor.js?v=23"></script>
 </body>
 </html>
