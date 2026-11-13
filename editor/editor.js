@@ -72,6 +72,10 @@
     imageCutoutQuality: $("#imageCutoutQuality"),
     imageList: $("#imageList"),
     imageStatus: $("#imageStatus"),
+    imageProgress: $("#imageProgress"),
+    imageProgressTitle: $("#imageProgressTitle"),
+    imageProgressDetail: $("#imageProgressDetail"),
+    imageProgressBar: $("#imageProgressBar"),
     videoFiles: $("#videoFiles"),
     videoList: $("#videoList"),
     videoStatus: $("#videoStatus"),
@@ -103,6 +107,7 @@
   let dirty = false;
   let saving = false;
   let removeBackgroundPromise = null;
+  let procesandoFotos = false;
   let toastTimer = null;
   let loginNotice = "";
   let importing = false;
@@ -1194,13 +1199,47 @@
       );
     });
 
-  const recortarSujeto = async (blob) => {
+  const mostrarProgresoImagen = (titulo, detalle = "", avance = null) => {
+    if (!els.imageProgress) return;
+    els.imageProgress.hidden = false;
+    if (els.imageProgressTitle) els.imageProgressTitle.textContent = titulo;
+    if (els.imageProgressDetail) els.imageProgressDetail.textContent = detalle;
+    if (els.imageProgressBar) {
+      els.imageProgressBar.classList.toggle("is-indeterminate", avance === null);
+      els.imageProgressBar.style.width = avance === null ? "" : `${Math.max(0, Math.min(100, avance))}%`;
+    }
+  };
+  const ocultarProgresoImagen = () => {
+    if (els.imageProgress) els.imageProgress.hidden = true;
+  };
+
+  const recortarSujeto = async (blob, originalFile = null) => {
     const imagen = await cargarImagen(blob);
     const lienzo = document.createElement("canvas");
     lienzo.width = imagen.naturalWidth || imagen.width;
     lienzo.height = imagen.naturalHeight || imagen.height;
     const ctx = lienzo.getContext("2d", { willReadFrequently: true });
     ctx.drawImage(imagen, 0, 0);
+    if (originalFile) {
+      try {
+        const original = await cargarImagen(originalFile);
+        const lienzoOriginal = document.createElement("canvas");
+        lienzoOriginal.width = lienzo.width;
+        lienzoOriginal.height = lienzo.height;
+        const ctxOriginal = lienzoOriginal.getContext("2d", { willReadFrequently: true });
+        ctxOriginal.drawImage(original, 0, 0, lienzo.width, lienzo.height);
+        const originalData = ctxOriginal.getImageData(0, 0, lienzo.width, lienzo.height).data;
+        const recorteData = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+        for (let i = 0; i < recorteData.data.length; i += 4) {
+          if (recorteData.data[i + 3] > 0) {
+            recorteData.data[i] = originalData[i];
+            recorteData.data[i + 1] = originalData[i + 1];
+            recorteData.data[i + 2] = originalData[i + 2];
+          }
+        }
+        ctx.putImageData(recorteData, 0, 0);
+      } catch (error) {}
+    }
     const datos = ctx.getImageData(0, 0, lienzo.width, lienzo.height).data;
     let maxAlfa = 0;
     for (let i = 3; i < datos.length; i += 4) {
@@ -1253,6 +1292,16 @@
     ctxSalida.imageSmoothingQuality = "high";
     ctxSalida.drawImage(lienzo, minX, minY, ancho, alto, x, y, anchoFinal, altoFinal);
 
+    // El modelo a veces deja la tela clara casi transparente. La volvemos opaca
+    // y eliminamos el ruido de fondo con alfa mínimo.
+    const pixelesSalida = ctxSalida.getImageData(0, 0, salida.width, salida.height);
+    for (let i = 3; i < pixelesSalida.data.length; i += 4) {
+      const alfa = pixelesSalida.data[i];
+      if (alfa === 0) continue;
+      pixelesSalida.data[i] = alfa < 3 ? 0 : 255;
+    }
+    ctxSalida.putImageData(pixelesSalida, 0, 0);
+
     let resultado = await canvasABlob(salida, "image/webp", 0.9);
     if (resultado.size > 300 * 1024) {
       resultado = await canvasABlob(salida, "image/webp", 0.8);
@@ -1283,12 +1332,22 @@
     for (const modelo of modelos) {
       try {
         setStatus(els.imageStatus, `Preparando recorte ${modelo === "isnet" ? "de alta calidad" : modelo}…`);
+        mostrarProgresoImagen("Quitando el fondo…", `Modelo ${modelo}. La primera vez puede tardar mientras se descarga.`);
+        await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
         return await modulo.removeBackground(file, {
           model: modelo,
+          proxyToWorker: true,
           output: { format: "image/png" },
+          progress: (clave, actual, total) => {
+            const avance = total ? Math.round((actual / total) * 100) : null;
+            const detalle = avance === null ? `Preparando ${clave}…` : `Descargando modelo ${clave}: ${avance}%`;
+            setStatus(els.imageStatus, detalle);
+            mostrarProgresoImagen("Preparando el recorte…", detalle, avance);
+          },
         });
       } catch (error) {
         ultimoError = error;
+        mostrarProgresoImagen("Reintentando recorte…", "El modelo anterior no pudo procesar esta foto.");
       }
     }
     throw new Error(ultimoError?.message || "El modelo de recorte no pudo procesar la foto.");
@@ -1364,6 +1423,13 @@
       setStatus(els.imageStatus, "Elegí o creá un producto antes de agregar fotos.", "error");
       return;
     }
+    if (procesandoFotos) {
+      setStatus(els.imageStatus, "Ya hay una foto procesándose. Esperá a que termine.", "error");
+      return;
+    }
+    procesandoFotos = true;
+    els.imageFiles.disabled = true;
+    try {
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) {
         setStatus(els.imageStatus, `«${file.name}» no es una imagen.`, "error");
@@ -1375,9 +1441,12 @@
       }
       try {
         setStatus(els.imageStatus, `Quitando el fondo de «${file.name}»…`);
+        mostrarProgresoImagen("Procesando foto…", `Quitando el fondo de «${file.name}».`);
         const recorte = await quitarFondo(file);
-        const procesada = await recortarSujeto(recorte);
+        mostrarProgresoImagen("Ajustando el recorte…", "Detectando el producto y centrando la imagen.");
+        const procesada = await recortarSujeto(recorte, file);
         setStatus(els.imageStatus, `Subiendo «${file.name}»…`);
+        mostrarProgresoImagen("Subiendo la foto…", "Guardando la imagen recortada en Cloudinary.");
         const url = await subirCloudinary(procesada, "image");
         const actual = catalog.productos.find((item) => item.id === selectedId);
         if (!actual) throw new Error("El producto se cerró mientras se procesaba la foto.");
@@ -1389,9 +1458,16 @@
         setStatus(els.imageStatus, `«${file.name}» lista.`, "success");
       } catch (error) {
         setStatus(els.imageStatus, `No se pudo procesar «${file.name}»: ${error.message}`, "error");
+      } finally {
+        ocultarProgresoImagen();
       }
     }
-    els.imageFiles.value = "";
+    } finally {
+      procesandoFotos = false;
+      els.imageFiles.disabled = false;
+      els.imageFiles.value = "";
+      ocultarProgresoImagen();
+    }
   };
 
   const procesarVideo = async (files) => {
