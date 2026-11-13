@@ -76,6 +76,20 @@
     imageProgressTitle: $("#imageProgressTitle"),
     imageProgressDetail: $("#imageProgressDetail"),
     imageProgressBar: $("#imageProgressBar"),
+    imageEditorDialog: $("#imageEditorDialog"),
+    imageEditorCanvas: $("#imageEditorCanvas"),
+    imageEditorTitle: $("#imageEditorTitle"),
+    imageEditorHelp: $("#imageEditorHelp"),
+    imageEditorClose: $("#imageEditorClose"),
+    imageEditorCancel: $("#imageEditorCancel"),
+    imageEditorAccept: $("#imageEditorAccept"),
+    imageEditorUndo: $("#imageEditorUndo"),
+    imageEditorTools: $("#imageEditorTools"),
+    imageBrushSize: $("#imageBrushSize"),
+    imageLightbox: $("#imageLightbox"),
+    imageLightboxImg: $("#imageLightboxImg"),
+    imageLightboxCaption: $("#imageLightboxCaption"),
+    imageLightboxClose: $("#imageLightboxClose"),
     videoFiles: $("#videoFiles"),
     videoList: $("#videoList"),
     videoStatus: $("#videoStatus"),
@@ -108,6 +122,7 @@
   let saving = false;
   let removeBackgroundPromise = null;
   let procesandoFotos = false;
+  let editorRecorteState = null;
   let toastTimer = null;
   let loginNotice = "";
   let importing = false;
@@ -1143,7 +1158,9 @@
           .map(
             (imagen, indice) => `
             <div class="cloud-image" data-index="${indice}">
-              <img src="${escapeHTML(imageURL(imagen.src))}" alt="${escapeHTML(imagen.alt || "")}" loading="lazy">
+              <button class="cloud-image__preview" type="button" data-view-image="${indice}" aria-label="Ver foto ${indice + 1} en grande">
+                <img src="${escapeHTML(imageURL(imagen.src))}" alt="${escapeHTML(imagen.alt || "")}" loading="lazy">
+              </button>
               <label class="field">
                 <span class="sr-only">Texto alternativo</span>
                 <input type="text" data-alt="${indice}" value="${escapeHTML(imagen.alt || "")}" placeholder="Texto alternativo" maxlength="160">
@@ -1211,6 +1228,104 @@
   };
   const ocultarProgresoImagen = () => {
     if (els.imageProgress) els.imageProgress.hidden = true;
+  };
+
+  const pintarRecorte = (clientX, clientY) => {
+    const estado = editorRecorteState;
+    if (!estado) return;
+    const { canvas, ctx, data, originalPixels, brushMode } = estado;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.round((clientX - rect.left) * (canvas.width / rect.width));
+    const y = Math.round((clientY - rect.top) * (canvas.height / rect.height));
+    const radioPantalla = Number(els.imageBrushSize?.value || 70);
+    const radio = Math.max(2, Math.round(radioPantalla * (canvas.width / rect.width)));
+    const desdeX = Math.max(0, x - radio);
+    const hastaX = Math.min(canvas.width - 1, x + radio);
+    const desdeY = Math.max(0, y - radio);
+    const hastaY = Math.min(canvas.height - 1, y + radio);
+    const r2 = radio * radio;
+    for (let py = desdeY; py <= hastaY; py += 1) {
+      for (let px = desdeX; px <= hastaX; px += 1) {
+        const dx = px - x;
+        const dy = py - y;
+        if (dx * dx + dy * dy > r2) continue;
+        const i = (py * canvas.width + px) * 4;
+        if (brushMode === "erase") {
+          data.data[i + 3] = 0;
+        } else {
+          data.data[i] = originalPixels[i];
+          data.data[i + 1] = originalPixels[i + 1];
+          data.data[i + 2] = originalPixels[i + 2];
+          data.data[i + 3] = 255;
+        }
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+  };
+
+  const abrirEditorRecorte = async (file, recorteBlob) => {
+    if (!els.imageEditorDialog || !els.imageEditorCanvas) return recorteBlob;
+    const [original, corte] = await Promise.all([cargarImagen(file), cargarImagen(recorteBlob)]);
+    const anchoOriginal = corte.naturalWidth || corte.width;
+    const altoOriginal = corte.naturalHeight || corte.height;
+    const maximo = 1600;
+    const escala = Math.min(1, maximo / Math.max(anchoOriginal, altoOriginal));
+    const ancho = Math.max(1, Math.round(anchoOriginal * escala));
+    const alto = Math.max(1, Math.round(altoOriginal * escala));
+    const canvas = els.imageEditorCanvas;
+    canvas.width = ancho;
+    canvas.height = alto;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(original, 0, 0, ancho, alto);
+    const originalData = ctx.getImageData(0, 0, ancho, alto);
+    const originalPixels = new Uint8ClampedArray(originalData.data);
+    const capa = document.createElement("canvas");
+    capa.width = ancho;
+    capa.height = alto;
+    const capaCtx = capa.getContext("2d", { willReadFrequently: true });
+    capaCtx.drawImage(corte, 0, 0, ancho, alto);
+    const corteData = capaCtx.getImageData(0, 0, ancho, alto);
+    for (let i = 0; i < corteData.data.length; i += 4) {
+      // Mostramos como parte del producto cualquier alfa detectado. La brocha
+      // permite corregir tanto lo que falta como lo que sobra.
+      originalData.data[i + 3] = corteData.data[i + 3] > 2 ? 255 : 0;
+    }
+    ctx.putImageData(originalData, 0, 0);
+    editorRecorteState = {
+      canvas, ctx, data: originalData, originalPixels,
+      brushMode: "restore", drawing: false, undo: [], finalizado: false, resolve: null,
+    };
+    if (els.imageEditorTitle) els.imageEditorTitle.textContent = `Revisar «${file.name}»`;
+    if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
+    els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
+    if (els.imageBrushSize) els.imageBrushSize.value = "70";
+    if (typeof els.imageEditorDialog.showModal === "function") els.imageEditorDialog.showModal();
+    else els.imageEditorDialog.setAttribute("open", "");
+    return new Promise((resolve) => {
+      if (editorRecorteState) editorRecorteState.resolve = resolve;
+    });
+  };
+
+  const finalizarEditorRecorte = (blob) => {
+    const estado = editorRecorteState;
+    if (!estado) return;
+    estado.finalizado = true;
+    const resolver = estado.resolve;
+    estado.resolve = null;
+    els.imageEditorDialog?.close();
+    editorRecorteState = null;
+    if (resolver) resolver(blob);
+  };
+
+  const abrirLightbox = (src, alt) => {
+    if (!els.imageLightbox || !els.imageLightboxImg) return;
+    els.imageLightboxImg.src = imageURL(src);
+    els.imageLightboxImg.alt = alt || "Foto del producto";
+    if (els.imageLightboxCaption) els.imageLightboxCaption.textContent = alt || "";
+    if (typeof els.imageLightbox.showModal === "function") els.imageLightbox.showModal();
+    else els.imageLightbox.setAttribute("open", "");
   };
 
   const recortarSujeto = async (blob, originalFile = null) => {
@@ -1443,8 +1558,15 @@
         setStatus(els.imageStatus, `Quitando el fondo de «${file.name}»…`);
         mostrarProgresoImagen("Procesando foto…", `Quitando el fondo de «${file.name}».`);
         const recorte = await quitarFondo(file);
-        mostrarProgresoImagen("Ajustando el recorte…", "Detectando el producto y centrando la imagen.");
-        const procesada = await recortarSujeto(recorte, file);
+        ocultarProgresoImagen();
+        setStatus(els.imageStatus, "Revisá el recorte y corregilo con la brocha si hace falta.");
+        const editado = await abrirEditorRecorte(file, recorte);
+        if (!editado) {
+          setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
+          continue;
+        }
+        mostrarProgresoImagen("Ajustando el recorte…", "Centrando y optimizando la imagen corregida.");
+        const procesada = await recortarSujeto(editado, file);
         setStatus(els.imageStatus, `Subiendo «${file.name}»…`);
         mostrarProgresoImagen("Subiendo la foto…", "Guardando la imagen recortada en Cloudinary.");
         const url = await subirCloudinary(procesada, "image");
@@ -1542,6 +1664,12 @@
   const manejarClickImagenes = (event) => {
     const producto = catalog?.productos?.find((item) => item.id === selectedId);
     if (!producto) return;
+    const ver = event.target.closest("[data-view-image]");
+    if (ver) {
+      const imagen = producto.imagenes[Number(ver.dataset.viewImage)];
+      if (imagen) abrirLightbox(imagen.src, imagen.alt || producto.nombre);
+      return;
+    }
     const quitar = event.target.closest("[data-remove]");
     if (quitar) {
       producto.imagenes.splice(Number(quitar.dataset.remove), 1);
@@ -2218,6 +2346,67 @@
       els.imageList.addEventListener("click", manejarClickImagenes);
       els.imageList.addEventListener("input", manejarAltImagen);
     }
+    if (els.imageEditorCanvas) {
+      const canvas = els.imageEditorCanvas;
+      canvas.addEventListener("pointerdown", (event) => {
+        if (!editorRecorteState) return;
+        event.preventDefault();
+        canvas.setPointerCapture?.(event.pointerId);
+        editorRecorteState.drawing = true;
+        editorRecorteState.undo.push(new ImageData(new Uint8ClampedArray(editorRecorteState.data.data), canvas.width, canvas.height));
+        if (editorRecorteState.undo.length > 12) editorRecorteState.undo.shift();
+        pintarRecorte(event.clientX, event.clientY);
+      });
+      canvas.addEventListener("pointermove", (event) => {
+        if (editorRecorteState?.drawing) pintarRecorte(event.clientX, event.clientY);
+      });
+      const terminarTrazo = () => { if (editorRecorteState) editorRecorteState.drawing = false; };
+      canvas.addEventListener("pointerup", terminarTrazo);
+      canvas.addEventListener("pointercancel", terminarTrazo);
+      canvas.addEventListener("pointerleave", terminarTrazo);
+    }
+    if (els.imageEditorTools) {
+      els.imageEditorTools.addEventListener("click", (event) => {
+        const boton = event.target.closest("[data-brush]");
+        if (!boton || !editorRecorteState) return;
+        editorRecorteState.brushMode = boton.dataset.brush === "erase" ? "erase" : "restore";
+        els.imageEditorTools.querySelectorAll("[data-brush]").forEach((item) => item.classList.toggle("is-active", item === boton));
+      });
+    }
+    if (els.imageEditorUndo) {
+      els.imageEditorUndo.addEventListener("click", () => {
+        const estado = editorRecorteState;
+        if (!estado) return;
+        const anterior = estado.undo.pop();
+        if (!anterior) return;
+        estado.data.data.set(anterior.data);
+        estado.ctx.putImageData(estado.data, 0, 0);
+      });
+    }
+    if (els.imageEditorAccept) {
+      els.imageEditorAccept.addEventListener("click", () => {
+        const estado = editorRecorteState;
+        if (!estado) return;
+        estado.canvas.toBlob((blob) => {
+          if (blob) finalizarEditorRecorte(blob);
+        }, "image/png");
+      });
+    }
+    const cancelarRecorte = () => finalizarEditorRecorte(null);
+    els.imageEditorClose?.addEventListener("click", cancelarRecorte);
+    els.imageEditorCancel?.addEventListener("click", cancelarRecorte);
+    els.imageEditorDialog?.addEventListener("close", () => {
+      if (!editorRecorteState) return;
+      if (!editorRecorteState.finalizado) finalizarEditorRecorte(null);
+    });
+    els.imageEditorDialog?.addEventListener("click", (event) => {
+      if (event.target === els.imageEditorDialog) cancelarRecorte();
+    });
+    const cerrarLightbox = () => els.imageLightbox?.close();
+    els.imageLightboxClose?.addEventListener("click", cerrarLightbox);
+    els.imageLightbox?.addEventListener("click", (event) => {
+      if (event.target === els.imageLightbox) cerrarLightbox();
+    });
     if (els.videoFiles) {
       els.videoFiles.addEventListener("change", () => procesarVideo(els.videoFiles.files));
     }
