@@ -1235,7 +1235,7 @@
   const mostrarCursorBrocha = (event) => {
     if (!editorRecorteState || !els.imageBrushCursor || !els.imageEditorStage) return;
     const escenario = els.imageEditorStage.getBoundingClientRect();
-    const tamano = Number(els.imageBrushSize?.value || 70) * 2;
+    const tamano = Number(els.imageBrushSize?.value || 36) * 2;
     els.imageBrushCursor.hidden = false;
     els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
     els.imageBrushCursor.style.width = `${tamano}px`;
@@ -1245,7 +1245,7 @@
   };
   const actualizarCursorBrocha = () => {
     if (!els.imageBrushCursor || els.imageBrushCursor.hidden) return;
-    const tamano = Number(els.imageBrushSize?.value || 70) * 2;
+    const tamano = Number(els.imageBrushSize?.value || 36) * 2;
     els.imageBrushCursor.style.width = `${tamano}px`;
     els.imageBrushCursor.style.height = `${tamano}px`;
   };
@@ -1261,7 +1261,7 @@
     if (!rect.width || !rect.height) return;
     const x = Math.round((clientX - rect.left) * (canvas.width / rect.width));
     const y = Math.round((clientY - rect.top) * (canvas.height / rect.height));
-    const radioPantalla = Number(els.imageBrushSize?.value || 70);
+    const radioPantalla = Number(els.imageBrushSize?.value || 36);
     const radio = Math.max(2, Math.round(radioPantalla * (canvas.width / rect.width)));
     const desdeX = Math.max(0, x - radio);
     const hastaX = Math.min(canvas.width - 1, x + radio);
@@ -1311,9 +1311,9 @@
     capaCtx.drawImage(corte, 0, 0, ancho, alto);
     const corteData = capaCtx.getImageData(0, 0, ancho, alto);
     for (let i = 0; i < corteData.data.length; i += 4) {
-      // Mostramos como parte del producto cualquier alfa detectado. La brocha
-      // permite corregir tanto lo que falta como lo que sobra.
-      originalData.data[i + 3] = corteData.data[i + 3] > 2 ? 255 : 0;
+      // Conservamos el alfa real para no convertir el fondo claro en blanco.
+      // La brocha permite reforzar las partes claras o borrar restos.
+      originalData.data[i + 3] = corteData.data[i + 3];
     }
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
@@ -1323,7 +1323,7 @@
     if (els.imageEditorTitle) els.imageEditorTitle.textContent = `Revisar «${file.name}»`;
     if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
     els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
-    if (els.imageBrushSize) els.imageBrushSize.value = "70";
+    if (els.imageBrushSize) els.imageBrushSize.value = "36";
     ocultarCursorBrocha();
     if (typeof els.imageEditorDialog.showModal === "function") els.imageEditorDialog.showModal();
     else els.imageEditorDialog.setAttribute("open", "");
@@ -1387,7 +1387,7 @@
     }
     // El recorte automático puede devolver alfa bajo en telas claras.
     // Usamos un umbral adaptativo y, si hace falta, conservamos cualquier píxel visible.
-    const umbrales = [Math.max(2, Math.round(maxAlfa * 0.018)), 2, 0];
+    const umbrales = [8, 4, 0];
     let caja = null;
     for (const umbral of umbrales) {
       let minX = lienzo.width;
@@ -1411,7 +1411,7 @@
     if (!caja) throw new Error("La imagen quedó vacía después de quitar el fondo.");
     let { minX, minY, maxX, maxY } = caja;
 
-    const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
+    const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.04);
     minX = Math.max(0, minX - margen);
     minY = Math.max(0, minY - margen);
     maxX = Math.min(lienzo.width - 1, maxX + margen);
@@ -1431,16 +1431,6 @@
     const y = Math.round(1010 - altoFinal);
     ctxSalida.imageSmoothingQuality = "high";
     ctxSalida.drawImage(lienzo, minX, minY, ancho, alto, x, y, anchoFinal, altoFinal);
-
-    // El modelo a veces deja la tela clara casi transparente. La volvemos opaca
-    // y eliminamos el ruido de fondo con alfa mínimo.
-    const pixelesSalida = ctxSalida.getImageData(0, 0, salida.width, salida.height);
-    for (let i = 3; i < pixelesSalida.data.length; i += 4) {
-      const alfa = pixelesSalida.data[i];
-      if (alfa === 0) continue;
-      pixelesSalida.data[i] = alfa < 3 ? 0 : 255;
-    }
-    ctxSalida.putImageData(pixelesSalida, 0, 0);
 
     let resultado = await canvasABlob(salida, "image/webp", 0.9);
     if (resultado.size > 300 * 1024) {
