@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=17">
+  <link rel="stylesheet" href="editor.css?v=18">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -382,12 +382,42 @@
     </main>
   </div>
 
+  <dialog class="cloud-image-editor" id="imageEditorDialog" aria-labelledby="imageEditorTitle">
+    <div class="cloud-image-editor__inner">
+      <div class="cloud-image-editor__head">
+        <div>
+          <p class="cloud-eyebrow">Recorte</p>
+          <h2 id="imageEditorTitle">Revisar foto</h2>
+        </div>
+        <button class="cloud-image-editor__close" id="imageEditorClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p class="cloud-image-editor__help" id="imageEditorHelp">Con la brocha podés restaurar partes del producto o borrar restos de fondo. Usá «Restaurar» para recuperar la imagen original.</p>
+      <div class="cloud-image-editor__stage"><canvas id="imageEditorCanvas"></canvas></div>
+      <div class="cloud-image-editor__tools" id="imageEditorTools">
+        <button class="is-active" type="button" data-brush="restore">Restaurar</button>
+        <button type="button" data-brush="erase">Borrar fondo</button>
+        <label>Brocha <input id="imageBrushSize" type="range" min="12" max="220" value="70" step="2"></label>
+        <button type="button" id="imageEditorUndo">Deshacer</button>
+      </div>
+      <div class="cloud-image-editor__actions">
+        <button class="btn btn--ghost" id="imageEditorCancel" type="button">Cancelar</button>
+        <button class="btn" id="imageEditorAccept" type="button">Usar esta imagen</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="cloud-image-lightbox" id="imageLightbox" aria-label="Vista grande de la foto">
+    <button class="cloud-image-lightbox__close" id="imageLightboxClose" type="button" aria-label="Cerrar">×</button>
+    <img id="imageLightboxImg" alt="">
+    <p id="imageLightboxCaption"></p>
+  </dialog>
+
   <div class="cloud-toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=24"></script>
+  <script src="editor.js?v=25"></script>
 </body>
 </html>
