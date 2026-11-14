@@ -92,6 +92,15 @@
     imageLightboxImg: $("#imageLightboxImg"),
     imageLightboxCaption: $("#imageLightboxCaption"),
     imageLightboxClose: $("#imageLightboxClose"),
+    imageFrameDialog: $("#imageFrameDialog"),
+    imageFrameCanvas: $("#imageFrameCanvas"),
+    imageFrameZoom: $("#imageFrameZoom"),
+    imageFrameZoomValue: $("#imageFrameZoomValue"),
+    imageFrameCenter: $("#imageFrameCenter"),
+    imageFrameReset: $("#imageFrameReset"),
+    imageFrameClose: $("#imageFrameClose"),
+    imageFrameCancel: $("#imageFrameCancel"),
+    imageFrameAccept: $("#imageFrameAccept"),
     videoFiles: $("#videoFiles"),
     videoList: $("#videoList"),
     videoStatus: $("#videoStatus"),
@@ -125,6 +134,7 @@
   let removeBackgroundPromise = null;
   let procesandoFotos = false;
   let editorRecorteState = null;
+  let editorEncuadreState = null;
   let categoriasAbiertas = new Set();
   let categoriasAbiertasInicializadas = false;
   let arrastrandoCategoria = null;
@@ -1311,6 +1321,22 @@
       if (alfa < 220 && r > 235 && g > 235 && b > 235) continue;
       mascara[i] = 1;
     }
+    // Si el borde exterior es blanco (fondo que sobrevivió), lo quitamos
+    // aunque el modelo le haya dado alfa alto.
+    for (let pasada = 0; pasada < 2; pasada += 1) {
+      const siguiente = new Uint8Array(mascara);
+      for (let y = 1; y < alto - 1; y += 1) {
+        for (let x = 1; x < ancho - 1; x += 1) {
+          const i = y * ancho + x;
+          if (!mascara[i]) continue;
+          const esBorde = !mascara[i - 1] || !mascara[i + 1] || !mascara[i - ancho] || !mascara[i + ancho];
+          if (!esBorde) continue;
+          const p = i * 4;
+          if (datos[p] > 210 && datos[p + 1] > 210 && datos[p + 2] > 210) siguiente[i] = 0;
+        }
+      }
+      mascara.set(siguiente);
+    }
     if (erosion > 0) {
       let actual = mascara;
       for (let vuelta = 0; vuelta < erosion; vuelta += 1) {
@@ -1394,7 +1420,7 @@
       // Conservamos el alfa original para poder detectar y quitar halos claros.
       originalData.data[i + 3] = corteData.data[i + 3];
     }
-    limpiarAlfa(originalData, ancho, alto, 0);
+    limpiarAlfa(originalData, ancho, alto, 1);
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
       canvas, ctx, data: originalData, originalPixels,
@@ -1409,6 +1435,81 @@
     else els.imageEditorDialog.setAttribute("open", "");
     return new Promise((resolve) => {
       if (editorRecorteState) editorRecorteState.resolve = resolve;
+    });
+  };
+
+  const renderizarEncuadre = () => {
+    const estado = editorEncuadreState;
+    if (!estado) return;
+    const { ctx, imagen, ancho, alto, bbox, baseScale, zoom, offsetX, offsetY } = estado;
+    ctx.clearRect(0, 0, ancho, alto);
+    const escala = baseScale * zoom;
+    const anchoDibujo = bbox.ancho * escala;
+    const altoDibujo = bbox.alto * escala;
+    const x = (ancho - anchoDibujo) / 2 + offsetX;
+    const y = 1010 - altoDibujo + offsetY;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(imagen, bbox.x, bbox.y, bbox.ancho, bbox.alto, x, y, anchoDibujo, altoDibujo);
+  };
+
+  const finalizarEditorEncuadre = (blob) => {
+    const estado = editorEncuadreState;
+    if (!estado) return;
+    estado.finalizado = true;
+    const resolver = estado.resolve;
+    estado.resolve = null;
+    els.imageFrameDialog?.close();
+    editorEncuadreState = null;
+    if (resolver) resolver(blob);
+  };
+
+  const abrirEditorEncuadre = async (blob) => {
+    if (!els.imageFrameDialog || !els.imageFrameCanvas) return blob;
+    const imagen = await cargarImagen(blob);
+    const anchoNatural = imagen.naturalWidth || imagen.width;
+    const altoNatural = imagen.naturalHeight || imagen.height;
+    const temporal = document.createElement("canvas");
+    temporal.width = anchoNatural;
+    temporal.height = altoNatural;
+    const ctxTemporal = temporal.getContext("2d", { willReadFrequently: true });
+    ctxTemporal.drawImage(imagen, 0, 0);
+    const datos = ctxTemporal.getImageData(0, 0, anchoNatural, altoNatural).data;
+    let minX = anchoNatural;
+    let minY = altoNatural;
+    let maxX = 0;
+    let maxY = 0;
+    let encontrado = false;
+    for (let y = 0; y < altoNatural; y += 1) {
+      for (let x = 0; x < anchoNatural; x += 1) {
+        if (datos[(y * anchoNatural + x) * 4 + 3] > 0) {
+          encontrado = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (!encontrado) return blob;
+    const bbox = { x: minX, y: minY, ancho: maxX - minX + 1, alto: maxY - minY + 1 };
+    const ancho = 1200;
+    const alto = 1200;
+    const canvas = els.imageFrameCanvas;
+    canvas.width = ancho;
+    canvas.height = alto;
+    const ctx = canvas.getContext("2d");
+    const baseScale = Math.min(900 / bbox.ancho, 900 / bbox.alto);
+    editorEncuadreState = {
+      ctx, imagen, ancho, alto, bbox, baseScale,
+      zoom: 1, offsetX: 0, offsetY: 0, drawing: false, drag: null, finalizado: false, resolve: null,
+    };
+    if (els.imageFrameZoom) els.imageFrameZoom.value = "100";
+    if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = "100%";
+    renderizarEncuadre();
+    if (typeof els.imageFrameDialog.showModal === "function") els.imageFrameDialog.showModal();
+    else els.imageFrameDialog.setAttribute("open", "");
+    return new Promise((resolve) => {
+      if (editorEncuadreState) editorEncuadreState.resolve = resolve;
     });
   };
 
@@ -1659,8 +1760,13 @@
           setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
           continue;
         }
-        mostrarProgresoImagen("Ajustando el recorte…", "Centrando y optimizando la imagen corregida.");
-        const procesada = await recortarSujeto(editado, file);
+        ocultarProgresoImagen();
+        setStatus(els.imageStatus, "Ajustá el encuadre de la foto.");
+        const procesada = await abrirEditorEncuadre(editado);
+        if (!procesada) {
+          setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
+          continue;
+        }
         setStatus(els.imageStatus, `Subiendo «${file.name}»…`);
         mostrarProgresoImagen("Subiendo la foto…", "Guardando la imagen recortada en Cloudinary.");
         const url = await subirCloudinary(procesada, "image");
@@ -2593,6 +2699,84 @@
     els.imageLightbox?.addEventListener("click", (event) => {
       if (event.target === els.imageLightbox) cerrarLightbox();
     });
+    if (els.imageFrameCanvas) {
+      const canvas = els.imageFrameCanvas;
+      canvas.addEventListener("pointerdown", (event) => {
+        if (!editorEncuadreState) return;
+        event.preventDefault();
+        canvas.setPointerCapture?.(event.pointerId);
+        editorEncuadreState.drawing = true;
+        editorEncuadreState.drag = { x: event.clientX, y: event.clientY, offsetX: editorEncuadreState.offsetX, offsetY: editorEncuadreState.offsetY };
+        canvas.style.cursor = "grabbing";
+      });
+      canvas.addEventListener("pointermove", (event) => {
+        const estado = editorEncuadreState;
+        if (!estado?.drawing || !estado.drag) return;
+        const rect = canvas.getBoundingClientRect();
+        estado.offsetX = estado.drag.offsetX + (event.clientX - estado.drag.x) * (canvas.width / rect.width);
+        estado.offsetY = estado.drag.offsetY + (event.clientY - estado.drag.y) * (canvas.height / rect.height);
+        renderizarEncuadre();
+      });
+      const soltarEncuadre = () => {
+        if (!editorEncuadreState) return;
+        editorEncuadreState.drawing = false;
+        editorEncuadreState.drag = null;
+        canvas.style.cursor = "grab";
+      };
+      canvas.addEventListener("pointerup", soltarEncuadre);
+      canvas.addEventListener("pointercancel", soltarEncuadre);
+      canvas.addEventListener("pointerleave", soltarEncuadre);
+    }
+    if (els.imageFrameZoom) {
+      els.imageFrameZoom.addEventListener("input", () => {
+        if (!editorEncuadreState) return;
+        editorEncuadreState.zoom = Math.max(0.5, Math.min(1.5, Number(els.imageFrameZoom.value) / 100));
+        if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = `${els.imageFrameZoom.value}%`;
+        renderizarEncuadre();
+      });
+    }
+    els.imageFrameCenter?.addEventListener("click", () => {
+      if (!editorEncuadreState) return;
+      editorEncuadreState.offsetX = 0;
+      editorEncuadreState.offsetY = 0;
+      renderizarEncuadre();
+    });
+    els.imageFrameReset?.addEventListener("click", () => {
+      if (!editorEncuadreState) return;
+      editorEncuadreState.zoom = 1;
+      editorEncuadreState.offsetX = 0;
+      editorEncuadreState.offsetY = 0;
+      if (els.imageFrameZoom) els.imageFrameZoom.value = "100";
+      if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = "100%";
+      renderizarEncuadre();
+    });
+    if (els.imageFrameAccept) {
+      els.imageFrameAccept.addEventListener("click", () => {
+        const estado = editorEncuadreState;
+        if (!estado) return;
+        estado.ctx.canvas.toBlob(async (primerBlob) => {
+          if (!primerBlob) return;
+          const canvas = estado.ctx.canvas;
+          let blob = primerBlob;
+          if (blob.size > 300 * 1024) {
+            const reducido = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.8));
+            if (reducido) blob = reducido;
+          }
+          finalizarEditorEncuadre(blob);
+        }, "image/webp", 0.9);
+      });
+    }
+    const cancelarEncuadre = () => finalizarEditorEncuadre(null);
+    els.imageFrameClose?.addEventListener("click", cancelarEncuadre);
+    els.imageFrameCancel?.addEventListener("click", cancelarEncuadre);
+    els.imageFrameDialog?.addEventListener("close", () => {
+      if (!editorEncuadreState) return;
+      if (!editorEncuadreState.finalizado) finalizarEditorEncuadre(null);
+    });
+    els.imageFrameDialog?.addEventListener("click", (event) => {
+      if (event.target === els.imageFrameDialog) cancelarEncuadre();
+    });
+
     if (els.videoFiles) {
       els.videoFiles.addEventListener("change", () => procesarVideo(els.videoFiles.files));
     }
