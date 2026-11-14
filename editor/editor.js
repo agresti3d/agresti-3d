@@ -125,6 +125,12 @@
   let removeBackgroundPromise = null;
   let procesandoFotos = false;
   let editorRecorteState = null;
+  let categoriasAbiertas = new Set();
+  let categoriasAbiertasInicializadas = false;
+  let arrastrandoCategoria = null;
+  let dropCategoria = null;
+  let dropPosicion = null;
+  let dropRaiz = false;
   let toastTimer = null;
   let loginNotice = "";
   let importing = false;
@@ -566,6 +572,17 @@
       : '<p class="cloud-muted">No hay productos con ese nombre.</p>';
   };
 
+  const esDescendienteCategoria = (id, posiblePadre) => {
+    let actual = posiblePadre;
+    let guard = 0;
+    while (actual && guard < 30) {
+      if (actual === id) return true;
+      actual = catalog?.categorias?.find((categoria) => categoria.id === actual)?.padre;
+      guard += 1;
+    }
+    return false;
+  };
+
   const renderCategorias = () => {
     if (!catalog) return;
     const opciones = categoryOptions();
@@ -587,49 +604,75 @@
           .map((categoria) => `<option value="${escapeHTML(categoria.id)}">${escapeHTML(categoria.ruta)}</option>`)
           .join("");
     }
+    if (!categoriasAbiertasInicializadas && catalog.categorias.length) {
+      catalog.categorias.forEach((categoria) => categoriasAbiertas.add(categoria.id));
+      categoriasAbiertasInicializadas = true;
+    }
     if (els.categoryList) {
-      const esDescendiente = (id, posiblePadre) => {
-        let actual = posiblePadre;
-        let guard = 0;
-        while (actual && guard < 30) {
-          if (actual === id) return true;
-          actual = catalog.categorias.find((categoria) => categoria.id === actual)?.padre;
-          guard += 1;
-        }
-        return false;
+      const raiz = catalog.categorias.filter((categoria) => !categoria.padre);
+      const hijasDe = (padre) => catalog.categorias.filter((categoria) => (categoria.padre || null) === (padre || null));
+      const renderNodo = (categoria) => {
+        const hijas = hijasDe(categoria.id);
+        const abierta = categoriasAbiertas.has(categoria.id);
+        const productos = catalog.productos.filter((producto) => categoriasProducto(producto).includes(categoria.id)).length;
+        return `
+          <div class="cloud-tree-node" data-category-node="${escapeHTML(categoria.id)}">
+            <div class="cloud-tree-row" data-category-id="${escapeHTML(categoria.id)}" data-drop-row="${escapeHTML(categoria.id)}">
+              <span class="cloud-tree-drag" draggable="true" data-drag-handle="${escapeHTML(categoria.id)}" role="button" tabindex="0" aria-label="Mover ${escapeHTML(categoria.nombre)}">⠿</span>
+              <button class="cloud-tree-toggle" type="button" data-tree-toggle="${escapeHTML(categoria.id)}" aria-expanded="${hijas.length ? abierta : false}" aria-label="${hijas.length ? (abierta ? "Plegar" : "Desplegar") : "Sin subcategorías"} ${escapeHTML(categoria.nombre)}">${hijas.length ? (abierta ? "▾" : "▸") : '<span class="cloud-tree-leaf">•</span>'}</button>
+              <input class="cloud-category__name" type="text" data-category-name="${escapeHTML(categoria.id)}" value="${escapeHTML(categoria.nombre)}" maxlength="60" aria-label="Nombre de la categoría">
+              <span class="cloud-tree-count" title="${productos} producto(s)">${productos}</span>
+              <button type="button" class="cloud-category__cover-button" data-category-cover-open="${escapeHTML(categoria.id)}" aria-label="Cambiar portada de ${escapeHTML(categoria.nombre)}">
+                ${portadaPreview(categoria) ? `<img src="${escapeHTML(imageURL(portadaPreview(categoria)))}" alt="" loading="lazy">` : '<span class="cloud-category__cover-empty">Sin foto</span>'}
+                <span>Portada</span>
+              </button>
+              <button type="button" class="cloud-tree-delete" data-delete-category="${escapeHTML(categoria.id)}" aria-label="Eliminar ${escapeHTML(categoria.nombre)}" ${productos ? "disabled title='Tiene productos'" : ""}>×</button>
+            </div>
+            ${hijas.length && abierta ? `<div class="cloud-tree-children" role="group">${hijas.map(renderNodo).join("")}</div>` : ""}
+          </div>`;
       };
-      els.categoryList.innerHTML = opciones.length
-        ? opciones
-            .map((categoria) => {
-              const productos = catalog.productos.filter((producto) => categoriasProducto(producto).includes(categoria.id)).length;
-              const padres = opciones.filter(
-                (opcion) => opcion.id !== categoria.id && !esDescendiente(categoria.id, opcion.id)
-              );
-              return `
-                <div class="cloud-category">
-                  <input class="cloud-category__name" type="text" data-category-name="${escapeHTML(categoria.id)}" value="${escapeHTML(categoria.nombre)}" maxlength="60" aria-label="Nombre de la categoría">
-                  <label class="cloud-category__parent">
-                    <span class="sr-only">Categoría padre de ${escapeHTML(categoria.nombre)}</span>
-                    <select data-parent-category="${escapeHTML(categoria.id)}">
-                      <option value="">Nivel principal</option>
-                      ${padres
-                        .map(
-                          (opcion) =>
-                            `<option value="${escapeHTML(opcion.id)}" ${opcion.id === categoria.padre ? "selected" : ""}>${escapeHTML(opcion.ruta)}</option>`
-                        )
-                        .join("")}
-                    </select>
-                  </label>
-                  <button type="button" class="cloud-category__cover-button" data-category-cover-open="${escapeHTML(categoria.id)}" aria-label="Cambiar portada de ${escapeHTML(categoria.nombre)}">
-                    ${portadaPreview(categoria) ? `<img src="${escapeHTML(imageURL(portadaPreview(categoria)))}" alt="" loading="lazy">` : '<span class="cloud-category__cover-empty">Sin foto</span>'}
-                    <span>Portada</span>
-                  </button>
-                  <button type="button" data-delete-category="${escapeHTML(categoria.id)}" aria-label="Eliminar ${escapeHTML(categoria.nombre)}" ${productos ? "disabled title='Tiene productos'" : ""}>×</button>
-                </div>`;
-            })
-            .join("")
+      els.categoryList.innerHTML = raiz.length
+        ? `<div class="cloud-category-tree">${raiz.map(renderNodo).join("")}</div><div class="cloud-tree-root-drop" data-root-drop>Soltá acá para mover a nivel principal</div>`
         : '<p class="cloud-muted">Todavía no hay categorías.</p>';
     }
+  };
+
+  const moverCategoria = (id, padre, referenciaId = null, posicion = null) => {
+    if (!catalog) return;
+    if (padre === id || esDescendienteCategoria(id, padre)) {
+      toast("No se puede mover una categoría dentro de sí misma.", "error");
+      return;
+    }
+    const origen = catalog.categorias.findIndex((categoria) => categoria.id === id);
+    if (origen < 0) return;
+    const [categoria] = catalog.categorias.splice(origen, 1);
+    categoria.padre = padre || null;
+    if (referenciaId) {
+      const indiceReferencia = catalog.categorias.findIndex((item) => item.id === referenciaId);
+      if (indiceReferencia >= 0) {
+        catalog.categorias.splice(indiceReferencia + (posicion === "after" ? 1 : 0), 0, categoria);
+      } else {
+        catalog.categorias.push(categoria);
+      }
+    } else {
+      catalog.categorias.push(categoria);
+    }
+    if (padre) categoriasAbiertas.add(padre);
+    categoriasAbiertas.add(id);
+    dirty = true;
+    renderCategorias();
+    renderProductos();
+    programarAutoguardado();
+    setStatus(els.saveStatus, "Categoría movida. Guardá el borrador para confirmarlo.");
+  };
+
+  const limpiarDropCategoria = () => {
+    dropCategoria = null;
+    dropPosicion = null;
+    dropRaiz = false;
+    els.categoryList?.querySelectorAll(".cloud-tree-row").forEach((fila) => fila.classList.remove("drop-before", "drop-after", "drop-inside"));
+    els.categoryList?.querySelector(".cloud-tree-root-drop")?.classList.remove("is-over");
+    els.categoryList?.classList.remove("is-dragging");
   };
 
   const renderBranches = (producto = null) => {
@@ -1689,6 +1732,8 @@
     }
     const padre = els.categoryParent.value || null;
     catalog.categorias.push({ id, nombre, padre });
+    categoriasAbiertas.add(id);
+    if (padre) categoriasAbiertas.add(padre);
     dirty = true;
     els.categoryForm.reset();
     renderCategorias();
@@ -1706,6 +1751,7 @@
       return;
     }
     catalog.categorias = catalog.categorias.filter((categoria) => categoria.id !== id);
+    categoriasAbiertas.delete(id);
     dirty = true;
     renderCategorias();
     programarAutoguardado();
@@ -2311,6 +2357,14 @@
     }
     if (els.categoryList) {
       els.categoryList.addEventListener("click", (event) => {
+        const toggle = event.target.closest("[data-tree-toggle]");
+        if (toggle) {
+          const id = toggle.dataset.treeToggle;
+          if (categoriasAbiertas.has(id)) categoriasAbiertas.delete(id);
+          else categoriasAbiertas.add(id);
+          renderCategorias();
+          return;
+        }
         const portadaBoton = event.target.closest("[data-category-cover-open]");
         if (portadaBoton) {
           abrirPortada(portadaBoton.dataset.categoryCoverOpen);
@@ -2352,6 +2406,77 @@
     if (els.imageFiles) {
       els.imageFiles.addEventListener("change", () => procesarImagenes(els.imageFiles.files));
     }
+    if (els.categoryList) {
+      els.categoryList.addEventListener("dragstart", (event) => {
+        const handle = event.target.closest("[data-drag-handle]");
+        if (!handle) {
+          event.preventDefault();
+          return;
+        }
+        arrastrandoCategoria = handle.dataset.dragHandle;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", arrastrandoCategoria);
+        els.categoryList.classList.add("is-dragging");
+        handle.closest(".cloud-tree-row")?.classList.add("is-dragging-row");
+      });
+      els.categoryList.addEventListener("dragover", (event) => {
+        if (!arrastrandoCategoria) return;
+        const fila = event.target.closest("[data-drop-row]");
+        const raizDrop = event.target.closest("[data-root-drop]");
+        if (raizDrop) {
+          event.preventDefault();
+          els.categoryList.querySelectorAll(".cloud-tree-row").forEach((item) => item.classList.remove("drop-before", "drop-after", "drop-inside"));
+          dropCategoria = null;
+          dropPosicion = null;
+          dropRaiz = true;
+          raizDrop.classList.add("is-over");
+          return;
+        }
+        if (!fila) return;
+        const targetId = fila.dataset.dropRow;
+        if (targetId === arrastrandoCategoria) return;
+        const rect = fila.getBoundingClientRect();
+        const relativo = (event.clientY - rect.top) / rect.height;
+        const posicion = relativo < 0.28 ? "before" : relativo > 0.72 ? "after" : "inside";
+        const padre = posicion === "inside" ? targetId : (catalog.categorias.find((categoria) => categoria.id === targetId)?.padre || null);
+        if (padre && (padre === arrastrandoCategoria || esDescendienteCategoria(arrastrandoCategoria, padre))) return;
+        event.preventDefault();
+        els.categoryList.querySelectorAll(".cloud-tree-row").forEach((item) => item.classList.remove("drop-before", "drop-after", "drop-inside"));
+        els.categoryList.querySelector("[data-root-drop]")?.classList.remove("is-over");
+        dropCategoria = targetId;
+        dropPosicion = posicion;
+        dropRaiz = false;
+        fila.classList.add(`drop-${posicion}`);
+      });
+      els.categoryList.addEventListener("dragleave", (event) => {
+        if (event.relatedTarget && els.categoryList.contains(event.relatedTarget)) return;
+        if (!event.relatedTarget) {
+          const fila = event.target.closest(".cloud-tree-row");
+          fila?.classList.remove("drop-before", "drop-after", "drop-inside");
+        }
+      });
+      els.categoryList.addEventListener("drop", (event) => {
+        if (!arrastrandoCategoria) return;
+        event.preventDefault();
+        if (dropRaiz) {
+          moverCategoria(arrastrandoCategoria, null);
+        } else if (dropCategoria) {
+          const target = catalog.categorias.find((categoria) => categoria.id === dropCategoria);
+          if (target) {
+            if (dropPosicion === "inside") moverCategoria(arrastrandoCategoria, target.id);
+            else moverCategoria(arrastrandoCategoria, target.padre || null, target.id, dropPosicion);
+          }
+        }
+        arrastrandoCategoria = null;
+        limpiarDropCategoria();
+      });
+      els.categoryList.addEventListener("dragend", () => {
+        els.categoryList.querySelectorAll(".is-dragging-row").forEach((fila) => fila.classList.remove("is-dragging-row"));
+        arrastrandoCategoria = null;
+        limpiarDropCategoria();
+      });
+    }
+
 
     const configurarDropzone = (id, procesar) => {
       const zona = document.getElementById(id);
