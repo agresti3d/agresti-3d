@@ -7,6 +7,7 @@ window.AGRESTI_CLOUD = {
     projectId: "agresti-3d",
   },
   adminEmail: "agresti.3d@gmail.com",
+  adminEmails: ["agresti.3d@gmail.com", "leoagresti9@gmail.com"],
   cloudinary: {
     cloudName: "ejl0yvoo",
     uploadPreset: "agresti3d_unsigned",
