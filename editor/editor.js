@@ -2421,6 +2421,11 @@
       });
       els.categoryList.addEventListener("dragover", (event) => {
         if (!arrastrandoCategoria) return;
+        els.categoryList.querySelectorAll(".cloud-tree-row").forEach((item) => item.classList.remove("drop-before", "drop-after", "drop-inside"));
+        els.categoryList.querySelector("[data-root-drop]")?.classList.remove("is-over");
+        dropCategoria = null;
+        dropPosicion = null;
+        dropRaiz = false;
         const fila = event.target.closest("[data-drop-row]");
         const raizDrop = event.target.closest("[data-root-drop]");
         if (raizDrop) {
