@@ -1323,7 +1323,7 @@
     }
     // Si el borde exterior es blanco (fondo que sobrevivió), lo quitamos
     // aunque el modelo le haya dado alfa alto.
-    for (let pasada = 0; pasada < 2; pasada += 1) {
+    for (let pasada = 0; pasada < 3; pasada += 1) {
       const siguiente = new Uint8Array(mascara);
       for (let y = 1; y < alto - 1; y += 1) {
         for (let x = 1; x < ancho - 1; x += 1) {
@@ -1420,7 +1420,7 @@
       // Conservamos el alfa original para poder detectar y quitar halos claros.
       originalData.data[i + 3] = corteData.data[i + 3];
     }
-    limpiarAlfa(originalData, ancho, alto, 1);
+    limpiarAlfa(originalData, ancho, alto, 2);
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
       canvas, ctx, data: originalData, originalPixels,
