@@ -907,3 +907,51 @@
 .cloud-brush-cursor::after { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.9); transform: translate(-50%, -50%); }
 .cloud-brush-cursor[data-mode="erase"] { border-color: #ff9b86; background: rgba(255,80,60,.13); }
 .cloud-brush-cursor[hidden] { display: none; }
+/* Árbol de categorías */
+.cloud-category-tree { display: grid; gap: 4px; }
+.cloud-tree-children { display: grid; gap: 4px; margin-left: 1.1rem; padding-left: .55rem; border-left: 1px solid var(--cloud-line); }
+.cloud-tree-row {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  min-height: 42px;
+  padding: .27rem .38rem;
+  border: 1px solid var(--cloud-line);
+  border-radius: 7px;
+  background: rgba(255,255,255,.022);
+  transition: border-color .15s ease, background-color .15s ease, opacity .15s ease;
+}
+.cloud-tree-row:hover { border-color: var(--cloud-line-strong); background: rgba(255,255,255,.04); }
+.cloud-tree-row.is-dragging-row { opacity: .38; }
+.cloud-tree-drag { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 5px; color: var(--cloud-muted); font-size: 1rem; line-height: 1; cursor: grab; user-select: none; }
+.cloud-tree-drag:active { cursor: grabbing; }
+.cloud-tree-drag:hover { background: rgba(255,255,255,.06); color: var(--cloud-ink); }
+.cloud-tree-toggle { display: grid; place-items: center; width: 32px; height: 32px; flex: none; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--cloud-muted); font-size: .9rem; cursor: pointer; }
+.cloud-tree-toggle:hover { background: rgba(255,255,255,.06); color: var(--cloud-ink); }
+.cloud-tree-leaf { color: var(--cloud-line-strong); font-size: 1.15rem; line-height: 1; }
+.cloud-tree-row .cloud-category__name { flex: 1; min-width: 0; height: 34px; padding: .2rem .4rem; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--cloud-ink); font: inherit; font-size: .78rem; }
+.cloud-tree-row .cloud-category__name:hover { border-color: var(--cloud-line); }
+.cloud-tree-row .cloud-category__name:focus { border-color: var(--cloud-accent); outline: none; background: rgba(7,15,31,.4); }
+.cloud-tree-count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; flex: none; padding: 0 .4rem; border: 1px solid var(--cloud-line); border-radius: 999px; color: var(--cloud-muted); font-size: .62rem; }
+.cloud-tree-row .cloud-category__cover-button { max-width: 112px; flex: none; }
+.cloud-tree-row .cloud-category__cover-button span:last-child { font-size: .64rem; }
+.cloud-tree-delete { display: grid; place-items: center; width: 32px; height: 32px; flex: none; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--cloud-danger); font-size: 1rem; cursor: pointer; }
+.cloud-tree-delete:hover { background: rgba(255,120,110,.12); }
+.cloud-tree-delete:disabled { cursor: not-allowed; opacity: .28; }
+.cloud-tree-row.drop-before, .cloud-tree-row.drop-after { position: relative; }
+.cloud-tree-row.drop-before::before, .cloud-tree-row.drop-after::after { content: ""; position: absolute; left: .45rem; right: .45rem; height: 2px; border-radius: 2px; background: var(--cloud-accent); }
+.cloud-tree-row.drop-before::before { top: -4px; }
+.cloud-tree-row.drop-after::after { bottom: -4px; }
+.cloud-tree-row.drop-inside { border-color: var(--cloud-accent); background: rgba(255,106,61,.12); box-shadow: 0 0 0 1px var(--cloud-accent); }
+.cloud-tree-root-drop { display: none; align-items: center; justify-content: center; min-height: 44px; border: 1px dashed var(--cloud-line-strong); border-radius: 8px; color: var(--cloud-muted); font-size: .72rem; }
+.cloud-category-list.is-dragging .cloud-tree-root-drop { display: flex; }
+.cloud-tree-root-drop.is-over { border-color: var(--cloud-accent); background: rgba(255,106,61,.1); color: var(--cloud-accent); }
+@media (max-width: 720px) {
+  .cloud-tree-children { margin-left: .65rem; padding-left: .35rem; }
+  .cloud-tree-count { display: none; }
+  .cloud-tree-row .cloud-category__cover-button { width: 40px; padding: .2rem; }
+  .cloud-tree-row .cloud-category__cover-button span:last-child { display: none; }
+  .cloud-tree-row .cloud-category__cover-button img { width: 26px; height: 26px; }
+  .cloud-tree-row .cloud-category__cover-empty { width: 26px; height: 26px; font-size: .5rem; }
+  .cloud-tree-drag, .cloud-tree-toggle, .cloud-tree-delete { width: 30px; height: 30px; }
+}
