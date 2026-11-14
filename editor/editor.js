@@ -3,7 +3,12 @@
 
   const CONFIG = window.AGRESTI_CLOUD || {};
   const FIREBASE_CONFIG = CONFIG.firebase || {};
-  const ADMIN_EMAIL = String(CONFIG.adminEmail || "").toLowerCase();
+  const ADMIN_EMAILS = [
+    ...(Array.isArray(CONFIG.adminEmails) ? CONFIG.adminEmails : []),
+    CONFIG.adminEmail,
+  ]
+    .map((email) => String(email || "").trim().toLowerCase())
+    .filter(Boolean);
   const CLOUDINARY = CONFIG.cloudinary || {};
   const CATALOG_DOC = "catalogo";
   const DRAFT_DOC = "borrador";
@@ -398,8 +403,8 @@
   };
 
   const verificarAdmin = (user) => {
-    const email = String(user?.email || "").toLowerCase();
-    return Boolean(ADMIN_EMAIL) && email === ADMIN_EMAIL;
+    const email = String(user?.email || "").trim().toLowerCase();
+    return ADMIN_EMAILS.includes(email);
   };
 
   const manejarSesion = async (user) => {
