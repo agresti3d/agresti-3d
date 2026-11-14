@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=22">
+  <link rel="stylesheet" href="editor.css?v=23">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -409,6 +409,29 @@
     </div>
   </dialog>
 
+  <dialog class="cloud-image-frame" id="imageFrameDialog" aria-labelledby="imageFrameTitle">
+    <div class="cloud-image-editor__inner">
+      <div class="cloud-image-editor__head">
+        <div>
+          <p class="cloud-eyebrow">Encuadre</p>
+          <h2 id="imageFrameTitle">Ajustar la foto</h2>
+        </div>
+        <button class="cloud-image-editor__close" id="imageFrameClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p class="cloud-image-editor__help">Arrastrá la figura para moverla dentro del encuadre. Usá el zoom para agrandarla o achicarla.</p>
+      <div class="cloud-image-editor__stage cloud-image-frame__stage"><canvas id="imageFrameCanvas"></canvas></div>
+      <div class="cloud-image-editor__tools">
+        <label class="cloud-zoom-control">Zoom <input id="imageFrameZoom" type="range" min="50" max="150" value="100" step="1"> <output id="imageFrameZoomValue">100%</output></label>
+        <button type="button" id="imageFrameCenter">Centrar</button>
+        <button type="button" id="imageFrameReset">Restablecer</button>
+      </div>
+      <div class="cloud-image-editor__actions">
+        <button class="btn btn--ghost" id="imageFrameCancel" type="button">Cancelar</button>
+        <button class="btn" id="imageFrameAccept" type="button">Guardar foto</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="cloud-image-lightbox" id="imageLightbox" aria-label="Vista grande de la foto">
     <button class="cloud-image-lightbox__close" id="imageLightboxClose" type="button" aria-label="Cerrar">×</button>
     <img id="imageLightboxImg" alt="">
@@ -421,6 +444,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=1"></script>
-  <script src="editor.js?v=30"></script>
+  <script src="editor.js?v=31"></script>
 </body>
 </html>
