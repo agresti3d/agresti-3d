@@ -2,37 +2,88 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function esAdmin() {
+    // Único administrador principal: puede crear usuarios y asignar permisos.
+    function esAdminPrincipal() {
       return request.auth != null
-        && request.auth.token.email in [
-          'agresti.3d@gmail.com',
-          'leoagresti9@gmail.com'
-        ];
+        && request.auth.token.email == 'agresti.3d@gmail.com';
+    }
+
+    // Cuenta heredada mientras todavía no tiene permisos guardados.
+    // Se mantiene con acceso solo a Productos para no perder el acceso actual.
+    function esEditorHeredado() {
+      return request.auth != null
+        && request.auth.token.email == 'leoagresti9@gmail.com';
+    }
+
+    function tieneDocEditor() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/editores/$(request.auth.token.email));
+    }
+
+    function datosEditor() {
+      return get(/databases/$(database)/documents/editores/$(request.auth.token.email)).data;
+    }
+
+    function editorActivo() {
+      return request.auth != null && (
+        esAdminPrincipal()
+        || (tieneDocEditor() && datosEditor().activo == true)
+        || (!tieneDocEditor() && esEditorHeredado())
+      );
+    }
+
+    function permisoEditor(seccion) {
+      return esAdminPrincipal()
+        || (tieneDocEditor() && datosEditor().activo == true && datosEditor().permisos[seccion] == true)
+        || (!tieneDocEditor() && esEditorHeredado() && seccion == 'productos');
+    }
+
+    function puedePublicar() {
+      return esAdminPrincipal()
+        || (tieneDocEditor() && datosEditor().activo == true && datosEditor().puedePublicar == true);
+    }
+
+    function puedeEditarCatalogo() {
+      return esAdminPrincipal() || (
+        editorActivo() && (
+          permisoEditor('productos')
+          || permisoEditor('categorias')
+          || permisoEditor('sucursales')
+        )
+      );
+    }
+
+    // Los permisos de cada editor son privados: el principal los administra,
+    // cada editor puede leer el suyo para cargar su interfaz.
+    match /editores/{email} {
+      allow read: if esAdminPrincipal()
+        || (request.auth != null && request.auth.token.email == email);
+      allow write: if esAdminPrincipal();
     }
 
     // El sitio público lee solamente la versión publicada.
     match /catalogo/publicado {
       allow read: if true;
-      allow write: if esAdmin();
+      allow write: if puedePublicar();
     }
 
-    // El borrador es privado del administrador.
+    // El borrador es privado de los editores activos.
     match /catalogo/borrador {
-      allow read, write: if esAdmin();
+      allow read: if editorActivo();
+      allow write: if puedeEditarCatalogo();
     }
 
     // Copia de la publicación inmediatamente anterior, para poder deshacer.
     match /catalogo/publicado_anterior {
-      allow read, write: if esAdmin();
+      allow read, write: if esAdminPrincipal() || permisoEditor('herramientas');
     }
 
     // Historial automático de versiones del catálogo.
     match /catalogo_historial/{version} {
-      allow read, create, delete: if esAdmin();
+      allow read, create, delete: if esAdminPrincipal() || permisoEditor('herramientas');
     }
 
     // Reseñas enviadas por clientes: se crean sin cuenta y quedan pendientes.
-    // Solo el administrador puede leerlas, aprobarlas o borrarlas.
     function resenaValida() {
       return request.resource.data.productoId is string
         && request.resource.data.productoId.size() > 0
@@ -51,29 +102,28 @@ service cloud.firestore {
     }
 
     // Pedidos: se crean desde el carrito sin cuenta. Se puede leer un pedido
-    // puntual con su código, pero no listar todos; el admin sí puede listar
-    // y actualizar estados.
+    // puntual con su código, pero no listar todos; los editores de pedidos sí.
     match /pedidos/{codigo} {
       allow get: if true;
-      allow list: if esAdmin();
+      allow list: if esAdminPrincipal() || permisoEditor('pedidos');
       allow create: if request.resource.data.codigo == codigo
         && request.resource.data.estado == 'pendiente'
         && request.resource.data.total is int
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0
         && request.resource.data.items.size() <= 100;
-      allow update, delete: if esAdmin();
+      allow update, delete: if esAdminPrincipal() || permisoEditor('pedidos');
     }
 
-    // Analítica anónima: nadie puede leerla desde la web, solo el administrador.
+    // Analítica anónima: nadie puede leerla desde la web, solo el principal.
     match /eventos/{evento} {
       allow create: if request.resource.data.evento is string
         && request.resource.data.evento.size() > 0
         && request.resource.data.evento.size() <= 60;
-      allow read: if esAdmin();
+      allow read: if esAdminPrincipal();
     }
 
-    // Avisos de reposición: se crean sin cuenta y los lee el administrador.
+    // Avisos de reposición: los crea el público y los lee quien edita productos.
     match /avisosStock/{aviso} {
       allow create: if request.resource.data.productoId is string
         && request.resource.data.productoId.size() > 0
@@ -81,18 +131,17 @@ service cloud.firestore {
         && request.resource.data.contacto.size() > 0
         && request.resource.data.contacto.size() <= 120
         && request.resource.data.estado == 'pendiente';
-      allow read: if esAdmin();
+      allow read: if esAdminPrincipal() || permisoEditor('productos');
     }
 
     match /resenas/{resena} {
       allow create: if resenaValida();
-      allow read, update, delete: if esAdmin();
+      allow read, update, delete: if esAdminPrincipal() || permisoEditor('productos');
     }
 
     // Configuración privada (token de GitHub para disparar el SEO).
-    // Solo el administrador puede leerla; se escribe desde la consola.
     match /config/{documento} {
-      allow read: if esAdmin();
+      allow read: if esAdminPrincipal();
       allow write: if false;
     }
   }
