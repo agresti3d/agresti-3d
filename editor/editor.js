@@ -492,7 +492,6 @@
   const puede = (seccion) => Boolean(currentAccess?.principal || currentAccess?.permisos?.[seccion]);
   const puedeEditarCatalogo = () => Boolean(currentAccess?.principal || ["productos", "categorias", "sucursales"].some((seccion) => puede(seccion)));
   const puedePublicarCambios = () => Boolean(currentAccess?.principal || currentAccess?.puedePublicar);
-
   const primerTabPermitida = () => SECCIONES_EDITOR.find((seccion) => puede(seccion.id))?.id || "";
   const tabPermitida = (nombre) => puede(nombre);
 
@@ -578,6 +577,2466 @@
       await cargarCatalogo();
     } catch (error) {
       toast(`No se pudo cargar el catálogo: ${firebaseErrorMessage(error)}`, "error");
+    }
+  };
+
+  const conTiempoMaximo = (promesa, milisegundos = 20000) =>
+    Promise.race([
+      promesa,
+      new Promise((_, rechazar) =>
+        window.setTimeout(
+          () => rechazar(Object.assign(new Error("Tiempo de espera agotado."), { code: "auth/timeout" })),
+          milisegundos
+        )
+      ),
+    ]);
+
+  const login = async (event) => {
+    event.preventDefault();
+    const email = els.loginEmail.value.trim();
+    const password = els.loginPassword.value;
+    if (!email || !password) {
+      setStatus(els.loginStatus, "Completá email y contraseña.", "error");
+      return;
+    }
+    els.loginButton.disabled = true;
+    setStatus(els.loginStatus, "Ingresando…");
+    try {
+      await conTiempoMaximo(auth.signInWithEmailAndPassword(email, password));
+    } catch (error) {
+      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
+    } finally {
+      els.loginButton.disabled = false;
+    }
+  };
+
+  const resetPassword = async () => {
+    const email = els.loginEmail.value.trim();
+    if (!email) {
+      setStatus(els.loginStatus, "Escribí tu email para enviarte el enlace.", "error");
+      return;
+    }
+    try {
+      await auth.sendPasswordResetEmail(email);
+      setStatus(els.loginStatus, "Te enviamos un email para restablecer la contraseña.");
+    } catch (error) {
+      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
+    }
+  };
+
+  const leerDocumento = async (id) => {
+    const snap = await db.collection(CATALOG_DOC).doc(id).get();
+    if (!snap.exists) return null;
+    const json = snap.data()?.json;
+    if (typeof json !== "string") return null;
+    try {
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  };
+
+  const normalizarCatalogo = (data) => ({
+    sucursales: Array.isArray(data?.sucursales) ? data.sucursales : [],
+    categorias: Array.isArray(data?.categorias) ? data.categorias : [],
+    productos: (Array.isArray(data?.productos) ? data.productos : []).map((producto) => {
+      const categorias = categoriasProducto(producto);
+      return { ...producto, categoria: categorias[0] || "", categorias };
+    }),
+  });
+
+  const cargarCatalogo = async () => {
+    setStatus(els.saveStatus, "Cargando catálogo…");
+    let data = await leerDocumento(DRAFT_DOC);
+    let origen = "borrador";
+    if (!data) {
+      data = await leerDocumento(PUBLISHED_DOC);
+      origen = "publicado";
+    }
+    if (!data) {
+      const respuesta = await fetch("../data/catalog.json", { cache: "no-store" });
+      if (!respuesta.ok) throw new Error("No se encontró el catálogo inicial.");
+      data = await respuesta.json();
+      origen = "catálogo inicial";
+    }
+    catalog = normalizarCatalogo(data);
+    const idsMigrados = migrarIdsProductos(catalog);
+    ultimaHuellaHistorial = huellaTexto(JSON.stringify(catalog));
+    ultimoTiempoHistorial = Date.now();
+    selectedId = null;
+    creating = false;
+    query = "";
+    if (els.searchProducts) els.searchProducts.value = "";
+    renderCategorias();
+    renderSucursales();
+    renderProductos();
+    actualizarMetaExportacion();
+    mostrarFormulario(false);
+    activarFormTab("medios");
+    activarCloudTab("productos");
+    if (idsMigrados) {
+      dirty = true;
+      programarAutoguardado();
+      setStatus(els.saveStatus, `Catálogo cargado desde ${origen}. Se corrigieron ${idsMigrados} ID provisorios; guardá el borrador para confirmarlo.`, "success");
+    } else {
+      setStatus(els.saveStatus, `Catálogo cargado desde ${origen}.`);
+      dirty = false;
+    }
+    advertirCloudinary();
+  };
+
+  const advertirCloudinary = () => {
+    if (!els.appView || CLOUDINARY.cloudName) return;
+    if ($("#cloudinaryWarning")) return;
+    const banner = document.createElement("div");
+    banner.id = "cloudinaryWarning";
+    banner.className = "cloud-banner";
+    banner.style.margin = "1rem";
+    banner.innerHTML =
+      "<span><strong>Cloudinary no está configurado.</strong> Completá <code>cloudName</code> en <code>editor/cloud-config.js</code> para subir fotos y videos.</span>";
+    const shell = $(".cloud-shell");
+    if (shell?.parentNode) shell.parentNode.insertBefore(banner, shell);
+  };
+
+  const renderProductos = () => {
+    if (!els.productList) return;
+    const termino = query.trim().toLocaleLowerCase("es-AR");
+    const categoriasFiltro = filterCategory
+      ? (() => {
+          const ids = new Set();
+          const agregar = (id) => {
+            ids.add(id);
+            (catalog?.categorias || [])
+              .filter((categoria) => categoria.padre === id)
+              .forEach((categoria) => agregar(categoria.id));
+          };
+          agregar(filterCategory);
+          return ids;
+        })()
+      : null;
+    const productos = (catalog?.productos || []).filter((producto) => {
+      const coincideTexto = termino
+        ? producto.nombre.toLocaleLowerCase("es-AR").includes(termino)
+        : true;
+      const coincideCategoria = categoriasFiltro
+        ? categoriasProducto(producto).some((id) => categoriasFiltro.has(id))
+        : true;
+      return coincideTexto && coincideCategoria;
+    });
+    if (els.productCount) {
+      const total = catalog?.productos?.length || 0;
+      els.productCount.textContent = `${total} ${total === 1 ? "producto" : "productos"}`;
+    }
+    els.productList.innerHTML = productos.length
+      ? productos
+          .map((producto) => {
+            const imagen = producto.imagenes?.[0]?.src;
+            return `
+              <button class="cloud-product" type="button" data-id="${escapeHTML(producto.id)}" aria-current="${producto.id === selectedId}">
+                ${
+                  imagen
+                    ? `<img src="${escapeHTML(imageURL(imagen))}" alt="" loading="lazy">`
+                    : '<span class="cloud-product__placeholder" aria-hidden="true"></span>'
+                }
+                <span>
+                  <span class="cloud-product__name">${escapeHTML(producto.nombre)}</span>
+                  <span class="cloud-product__meta">${escapeHTML(categoriasProducto(producto).map(categoryPath).filter(Boolean).join(" · ") || "Sin categoría")}</span>
+                </span>
+              </button>`;
+          })
+          .join("")
+      : '<p class="cloud-muted">No hay productos con ese nombre.</p>';
+  };
+
+  const esDescendienteCategoria = (id, posiblePadre) => {
+    let actual = posiblePadre;
+    let guard = 0;
+    while (actual && guard < 30) {
+      if (actual === id) return true;
+      actual = catalog?.categorias?.find((categoria) => categoria.id === actual)?.padre;
+      guard += 1;
+    }
+    return false;
+  };
+
+  const renderCategorias = () => {
+    if (!catalog) return;
+    const opciones = categoryOptions();
+    renderCategoriaChecks();
+    if (els.categoryFilter) {
+      const valor = filterCategory;
+      els.categoryFilter.innerHTML =
+        '<option value="">Todas las categorías</option>' +
+        opciones
+          .map((categoria) => `<option value="${escapeHTML(categoria.id)}">${escapeHTML(categoria.ruta)}</option>`)
+          .join("");
+      els.categoryFilter.value = opciones.some((categoria) => categoria.id === valor) ? valor : "";
+      filterCategory = els.categoryFilter.value;
+    }
+    if (els.categoryParent) {
+      els.categoryParent.innerHTML =
+        '<option value="">Nivel principal</option>' +
+        opciones
+          .map((categoria) => `<option value="${escapeHTML(categoria.id)}">${escapeHTML(categoria.ruta)}</option>`)
+          .join("");
+    }
+    if (!categoriasAbiertasInicializadas && catalog.categorias.length) {
+      catalog.categorias.forEach((categoria) => categoriasAbiertas.add(categoria.id));
+      categoriasAbiertasInicializadas = true;
+    }
+    if (els.categoryList) {
+      const raiz = catalog.categorias.filter((categoria) => !categoria.padre);
+      const hijasDe = (padre) => catalog.categorias.filter((categoria) => (categoria.padre || null) === (padre || null));
+      const renderNodo = (categoria) => {
+        const hijas = hijasDe(categoria.id);
+        const abierta = categoriasAbiertas.has(categoria.id);
+        const productos = catalog.productos.filter((producto) => categoriasProducto(producto).includes(categoria.id)).length;
+        return `
+          <div class="cloud-tree-node" data-category-node="${escapeHTML(categoria.id)}">
+            <div class="cloud-tree-row" data-category-id="${escapeHTML(categoria.id)}" data-drop-row="${escapeHTML(categoria.id)}">
+              <span class="cloud-tree-drag" draggable="true" data-drag-handle="${escapeHTML(categoria.id)}" role="button" tabindex="0" aria-label="Mover ${escapeHTML(categoria.nombre)}">⠿</span>
+              <button class="cloud-tree-toggle" type="button" data-tree-toggle="${escapeHTML(categoria.id)}" aria-expanded="${hijas.length ? abierta : false}" aria-label="${hijas.length ? (abierta ? "Plegar" : "Desplegar") : "Sin subcategorías"} ${escapeHTML(categoria.nombre)}">${hijas.length ? (abierta ? "▾" : "▸") : '<span class="cloud-tree-leaf">•</span>'}</button>
+              <input class="cloud-category__name" type="text" data-category-name="${escapeHTML(categoria.id)}" value="${escapeHTML(categoria.nombre)}" maxlength="60" aria-label="Nombre de la categoría">
+              <span class="cloud-tree-count" title="${productos} producto(s)">${productos}</span>
+              <button type="button" class="cloud-category__cover-button" data-category-cover-open="${escapeHTML(categoria.id)}" aria-label="Cambiar portada de ${escapeHTML(categoria.nombre)}">
+                ${portadaPreview(categoria) ? `<img src="${escapeHTML(imageURL(portadaPreview(categoria)))}" alt="" loading="lazy">` : '<span class="cloud-category__cover-empty">Sin foto</span>'}
+                <span>Portada</span>
+              </button>
+              <button type="button" class="cloud-tree-delete" data-delete-category="${escapeHTML(categoria.id)}" aria-label="Eliminar ${escapeHTML(categoria.nombre)}" ${productos ? "disabled title='Tiene productos'" : ""}>×</button>
+            </div>
+            ${hijas.length && abierta ? `<div class="cloud-tree-children" role="group">${hijas.map(renderNodo).join("")}</div>` : ""}
+          </div>`;
+      };
+      els.categoryList.innerHTML = raiz.length
+        ? `<div class="cloud-category-tree">${raiz.map(renderNodo).join("")}</div><div class="cloud-tree-root-drop" data-root-drop>Soltá acá para mover a nivel principal</div>`
+        : '<p class="cloud-muted">Todavía no hay categorías.</p>';
+    }
+  };
+
+  const moverCategoria = (id, padre, referenciaId = null, posicion = null) => {
+    if (!catalog) return;
+    if (padre === id || esDescendienteCategoria(id, padre)) {
+      toast("No se puede mover una categoría dentro de sí misma.", "error");
+      return;
+    }
+    const origen = catalog.categorias.findIndex((categoria) => categoria.id === id);
+    if (origen < 0) return;
+    const [categoria] = catalog.categorias.splice(origen, 1);
+    categoria.padre = padre || null;
+    if (referenciaId) {
+      const indiceReferencia = catalog.categorias.findIndex((item) => item.id === referenciaId);
+      if (indiceReferencia >= 0) {
+        catalog.categorias.splice(indiceReferencia + (posicion === "after" ? 1 : 0), 0, categoria);
+      } else {
+        catalog.categorias.push(categoria);
+      }
+    } else {
+      catalog.categorias.push(categoria);
+    }
+    if (padre) categoriasAbiertas.add(padre);
+    categoriasAbiertas.add(id);
+    dirty = true;
+    renderCategorias();
+    renderProductos();
+    programarAutoguardado();
+    setStatus(els.saveStatus, "Categoría movida. Guardá el borrador para confirmarlo.");
+  };
+
+  const limpiarDropCategoria = () => {
+    dropCategoria = null;
+    dropPosicion = null;
+    dropRaiz = false;
+    els.categoryList?.querySelectorAll(".cloud-tree-row").forEach((fila) => fila.classList.remove("drop-before", "drop-after", "drop-inside"));
+    els.categoryList?.querySelector(".cloud-tree-root-drop")?.classList.remove("is-over");
+    els.categoryList?.classList.remove("is-dragging");
+  };
+
+  const renderBranches = (producto = null) => {
+    if (!els.productBranches) return;
+    const disponibles = new Set(producto?.sucursalesDisponibles || catalog?.sucursales?.map((s) => s.id) || []);
+    const stock = producto?.stockPorSucursal || {};
+    els.productBranches.innerHTML = (catalog?.sucursales || [])
+      .map((sucursal) => {
+        const activa = disponibles.has(sucursal.id);
+        const cantidad = Number.isInteger(stock[sucursal.id]) ? stock[sucursal.id] : "";
+        return `
+        <label class="cloud-branch">
+          <input type="checkbox" value="${escapeHTML(sucursal.id)}" ${activa ? "checked" : ""}>
+          <span>${escapeHTML(sucursal.nombre)} <span class="cloud-muted">${escapeHTML(sucursal.localidad || "")}</span> <span class="cloud-branch__state">${activa ? "Disponible" : "No disponible"}</span></span>
+          <input type="number" data-stock="${escapeHTML(sucursal.id)}" min="0" step="1" inputmode="numeric" value="${cantidad}" placeholder="u." aria-label="Unidades en ${escapeHTML(sucursal.nombre)}" ${activa ? "" : "disabled"}>
+        </label>`;
+      })
+      .join("");
+  };
+
+  const mostrarFormulario = (visible) => {
+    if (els.emptyState) els.emptyState.hidden = visible;
+    if (els.productForm) els.productForm.hidden = !visible;
+  };
+
+  const editarProducto = (id) => {
+    const producto = catalog?.productos?.find((item) => item.id === id);
+    if (!producto) return;
+    selectedId = id;
+    creating = false;
+    mostrarFormulario(true);
+    if (els.formEyebrow) els.formEyebrow.textContent = "Editando producto";
+    if (els.formTitle) els.formTitle.textContent = producto.nombre || "Producto";
+    els.productName.value = producto.nombre || "";
+    if (els.productId) els.productId.value = producto.id || "";
+    renderCategorias();
+    marcarCategorias(categoriasProducto(producto));
+    marcarChecks(els.productAudience, Array.isArray(producto.publico) ? producto.publico : []);
+    marcarChecks(els.productOccasions, Array.isArray(producto.ocasiones) ? producto.ocasiones : []);
+    els.productPrice.value = producto.precio || "";
+    if (els.productPriceNote) els.productPriceNote.value = producto.notaPrecio || "";
+    els.productDescription.value = producto.descripcion || "";
+    els.productLongDescription.value = producto.descripcionLarga || "";
+    const detalles = producto.detalles || {};
+    if (els.productHeight) els.productHeight.value = detalles.altura || "";
+    if (els.productWidth) els.productWidth.value = detalles.ancho || "";
+    if (els.productLength) els.productLength.value = detalles.largo || "";
+    if (els.productWeight) els.productWeight.value = detalles.peso || "";
+    if (els.productMaterial) els.productMaterial.value = detalles.material || "";
+    if (els.productColors) els.productColors.value = detalles.colores || "";
+    if (els.productCapacity) els.productCapacity.value = detalles.capacidad || "";
+    if (els.productOptions) els.productOptions.value = detalles.personalizacion || "";
+    if (els.productContents) els.productContents.value = detalles.contenido || "";
+    if (els.productCare) els.productCare.value = detalles.cuidados || "";
+    activarFormTab("medios");
+    renderBranches(producto);
+    renderVariantes(producto);
+    renderResenas(producto);
+    renderImagenes(producto);
+    renderVideos(producto);
+    setStatus(els.saveStatus, "");
+    renderProductos();
+  };
+
+  const nuevoProducto = () => {
+    selectedId = null;
+    creating = true;
+    mostrarFormulario(true);
+    if (els.formEyebrow) els.formEyebrow.textContent = "Nuevo producto";
+    if (els.formTitle) els.formTitle.textContent = "Nuevo producto";
+    els.productForm.reset();
+    renderCategorias();
+    marcarCategorias([]);
+    marcarChecks(els.productAudience, []);
+    marcarChecks(els.productOccasions, []);
+    if (els.productId) els.productId.value = "";
+    activarFormTab("medios");
+    renderBranches({ sucursalesDisponibles: catalog?.sucursales?.map((s) => s.id) || [] });
+    renderVariantes({ variantes: [] });
+    renderResenas({ resenas: [] });
+    renderImagenes({ imagenes: [] });
+    renderVideos({ videos: [] });
+    setStatus(els.imageStatus, "");
+    setStatus(els.videoStatus, "");
+    setStatus(els.saveStatus, "Completá los datos y guardá el borrador.");
+    renderProductos();
+    els.productName.focus();
+  };
+
+  const leerFormulario = () => {
+    const nombre = els.productName.value.trim();
+    if (!nombre) throw new Error("El nombre es obligatorio.");
+    const categoriasSeleccionadas = [...els.productCategories.querySelectorAll("input:checked")].map((input) => input.value);
+    if (!categoriasSeleccionadas.length) throw new Error("Elegí al menos una categoría.");
+    const base = selectedId
+      ? catalog.productos.find((producto) => producto.id === selectedId)
+      : null;
+    const imagenes = base?.imagenes || [];
+    const videos = base?.videos || [];
+    const sucursalesDisponibles = [...els.productBranches.querySelectorAll("input:checked")].map(
+      (input) => input.value
+    );
+    const stockPorSucursal = {};
+    sucursalesDisponibles.forEach((id) => {
+      const input = els.productBranches.querySelector(`[data-stock="${CSS.escape(id)}"]`);
+      const cantidad = Number.parseInt(input?.value, 10);
+      if (Number.isInteger(cantidad) && cantidad >= 0) stockPorSucursal[id] = cantidad;
+    });
+    const variantes = [...els.variantList.querySelectorAll("[data-variant-row]")]
+      .map((fila, indice) => ({
+        nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
+        precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
+      }))
+      .filter((variante) => variante.nombre);
+    const id = selectedId || generarIdProducto(nombre);
+    const mapaDetalles = {
+      altura: els.productHeight,
+      ancho: els.productWidth,
+      largo: els.productLength,
+      peso: els.productWeight,
+      material: els.productMaterial,
+      colores: els.productColors,
+      capacidad: els.productCapacity,
+      personalizacion: els.productOptions,
+      contenido: els.productContents,
+      cuidados: els.productCare,
+    };
+    const detalles = { ...(base?.detalles || {}) };
+    Object.entries(mapaDetalles).forEach(([clave, input]) => {
+      const valor = input?.value.trim() || "";
+      if (valor) detalles[clave] = valor;
+      else delete detalles[clave];
+    });
+    const principal =
+      base?.categoria && categoriasSeleccionadas.includes(base.categoria)
+        ? base.categoria
+        : categoriasSeleccionadas[0];
+    const producto = {
+      ...(base || {}),
+      ...(creating ? { creado: new Date().toISOString() } : {}),
+      id,
+      nombre,
+      categoria: principal,
+      categorias: categoriasSeleccionadas,
+      publico: leerChecks(els.productAudience),
+      ocasiones: leerChecks(els.productOccasions),
+      precio: els.productPrice.value.trim(),
+      notaPrecio: els.productPriceNote?.value.trim() || "",
+      descripcion: els.productDescription.value.trim(),
+      descripcionLarga: els.productLongDescription.value.trim(),
+      detalles,
+      imagenes,
+      videos,
+      sucursalesDisponibles,
+    };
+    const resenas = [...els.reviewList.querySelectorAll("[data-review-row]")]
+      .map((fila) => {
+        const indice = fila.dataset.reviewRow;
+        return {
+          nombre: fila.querySelector(`[data-review-name="${indice}"]`)?.value.trim() || "",
+          rating: Number(fila.querySelector(`[data-review-rating="${indice}"]`)?.value) || 5,
+          texto: fila.querySelector(`[data-review-text="${indice}"]`)?.value.trim() || "",
+          foto: fila.dataset.foto || "",
+          fecha: fila.dataset.fecha || new Date().toISOString().slice(0, 10),
+        };
+      })
+      .filter((resena) => resena.nombre || resena.texto);
+    if (resenas.length) producto.resenas = resenas;
+    else delete producto.resenas;
+    if (Object.keys(stockPorSucursal).length) producto.stockPorSucursal = stockPorSucursal;
+    else delete producto.stockPorSucursal;
+    if (variantes.length) producto.variantes = variantes;
+    else delete producto.variantes;
+    if (!producto.notaPrecio) delete producto.notaPrecio;
+    if (!producto.publico.length) delete producto.publico;
+    if (!producto.ocasiones.length) delete producto.ocasiones;
+    if (!Object.keys(detalles).length) delete producto.detalles;
+    return producto;
+  };
+
+  const commitFormulario = () => {
+    if (els.productForm.hidden) return;
+    const producto = leerFormulario();
+    if (creating) {
+      catalog.productos.unshift(producto);
+      selectedId = producto.id;
+      creating = false;
+    } else {
+      const indice = catalog.productos.findIndex((item) => item.id === selectedId);
+      if (indice < 0) throw new Error("No se encontró el producto.");
+      const original = catalog.productos[indice];
+      if (esIdProvisional(original.id) && !/^producto sin t[ií]tulo$/i.test(producto.nombre)) {
+        const nuevoId = generarIdProducto(producto.nombre, original.id);
+        producto.idsAnteriores = [...new Set([...(original.idsAnteriores || []), original.id])];
+        producto.id = nuevoId;
+        selectedId = nuevoId;
+      }
+      catalog.productos[indice] = producto;
+    }
+    if (els.formTitle) els.formTitle.textContent = producto.nombre;
+    if (els.productId) els.productId.value = producto.id;
+    setStatus(els.saveStatus, "");
+    dirty = true;
+    renderProductos();
+    return producto;
+  };
+
+  const guardarBorrador = async (event, opciones = {}) => {
+    event?.preventDefault();
+    if (!puedeEditarCatalogo()) {
+      setStatus(els.saveStatus, "No tenés permiso para guardar cambios del catálogo.", "error");
+      return false;
+    }
+    if (saving) return;
+    try {
+      commitFormulario();
+      const limpio = normalizarCatalogo(clone(catalog));
+      const json = JSON.stringify(limpio);
+      if (json.length > 900000) {
+        throw new Error("El catálogo es demasiado grande para un documento de Firestore.");
+      }
+      saving = true;
+      if (els.saveDraft) els.saveDraft.disabled = true;
+      setStatus(els.saveStatus, "Guardando borrador…");
+      await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+        json,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+        actualizadoPor: currentUser?.email || "",
+      });
+      catalog = limpio;
+      dirty = false;
+      registrarVersionCatalogo(opciones.silencioso ? "Autoguardado" : "Borrador guardado", !opciones.silencioso).catch(() => {});
+      setStatus(
+        els.saveStatus,
+        opciones.silencioso ? "Borrador guardado automáticamente." : "Borrador guardado en la nube.",
+        "success"
+      );
+      if (!opciones.silencioso) toast("Borrador guardado. Todavía no está publicado.");
+      return true;
+    } catch (error) {
+      setStatus(els.saveStatus, `No se guardó: ${firebaseErrorMessage(error)}`, "error");
+      if (!opciones.silencioso) toast(`No se guardó: ${firebaseErrorMessage(error)}`, "error");
+      return false;
+    } finally {
+      saving = false;
+      if (els.saveDraft) els.saveDraft.disabled = false;
+    }
+  };
+
+
+  const dispararSeo = async () => {
+    try {
+      const config = await db.collection("config").doc("github").get();
+      const token = config.exists ? String(config.data().token || "") : "";
+      if (!token) {
+        setStatus(
+          els.saveStatus,
+          "Catálogo publicado. Falta configurar el token de GitHub para regenerar el SEO automáticamente.",
+          "success"
+        );
+        return;
+      }
+      const respuesta = await fetch(
+        "https://api.github.com/repos/agresti3d/agresti-3d/actions/workflows/deploy.yml/dispatches",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ref: "main" }),
+        }
+      );
+      if (!respuesta.ok) throw new Error(`GitHub respondió ${respuesta.status}`);
+      setStatus(
+        els.saveStatus,
+        "Catálogo publicado. Actualizando páginas SEO en segundo plano…",
+        "success"
+      );
+    } catch (error) {
+      setStatus(
+        els.saveStatus,
+        "Catálogo publicado. No se pudo iniciar la actualización SEO; el sitio ya muestra los cambios.",
+        "success"
+      );
+    }
+  };
+
+  const publicar = async () => {
+    if (!puedePublicarCambios()) {
+      toast("No tenés permiso para publicar en la web.", "error");
+      return;
+    }
+    if (saving) return;
+    if (!window.confirm("¿Publicar el catálogo en la web? Los cambios se verán en el sitio.")) return;
+    try {
+      commitFormulario();
+      const limpio = normalizarCatalogo(clone(catalog));
+      const json = JSON.stringify(limpio);
+      if (json.length > 900000) {
+        throw new Error("El catálogo es demasiado grande para un documento de Firestore.");
+      }
+      saving = true;
+      if (els.publishCatalog) els.publishCatalog.disabled = true;
+      setStatus(els.saveStatus, "Publicando…");
+      const basePayload = { json, actualizadoPor: currentUser?.email || "" };
+      const publicadoActual = await leerDocumento(PUBLISHED_DOC);
+      if (publicadoActual) {
+        await db.collection(CATALOG_DOC).doc("publicado_anterior").set({
+          json: JSON.stringify(normalizarCatalogo(publicadoActual)),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+          actualizadoPor: currentUser?.email || "",
+        });
+      }
+      await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+        ...basePayload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await db.collection(CATALOG_DOC).doc(PUBLISHED_DOC).set({
+        ...basePayload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      catalog = limpio;
+      dirty = false;
+      registrarVersionCatalogo("Publicación", true).catch(() => {});
+      cargarPublicacionAnterior();
+      setStatus(els.saveStatus, "Catálogo publicado en la web.", "success");
+      toast("Catálogo publicado. El sitio ya muestra los cambios.");
+      dispararSeo();
+    } catch (error) {
+      setStatus(els.saveStatus, `No se publicó: ${firebaseErrorMessage(error)}`, "error");
+      toast(`No se publicó: ${firebaseErrorMessage(error)}`, "error");
+    } finally {
+      saving = false;
+      if (els.publishCatalog) els.publishCatalog.disabled = false;
+    }
+  };
+
+  const eliminarProducto = async () => {
+    if (!selectedId) return;
+    const producto = catalog.productos.find((item) => item.id === selectedId);
+    if (!producto) return;
+    if (!window.confirm(`¿Eliminar «${producto.nombre}»?`)) return;
+    catalog.productos = catalog.productos.filter((item) => item.id !== selectedId);
+    selectedId = null;
+    creating = false;
+    mostrarFormulario(false);
+    dirty = true;
+    renderProductos();
+    await guardarBorrador();
+  };
+
+  const renderVariantes = (producto) => {
+    if (!els.variantList) return;
+    const variantes = producto?.variantes || [];
+    els.variantList.innerHTML = variantes.length
+      ? variantes
+          .map(
+            (variante, indice) => `
+            <div class="cloud-variant" data-variant-row="${indice}">
+              <label class="field">
+                <span>Opción</span>
+                <input type="text" data-variant-name="${indice}" value="${escapeHTML(variante.nombre || "")}" placeholder="Ej.: 10 cm" maxlength="80">
+              </label>
+              <label class="field">
+                <span>Precio</span>
+                <input type="text" data-variant-price="${indice}" value="${escapeHTML(variante.precio || "")}" placeholder="Ej.: $15.000" maxlength="40">
+              </label>
+              <button type="button" class="cloud-danger" data-remove-variant="${indice}">Quitar</button>
+            </div>`
+          )
+          .join("")
+      : '<p class="cloud-muted">Sin variantes: se usa el precio general.</p>';
+  };
+
+  const agregarVariante = () => {
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    const base = producto || { variantes: [] };
+    base.variantes = base.variantes || [];
+    base.variantes.push({ nombre: "", precio: "" });
+    if (producto) dirty = true;
+    renderVariantes(base);
+    programarAutoguardado();
+  };
+
+
+  const htmlEstrellas = (rating) => {
+    const valor = Math.max(1, Math.min(5, Number(rating) || 5));
+    return "★".repeat(valor) + "☆".repeat(5 - valor);
+  };
+
+  const htmlResena = (resena = {}, indice = 0) => `
+    <div class="cloud-review" data-review-row="${indice}" data-foto="${escapeHTML(resena.foto || "")}" data-fecha="${escapeHTML(resena.fecha || new Date().toISOString().slice(0, 10))}">
+      <div class="cloud-review__head">
+        <label class="field"><span>Nombre del cliente</span><input type="text" data-review-name="${indice}" value="${escapeHTML(resena.nombre || "")}" maxlength="80" placeholder="Ej.: Martina"></label>
+        <label class="field"><span>Calificación</span>
+          <select data-review-rating="${indice}">
+            ${[5,4,3,2,1].map((n) => `<option value="${n}" ${Number(resena.rating || 5) === n ? "selected" : ""}>${htmlEstrellas(n)}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <label class="field"><span>Reseña</span><textarea rows="2" data-review-text="${indice}" maxlength="600" placeholder="Qué dijo el cliente…">${escapeHTML(resena.texto || "")}</textarea></label>
+      <div class="cloud-review__photo">
+        ${resena.foto ? `<img src="${escapeHTML(resena.foto)}" alt="">` : ""}
+        <label class="btn btn--ghost cloud-file-btn">Foto de la reseña<input type="file" accept="image/*" data-review-photo="${indice}"></label>
+        <button type="button" class="cloud-danger" data-remove-review-photo="${indice}" ${resena.foto ? "" : "hidden"}>Quitar foto</button>
+        <button type="button" class="cloud-danger" data-remove-review="${indice}">Quitar reseña</button>
+      </div>
+    </div>`;
+
+  const renderResenas = (producto) => {
+    if (!els.reviewList) return;
+    const resenas = Array.isArray(producto?.resenas) ? producto.resenas : [];
+    els.reviewList.innerHTML = resenas.length
+      ? resenas.map((resena, indice) => htmlResena(resena, indice)).join("")
+      : '<p class="cloud-muted">Sin reseñas todavía. Agregá la primera cuando tengas una opinión real de un cliente.</p>';
+    setStatus(els.reviewStatus, "");
+  };
+
+  const agregarResena = () => {
+    if (!els.reviewList) return;
+    const vacias = els.reviewList.querySelector(".cloud-muted");
+    if (vacias) vacias.remove();
+    const indice = els.reviewList.querySelectorAll("[data-review-row]").length;
+    els.reviewList.insertAdjacentHTML("beforeend", htmlResena({}, indice));
+    dirty = true;
+    programarAutoguardado();
+  };
+
+  const subirFotoResena = async (input) => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const fila = input.closest("[data-review-row]");
+    if (!fila) return;
+    try {
+      setStatus(els.reviewStatus, "Subiendo foto de la reseña…");
+      const url = await subirCloudinary(file, "image");
+      fila.dataset.foto = url;
+      let imagen = fila.querySelector(".cloud-review__photo img");
+      if (!imagen) {
+        imagen = document.createElement("img");
+        fila.querySelector(".cloud-review__photo")?.prepend(imagen);
+      }
+      imagen.src = url;
+      const quitar = fila.querySelector("[data-remove-review-photo]");
+      if (quitar) quitar.hidden = false;
+      dirty = true;
+      programarAutoguardado();
+      setStatus(els.reviewStatus, "Foto lista.", "success");
+    } catch (error) {
+      setStatus(els.reviewStatus, `No se pudo subir la foto: ${error.message}`, "error");
+    } finally {
+      input.value = "";
+    }
+  };
+
+
+  const fechaResena = (fecha) => {
+    try {
+      if (fecha?.toDate) return fecha.toDate().toISOString().slice(0, 10);
+      if (typeof fecha === "string") return fecha.slice(0, 10);
+    } catch (error) {}
+    return new Date().toISOString().slice(0, 10);
+  };
+
+  const renderPendientes = (docs) => {
+    if (!els.pendingReviewsList) return;
+    if (!docs.length) {
+      els.pendingReviewsList.innerHTML = '<p class="cloud-muted">No hay reseñas pendientes.</p>';
+      return;
+    }
+    els.pendingReviewsList.innerHTML = docs
+      .map(({ id, data }) => {
+        const producto = catalog?.productos?.find((item) => item.id === data.productoId);
+        return `<article class="cloud-pending" data-pending-id="${escapeHTML(id)}">
+          ${data.foto ? `<img src="${escapeHTML(data.foto)}" alt="Foto de la reseña">` : ""}
+          <strong>${escapeHTML(data.nombre || "Cliente")} · ${"★".repeat(Math.max(1, Math.min(5, Number(data.rating) || 5)))}</strong>
+          <small>${escapeHTML(producto?.nombre || data.productoId || "Producto")} · ${fechaResena(data.fecha)}</small>
+          <p>${escapeHTML(data.texto || "")}</p>
+          <div class="cloud-pending__actions">
+            <button class="btn btn--primary" type="button" data-approve="${escapeHTML(id)}">Aprobar</button>
+            <button class="cloud-danger" type="button" data-reject="${escapeHTML(id)}">Descartar</button>
+          </div>
+        </article>`;
+      })
+      .join("");
+  };
+
+  const cargarResenasPendientes = async () => {
+    if (!db || !els.pendingReviewsList) return;
+    try {
+      setStatus(els.pendingReviewsStatus, "Buscando reseñas pendientes…");
+      const snap = await db.collection("resenas").where("estado", "==", "pendiente").limit(30).get();
+      const docs = snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+      renderPendientes(docs);
+      setStatus(els.pendingReviewsStatus, docs.length ? `${docs.length} pendiente(s).` : "No hay reseñas pendientes.", "success");
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se pudieron cargar: ${firebaseErrorMessage(error)}`, "error");
+    }
+  };
+
+  const aprobarResena = async (id) => {
+    if (!db) return;
+    try {
+      const ref = db.collection("resenas").doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) throw new Error("La reseña ya no existe.");
+      const data = snap.data();
+      const producto = catalog?.productos?.find((item) => item.id === data.productoId);
+      if (!producto) throw new Error("No encuentro el producto de esta reseña.");
+      const resena = {
+        nombre: data.nombre || "Cliente",
+        rating: Number(data.rating) || 5,
+        texto: data.texto || "",
+        foto: data.foto || "",
+        fecha: fechaResena(data.fecha),
+      };
+      producto.resenas = [...(Array.isArray(producto.resenas) ? producto.resenas : []), resena];
+      await ref.update({ estado: "aprobada" });
+      if (selectedId === producto.id) renderResenas(producto);
+      dirty = true;
+      await guardarBorrador(null, { silencioso: true });
+      await cargarResenasPendientes();
+      toast("Reseña aprobada. Guardá y publicá para que aparezca en la web.");
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se aprobó: ${error.message}`, "error");
+    }
+  };
+
+  const rechazarResena = async (id) => {
+    if (!db) return;
+    try {
+      await db.collection("resenas").doc(id).update({ estado: "rechazada" });
+      await cargarResenasPendientes();
+    } catch (error) {
+      setStatus(els.pendingReviewsStatus, `No se descartó: ${error.message}`, "error");
+    }
+  };
+
+  const renderImagenes = (producto) => {
+    if (!els.imageList) return;
+    const imagenes = producto?.imagenes || [];
+    els.imageList.innerHTML = imagenes.length
+      ? imagenes
+          .map(
+            (imagen, indice) => `
+            <div class="cloud-image" data-index="${indice}">
+              <button class="cloud-image__preview" type="button" data-view-image="${indice}" aria-label="Ver foto ${indice + 1} en grande">
+                <img src="${escapeHTML(imageURL(imagen.src))}" alt="${escapeHTML(imagen.alt || "")}" loading="lazy">
+              </button>
+              <label class="field">
+                <span class="sr-only">Texto alternativo</span>
+                <input type="text" data-alt="${indice}" value="${escapeHTML(imagen.alt || "")}" placeholder="Texto alternativo" maxlength="160">
+              </label>
+              <div class="cloud-image__tools">
+                <button type="button" data-move="${indice}" data-dir="-1" ${indice === 0 ? "disabled" : ""} aria-label="Mover antes">←</button>
+                <button type="button" data-move="${indice}" data-dir="1" ${indice === imagenes.length - 1 ? "disabled" : ""} aria-label="Mover después">→</button>
+                <button type="button" data-remove="${indice}" aria-label="Quitar foto">Quitar</button>
+              </div>
+            </div>`
+          )
+          .join("")
+      : '<p class="cloud-muted">Todavía no hay fotos.</p>';
+  };
+
+  const renderVideos = (producto) => {
+    if (!els.videoList) return;
+    const videos = producto?.videos || [];
+    els.videoList.innerHTML = videos.length
+      ? videos
+          .map(
+            (video, indice) => `
+            <div class="cloud-video">
+              <span>${escapeHTML(video.title || `Video ${indice + 1}`)}</span>
+              <button type="button" data-remove-video="${indice}">Quitar</button>
+            </div>`
+          )
+          .join("")
+      : '<p class="cloud-muted">Todavía no hay videos.</p>';
+  };
+
+  const cargarImagen = (blob) =>
+    new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
+      const imagen = new Image();
+      imagen.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(imagen);
+      };
+      imagen.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo leer la imagen."));
+      };
+      imagen.src = url;
+    });
+
+  const canvasABlob = (canvas, tipo = "image/webp", calidad = 0.9) =>
+    new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen."))),
+        tipo,
+        calidad
+      );
+    });
+
+  const mostrarProgresoImagen = (titulo, detalle = "", avance = null) => {
+    if (!els.imageProgress) return;
+    els.imageProgress.hidden = false;
+    if (els.imageProgressTitle) els.imageProgressTitle.textContent = titulo;
+    if (els.imageProgressDetail) els.imageProgressDetail.textContent = detalle;
+    if (els.imageProgressBar) {
+      els.imageProgressBar.classList.toggle("is-indeterminate", avance === null);
+      els.imageProgressBar.style.width = avance === null ? "" : `${Math.max(0, Math.min(100, avance))}%`;
+    }
+  };
+  const ocultarProgresoImagen = () => {
+    if (els.imageProgress) els.imageProgress.hidden = true;
+  };
+
+  const mostrarCursorBrocha = (event) => {
+    if (!editorRecorteState || !els.imageBrushCursor || !els.imageEditorStage) return;
+    const escenario = els.imageEditorStage.getBoundingClientRect();
+    const tamano = Number(els.imageBrushSize?.value || 36) * 2;
+    els.imageBrushCursor.hidden = false;
+    els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
+    els.imageBrushCursor.style.width = `${tamano}px`;
+    els.imageBrushCursor.style.height = `${tamano}px`;
+    els.imageBrushCursor.style.left = `${event.clientX - escenario.left}px`;
+    els.imageBrushCursor.style.top = `${event.clientY - escenario.top}px`;
+  };
+  const actualizarCursorBrocha = () => {
+    if (!els.imageBrushCursor || els.imageBrushCursor.hidden) return;
+    const tamano = Number(els.imageBrushSize?.value || 36) * 2;
+    els.imageBrushCursor.style.width = `${tamano}px`;
+    els.imageBrushCursor.style.height = `${tamano}px`;
+  };
+  const ocultarCursorBrocha = () => {
+    if (els.imageBrushCursor) els.imageBrushCursor.hidden = true;
+  };
+
+  const limpiarAlfa = (imageData, ancho, alto, erosion = 0) => {
+    const datos = imageData.data;
+    const total = ancho * alto;
+    const mascara = new Uint8Array(total);
+    for (let i = 0; i < total; i += 1) {
+      const p = i * 4;
+      const alfa = datos[p + 3];
+      if (alfa < 12) continue;
+      const r = datos[p];
+      const g = datos[p + 1];
+      const b = datos[p + 2];
+      // Halos claros semitransparentes que deja el modelo en fondos blancos.
+      if (alfa < 220 && r > 235 && g > 235 && b > 235) continue;
+      mascara[i] = 1;
+    }
+    // Si el borde exterior es blanco (fondo que sobrevivió), lo quitamos
+    // aunque el modelo le haya dado alfa alto.
+    for (let pasada = 0; pasada < 3; pasada += 1) {
+      const siguiente = new Uint8Array(mascara);
+      for (let y = 1; y < alto - 1; y += 1) {
+        for (let x = 1; x < ancho - 1; x += 1) {
+          const i = y * ancho + x;
+          if (!mascara[i]) continue;
+          const esBorde = !mascara[i - 1] || !mascara[i + 1] || !mascara[i - ancho] || !mascara[i + ancho];
+          if (!esBorde) continue;
+          const p = i * 4;
+          if (datos[p] > 210 && datos[p + 1] > 210 && datos[p + 2] > 210) siguiente[i] = 0;
+        }
+      }
+      mascara.set(siguiente);
+    }
+    if (erosion > 0) {
+      let actual = mascara;
+      for (let vuelta = 0; vuelta < erosion; vuelta += 1) {
+        const siguiente = new Uint8Array(actual);
+        for (let y = 1; y < alto - 1; y += 1) {
+          for (let x = 1; x < ancho - 1; x += 1) {
+            const i = y * ancho + x;
+            if (!actual[i]) continue;
+            if (!actual[i - 1] || !actual[i + 1] || !actual[i - ancho] || !actual[i + ancho]) siguiente[i] = 0;
+          }
+        }
+        actual = siguiente;
+      }
+      mascara.set(actual);
+    }
+    for (let i = 0; i < total; i += 1) {
+      datos[i * 4 + 3] = mascara[i] ? 255 : 0;
+    }
+  };
+
+  const pintarRecorte = (clientX, clientY) => {
+    const estado = editorRecorteState;
+    if (!estado) return;
+    const { canvas, ctx, data, originalPixels, brushMode } = estado;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.round((clientX - rect.left) * (canvas.width / rect.width));
+    const y = Math.round((clientY - rect.top) * (canvas.height / rect.height));
+    const radioPantalla = Number(els.imageBrushSize?.value || 36);
+    const radio = Math.max(2, Math.round(radioPantalla * (canvas.width / rect.width)));
+    const desdeX = Math.max(0, x - radio);
+    const hastaX = Math.min(canvas.width - 1, x + radio);
+    const desdeY = Math.max(0, y - radio);
+    const hastaY = Math.min(canvas.height - 1, y + radio);
+    const r2 = radio * radio;
+    for (let py = desdeY; py <= hastaY; py += 1) {
+      for (let px = desdeX; px <= hastaX; px += 1) {
+        const dx = px - x;
+        const dy = py - y;
+        if (dx * dx + dy * dy > r2) continue;
+        const i = (py * canvas.width + px) * 4;
+        if (brushMode === "erase") {
+          data.data[i + 3] = 0;
+        } else {
+          data.data[i] = originalPixels[i];
+          data.data[i + 1] = originalPixels[i + 1];
+          data.data[i + 2] = originalPixels[i + 2];
+          data.data[i + 3] = 255;
+        }
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+  };
+
+  const abrirEditorRecorte = async (file, recorteBlob) => {
+    if (!els.imageEditorDialog || !els.imageEditorCanvas) return recorteBlob;
+    const [original, corte] = await Promise.all([cargarImagen(file), cargarImagen(recorteBlob)]);
+    const anchoOriginal = corte.naturalWidth || corte.width;
+    const altoOriginal = corte.naturalHeight || corte.height;
+    const maximo = 1600;
+    const escala = Math.min(1, maximo / Math.max(anchoOriginal, altoOriginal));
+    const ancho = Math.max(1, Math.round(anchoOriginal * escala));
+    const alto = Math.max(1, Math.round(altoOriginal * escala));
+    const canvas = els.imageEditorCanvas;
+    canvas.width = ancho;
+    canvas.height = alto;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(original, 0, 0, ancho, alto);
+    const originalData = ctx.getImageData(0, 0, ancho, alto);
+    const originalPixels = new Uint8ClampedArray(originalData.data);
+    const capa = document.createElement("canvas");
+    capa.width = ancho;
+    capa.height = alto;
+    const capaCtx = capa.getContext("2d", { willReadFrequently: true });
+    capaCtx.drawImage(corte, 0, 0, ancho, alto);
+    const corteData = capaCtx.getImageData(0, 0, ancho, alto);
+    for (let i = 0; i < corteData.data.length; i += 4) {
+      // El modelo devuelve alfa parcial en cuerpos oscuros: lo normalizamos
+      // para que el producto quede opaco y el fondo realmente transparente.
+      // Conservamos el alfa original para poder detectar y quitar halos claros.
+      originalData.data[i + 3] = corteData.data[i + 3];
+    }
+    limpiarAlfa(originalData, ancho, alto, 2);
+    ctx.putImageData(originalData, 0, 0);
+    editorRecorteState = {
+      canvas, ctx, data: originalData, originalPixels,
+      brushMode: "restore", drawing: false, undo: [], finalizado: false, resolve: null,
+    };
+    if (els.imageEditorTitle) els.imageEditorTitle.textContent = `Revisar «${file.name}»`;
+    if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
+    els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
+    if (els.imageBrushSize) els.imageBrushSize.value = "36";
+    ocultarCursorBrocha();
+    if (typeof els.imageEditorDialog.showModal === "function") els.imageEditorDialog.showModal();
+    else els.imageEditorDialog.setAttribute("open", "");
+    return new Promise((resolve) => {
+      if (editorRecorteState) editorRecorteState.resolve = resolve;
+    });
+  };
+
+  const renderizarEncuadre = () => {
+    const estado = editorEncuadreState;
+    if (!estado) return;
+    const { ctx, imagen, ancho, alto, bbox, baseScale, zoom, offsetX, offsetY } = estado;
+    ctx.clearRect(0, 0, ancho, alto);
+    const escala = baseScale * zoom;
+    const anchoDibujo = bbox.ancho * escala;
+    const altoDibujo = bbox.alto * escala;
+    const x = (ancho - anchoDibujo) / 2 + offsetX;
+    const y = 1010 - altoDibujo + offsetY;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(imagen, bbox.x, bbox.y, bbox.ancho, bbox.alto, x, y, anchoDibujo, altoDibujo);
+  };
+
+  const finalizarEditorEncuadre = (blob) => {
+    const estado = editorEncuadreState;
+    if (!estado) return;
+    estado.finalizado = true;
+    const resolver = estado.resolve;
+    estado.resolve = null;
+    els.imageFrameDialog?.close();
+    editorEncuadreState = null;
+    if (resolver) resolver(blob);
+  };
+
+  const abrirEditorEncuadre = async (blob) => {
+    if (!els.imageFrameDialog || !els.imageFrameCanvas) return blob;
+    const imagen = await cargarImagen(blob);
+    const anchoNatural = imagen.naturalWidth || imagen.width;
+    const altoNatural = imagen.naturalHeight || imagen.height;
+    const temporal = document.createElement("canvas");
+    temporal.width = anchoNatural;
+    temporal.height = altoNatural;
+    const ctxTemporal = temporal.getContext("2d", { willReadFrequently: true });
+    ctxTemporal.drawImage(imagen, 0, 0);
+    const datos = ctxTemporal.getImageData(0, 0, anchoNatural, altoNatural).data;
+    let minX = anchoNatural;
+    let minY = altoNatural;
+    let maxX = 0;
+    let maxY = 0;
+    let encontrado = false;
+    for (let y = 0; y < altoNatural; y += 1) {
+      for (let x = 0; x < anchoNatural; x += 1) {
+        if (datos[(y * anchoNatural + x) * 4 + 3] > 0) {
+          encontrado = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (!encontrado) return blob;
+    const bbox = { x: minX, y: minY, ancho: maxX - minX + 1, alto: maxY - minY + 1 };
+    const ancho = 1200;
+    const alto = 1200;
+    const canvas = els.imageFrameCanvas;
+    canvas.width = ancho;
+    canvas.height = alto;
+    const ctx = canvas.getContext("2d");
+    const baseScale = Math.min(900 / bbox.ancho, 900 / bbox.alto);
+    editorEncuadreState = {
+      ctx, imagen, ancho, alto, bbox, baseScale,
+      zoom: 1, offsetX: 0, offsetY: 0, drawing: false, drag: null, finalizado: false, resolve: null,
+    };
+    if (els.imageFrameZoom) els.imageFrameZoom.value = "100";
+    if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = "100%";
+    renderizarEncuadre();
+    if (typeof els.imageFrameDialog.showModal === "function") els.imageFrameDialog.showModal();
+    else els.imageFrameDialog.setAttribute("open", "");
+    return new Promise((resolve) => {
+      if (editorEncuadreState) editorEncuadreState.resolve = resolve;
+    });
+  };
+
+  const finalizarEditorRecorte = (blob) => {
+    const estado = editorRecorteState;
+    if (!estado) return;
+    estado.finalizado = true;
+    const resolver = estado.resolve;
+    estado.resolve = null;
+    ocultarCursorBrocha();
+    els.imageEditorDialog?.close();
+    editorRecorteState = null;
+    if (resolver) resolver(blob);
+  };
+
+  const abrirLightbox = (src, alt) => {
+    if (!els.imageLightbox || !els.imageLightboxImg) return;
+    els.imageLightboxImg.src = imageURL(src);
+    els.imageLightboxImg.alt = alt || "Foto del producto";
+    if (els.imageLightboxCaption) els.imageLightboxCaption.textContent = alt || "";
+    if (typeof els.imageLightbox.showModal === "function") els.imageLightbox.showModal();
+    else els.imageLightbox.setAttribute("open", "");
+  };
+
+  const recortarSujeto = async (blob, originalFile = null) => {
+    const imagen = await cargarImagen(blob);
+    const lienzo = document.createElement("canvas");
+    lienzo.width = imagen.naturalWidth || imagen.width;
+    lienzo.height = imagen.naturalHeight || imagen.height;
+    const ctx = lienzo.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(imagen, 0, 0);
+    if (originalFile) {
+      try {
+        const original = await cargarImagen(originalFile);
+        const lienzoOriginal = document.createElement("canvas");
+        lienzoOriginal.width = lienzo.width;
+        lienzoOriginal.height = lienzo.height;
+        const ctxOriginal = lienzoOriginal.getContext("2d", { willReadFrequently: true });
+        ctxOriginal.drawImage(original, 0, 0, lienzo.width, lienzo.height);
+        const originalData = ctxOriginal.getImageData(0, 0, lienzo.width, lienzo.height).data;
+        const recorteData = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+        for (let i = 0; i < recorteData.data.length; i += 4) {
+          if (recorteData.data[i + 3] > 0) {
+            recorteData.data[i] = originalData[i];
+            recorteData.data[i + 1] = originalData[i + 1];
+            recorteData.data[i + 2] = originalData[i + 2];
+          }
+        }
+        ctx.putImageData(recorteData, 0, 0);
+      } catch (error) {}
+    }
+    const datosImagen = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+    limpiarAlfa(datosImagen, lienzo.width, lienzo.height, 1);
+    ctx.putImageData(datosImagen, 0, 0);
+    const datos = datosImagen.data;
+    let minX = lienzo.width;
+    let minY = lienzo.height;
+    let maxX = 0;
+    let maxY = 0;
+    let encontrado = false;
+    for (let y = 0; y < lienzo.height; y += 1) {
+      for (let x = 0; x < lienzo.width; x += 1) {
+        if (datos[(y * lienzo.width + x) * 4 + 3] > 0) {
+          encontrado = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    const caja = encontrado ? { minX, minY, maxX, maxY } : null;
+    if (!caja) throw new Error("La imagen quedó vacía después de quitar el fondo.");
+
+    const margen = Math.round(Math.max(maxX - minX, maxY - minY) * 0.04);
+    minX = Math.max(0, minX - margen);
+    minY = Math.max(0, minY - margen);
+    maxX = Math.min(lienzo.width - 1, maxX + margen);
+    maxY = Math.min(lienzo.height - 1, maxY + margen);
+    const ancho = maxX - minX + 1;
+    const alto = maxY - minY + 1;
+
+    const salida = document.createElement("canvas");
+    salida.width = 1200;
+    salida.height = 1200;
+    const ctxSalida = salida.getContext("2d");
+    const maximo = 900;
+    const escala = Math.min(maximo / ancho, maximo / alto);
+    const anchoFinal = Math.round(ancho * escala);
+    const altoFinal = Math.round(alto * escala);
+    const x = Math.round((salida.width - anchoFinal) / 2);
+    const y = Math.round(1010 - altoFinal);
+    ctxSalida.imageSmoothingQuality = "high";
+    ctxSalida.drawImage(lienzo, minX, minY, ancho, alto, x, y, anchoFinal, altoFinal);
+
+    // Cuerpo opaco, fondo transparente: evitamos el efecto "fantasma" gris.
+    const pixelesSalida = ctxSalida.getImageData(0, 0, salida.width, salida.height);
+    for (let i = 3; i < pixelesSalida.data.length; i += 4) {
+      pixelesSalida.data[i] = pixelesSalida.data[i] >= 12 ? 255 : 0;
+    }
+    ctxSalida.putImageData(pixelesSalida, 0, 0);
+
+    let resultado = await canvasABlob(salida, "image/webp", 0.9);
+    if (resultado.size > 300 * 1024) {
+      resultado = await canvasABlob(salida, "image/webp", 0.8);
+    }
+    if (resultado.size > 300 * 1024) {
+      resultado = await canvasABlob(salida, "image/webp", 0.7);
+    }
+    return resultado;
+  };
+
+  const quitarFondo = async (file) => {
+    if (!removeBackgroundPromise) {
+      removeBackgroundPromise = import(
+        "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
+      );
+    }
+    const modulo = await removeBackgroundPromise;
+    if (typeof modulo.removeBackground !== "function") {
+      throw new Error("El modelo de recorte no se cargó.");
+    }
+    const calidad = els.imageCutoutQuality?.value || "alta";
+    const modelos = calidad === "rapida"
+      ? ["isnet_quint8"]
+      : calidad === "equilibrada"
+        ? ["isnet_fp16", "isnet_quint8"]
+        : ["isnet", "isnet_fp16", "isnet_quint8"];
+    let ultimoError = null;
+    for (const modelo of modelos) {
+      try {
+        setStatus(els.imageStatus, `Preparando recorte ${modelo === "isnet" ? "de alta calidad" : modelo}…`);
+        mostrarProgresoImagen("Quitando el fondo…", `Modelo ${modelo}. La primera vez puede tardar mientras se descarga.`);
+        await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+        return await modulo.removeBackground(file, {
+          model: modelo,
+          proxyToWorker: true,
+          output: { format: "image/png" },
+          progress: (clave, actual, total) => {
+            const avance = total ? Math.round((actual / total) * 100) : null;
+            const detalle = avance === null ? `Preparando ${clave}…` : `Descargando modelo ${clave}: ${avance}%`;
+            setStatus(els.imageStatus, detalle);
+            mostrarProgresoImagen("Preparando el recorte…", detalle, avance);
+          },
+        });
+      } catch (error) {
+        ultimoError = error;
+        mostrarProgresoImagen("Reintentando recorte…", "El modelo anterior no pudo procesar esta foto.");
+      }
+    }
+    throw new Error(ultimoError?.message || "El modelo de recorte no pudo procesar la foto.");
+  };
+
+  const subirCloudinary = async (file, tipo = "image") => {
+    const { cloudName, uploadPreset, folder } = CLOUDINARY;
+    if (!cloudName) {
+      throw new Error("Cloudinary no está configurado. Completá cloudName en editor/cloud-config.js.");
+    }
+    if (!uploadPreset) {
+      throw new Error("Falta el upload preset de Cloudinary.");
+    }
+    const datos = new FormData();
+    datos.append("file", file);
+    datos.append("upload_preset", uploadPreset);
+    if (folder) datos.append("folder", folder);
+    const respuesta = await fetch(
+      `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/${tipo}/upload`,
+      { method: "POST", body: datos }
+    );
+    const resultado = await respuesta.json();
+    if (!respuesta.ok) {
+      throw new Error(resultado?.error?.message || `Cloudinary respondió ${respuesta.status}.`);
+    }
+    if (!resultado.secure_url) throw new Error("Cloudinary no devolvió la URL.");
+    return resultado.secure_url;
+  };
+
+
+  const asegurarProductoParaMedios = () => {
+    if (!catalog) return false;
+    if (!creating) return Boolean(selectedId);
+    if (!els.productName.value.trim()) {
+      els.productName.value = "Producto sin título";
+      if (!els.productCategories.querySelector("input:checked")) {
+        const primera = catalog.categorias?.[0]?.id;
+        if (primera) {
+          const check = els.productCategories.querySelector(`input[value="${primera}"]`);
+          if (check) check.checked = true;
+        }
+      }
+      try {
+        commitFormulario();
+      } catch (error) {
+        setStatus(els.saveStatus, error.message, "error");
+        return false;
+      }
+      activarFormTab("datos");
+      els.productName.focus();
+      els.productName.select();
+      setStatus(
+        els.saveStatus,
+        "Archivo preparado. Cambiá «Producto sin título» por el nombre real y elegí la categoría.",
+        ""
+      );
+      return true;
+    }
+    try {
+      commitFormulario();
+      return true;
+    } catch (error) {
+      setStatus(els.saveStatus, error.message, "error");
+      return false;
+    }
+  };
+
+  const procesarImagenes = async (files) => {
+    if (!catalog) return;
+    if (!asegurarProductoParaMedios()) return;
+    const producto = catalog?.productos?.find((item) => item.id === selectedId) || null;
+    if (!producto) {
+      setStatus(els.imageStatus, "Elegí o creá un producto antes de agregar fotos.", "error");
+      return;
+    }
+    if (procesandoFotos) {
+      setStatus(els.imageStatus, "Ya hay una foto procesándose. Esperá a que termine.", "error");
+      return;
+    }
+    procesandoFotos = true;
+    els.imageFiles.disabled = true;
+    try {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) {
+        setStatus(els.imageStatus, `«${file.name}» no es una imagen.`, "error");
+        continue;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        setStatus(els.imageStatus, `«${file.name}» supera 25 MB.`, "error");
+        continue;
+      }
+      try {
+        setStatus(els.imageStatus, `Quitando el fondo de «${file.name}»…`);
+        mostrarProgresoImagen("Procesando foto…", `Quitando el fondo de «${file.name}».`);
+        const recorte = await quitarFondo(file);
+        ocultarProgresoImagen();
+        setStatus(els.imageStatus, "Revisá el recorte y corregilo con la brocha si hace falta.");
+        const editado = await abrirEditorRecorte(file, recorte);
+        if (!editado) {
+          setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
+          continue;
+        }
+        ocultarProgresoImagen();
+        setStatus(els.imageStatus, "Ajustá el encuadre de la foto.");
+        const procesada = await abrirEditorEncuadre(editado);
+        if (!procesada) {
+          setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
+          continue;
+        }
+        setStatus(els.imageStatus, `Subiendo «${file.name}»…`);
+        mostrarProgresoImagen("Subiendo la foto…", "Guardando la imagen recortada en Cloudinary.");
+        const url = await subirCloudinary(procesada, "image");
+        const actual = catalog.productos.find((item) => item.id === selectedId);
+        if (!actual) throw new Error("El producto se cerró mientras se procesaba la foto.");
+        const nombre = actual.nombre || "Producto impreso en 3D";
+        actual.imagenes = actual.imagenes || [];
+        actual.imagenes.push({ src: url, alt: `${nombre} impreso en 3D` });
+        dirty = true;
+        renderImagenes(actual);
+        setStatus(els.imageStatus, `«${file.name}» lista.`, "success");
+      } catch (error) {
+        setStatus(els.imageStatus, `No se pudo procesar «${file.name}»: ${error.message}`, "error");
+      } finally {
+        ocultarProgresoImagen();
+      }
+    }
+    } finally {
+      procesandoFotos = false;
+      els.imageFiles.disabled = false;
+      els.imageFiles.value = "";
+      ocultarProgresoImagen();
+    }
+  };
+
+  const procesarVideo = async (files) => {
+    if (!catalog) return;
+    if (!asegurarProductoParaMedios()) return;
+    const producto = catalog?.productos?.find((item) => item.id === selectedId) || null;
+    if (!producto) {
+      setStatus(els.videoStatus, "Elegí o creá un producto antes de agregar un video.", "error");
+      return;
+    }
+    for (const file of Array.from(files)) {
+      if (!["video/mp4", "video/webm", "video/quicktime"].includes(file.type)) {
+        setStatus(els.videoStatus, `«${file.name}» no es MP4, WEBM o MOV.`, "error");
+        continue;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setStatus(els.videoStatus, `«${file.name}» supera 50 MB.`, "error");
+        continue;
+      }
+      try {
+        setStatus(els.videoStatus, `Subiendo «${file.name}»…`);
+        const url = await subirCloudinary(file, "video");
+        const actual = catalog.productos.find((item) => item.id === selectedId);
+        if (!actual) throw new Error("El producto se cerró mientras se subía el video.");
+        actual.videos = actual.videos || [];
+        actual.videos.push({ src: url, title: file.name.replace(/\.[^.]+$/, "") });
+        dirty = true;
+        renderVideos(actual);
+        setStatus(els.videoStatus, `«${file.name}» listo.`, "success");
+      } catch (error) {
+        setStatus(els.videoStatus, `No se pudo subir «${file.name}»: ${error.message}`, "error");
+      }
+    }
+    els.videoFiles.value = "";
+  };
+
+  const agregarCategoria = (event) => {
+    event.preventDefault();
+    const nombre = els.categoryName.value.trim();
+    if (!nombre) return;
+    const base = slugify(nombre) || "categoria";
+    let id = base;
+    let sufijo = 2;
+    while (catalog.categorias.some((categoria) => categoria.id === id)) {
+      id = `${base}-${sufijo++}`;
+    }
+    const padre = els.categoryParent.value || null;
+    catalog.categorias.push({ id, nombre, padre });
+    categoriasAbiertas.add(id);
+    if (padre) categoriasAbiertas.add(padre);
+    dirty = true;
+    els.categoryForm.reset();
+    renderCategorias();
+    programarAutoguardado();
+    const nuevoCheck = els.productCategories.querySelector(`input[value="${id}"]`);
+    if (nuevoCheck) nuevoCheck.checked = true;
+    setStatus(els.saveStatus, "Categoría agregada. Guardá el borrador para confirmarla.");
+  };
+
+  const eliminarCategoria = (id) => {
+    const usada = catalog.productos.some((producto) => categoriasProducto(producto).includes(id));
+    const tieneHijas = catalog.categorias.some((categoria) => categoria.padre === id);
+    if (usada || tieneHijas) {
+      toast("No se puede eliminar: tiene productos o subcategorías.", "error");
+      return;
+    }
+    catalog.categorias = catalog.categorias.filter((categoria) => categoria.id !== id);
+    categoriasAbiertas.delete(id);
+    dirty = true;
+    renderCategorias();
+    programarAutoguardado();
+    setStatus(els.saveStatus, "Categoría eliminada. Guardá el borrador para confirmarlo.");
+  };
+
+  const manejarClickImagenes = (event) => {
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    if (!producto) return;
+    const ver = event.target.closest("[data-view-image]");
+    if (ver) {
+      const imagen = producto.imagenes[Number(ver.dataset.viewImage)];
+      if (imagen) abrirLightbox(imagen.src, imagen.alt || producto.nombre);
+      return;
+    }
+    const quitar = event.target.closest("[data-remove]");
+    if (quitar) {
+      producto.imagenes.splice(Number(quitar.dataset.remove), 1);
+      dirty = true;
+      renderImagenes(producto);
+      return;
+    }
+    const mover = event.target.closest("[data-move]");
+    if (mover) {
+      const indice = Number(mover.dataset.move);
+      const destino = indice + Number(mover.dataset.dir);
+      if (destino < 0 || destino >= producto.imagenes.length) return;
+      const [imagen] = producto.imagenes.splice(indice, 1);
+      producto.imagenes.splice(destino, 0, imagen);
+      dirty = true;
+      renderImagenes(producto);
+    }
+  };
+
+  const manejarAltImagen = (event) => {
+    const input = event.target.closest("[data-alt]");
+    if (!input) return;
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    if (!producto) return;
+    const indice = Number(input.dataset.alt);
+    if (producto.imagenes[indice]) {
+      producto.imagenes[indice].alt = input.value;
+      dirty = true;
+    }
+  };
+
+
+  const importarCatalogo = async () => {
+    if (importing) return;
+    if (!CLOUDINARY.cloudName) {
+      setStatus(els.importStatus, "Configurá Cloudinary antes de importar las imágenes.", "error");
+      return;
+    }
+    if (!window.confirm("Se van a subir las fotos y videos del catálogo que tenés abierto a Cloudinary. No se eliminan productos. ¿Continuar?")) return;
+    importing = true;
+    if (els.importCatalog) els.importCatalog.disabled = true;
+    try {
+      setStatus(els.importStatus, "Preparando el catálogo actual…");
+      let base = normalizarCatalogo(clone(catalog || {}));
+      if (!base.productos.length) {
+        const respuesta = await fetch("../data/catalog.json", { cache: "no-store" });
+        if (!respuesta.ok) throw new Error("No se encontró data/catalog.json.");
+        base = normalizarCatalogo(await respuesta.json());
+      }
+
+      // Si las imágenes ya fueron migradas a Cloudinary, aplicar el mapa
+      // sin volver a subirlas. El mapa se genera con tools de administración.
+      let mapa = null;
+      try {
+        const respuestaMapa = await fetch("../data/cloudinary-map.json", { cache: "no-store" });
+        if (respuestaMapa.ok) mapa = await respuestaMapa.json();
+      } catch {
+        mapa = null;
+      }
+      if (mapa && typeof mapa === "object") {
+        let reemplazadas = 0;
+        base.productos.forEach((producto) => {
+          (producto.imagenes || []).forEach((imagen) => {
+            const clave = String(imagen.src || "").split("?")[0].replace(/^\/+/, "");
+            if (mapa[clave]) {
+              imagen.src = mapa[clave];
+              reemplazadas += 1;
+            }
+          });
+          (producto.videos || []).forEach((video) => {
+            const clave = String(video.src || "").split("?")[0].replace(/^\/+/, "");
+            if (mapa[clave]) {
+              video.src = mapa[clave];
+              reemplazadas += 1;
+            }
+          });
+        });
+        const jsonMapa = JSON.stringify(base);
+        const payloadMapa = { json: jsonMapa, actualizadoPor: currentUser?.email || "" };
+        await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+          ...payloadMapa,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        await db.collection(CATALOG_DOC).doc(PUBLISHED_DOC).set({
+          ...payloadMapa,
+          actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        catalog = base;
+        selectedId = null;
+        creating = false;
+        dirty = false;
+        renderCategorias();
+        renderSucursales();
+        renderProductos();
+        mostrarFormulario(false);
+        setStatus(
+          els.importStatus,
+          `Imágenes aplicadas: ${reemplazadas} rutas ahora usan Cloudinary.`,
+          "success"
+        );
+        toast("Imágenes migradas aplicadas y catálogo publicado.");
+        return;
+      }
+      const mapaImagenes = new Map();
+      const mapaVideos = new Map();
+      const imagenes = [];
+      const videos = [];
+
+      base.productos.forEach((producto) => {
+        (producto.imagenes || []).forEach((imagen) => {
+          if (imagen?.src && !/^https?:/i.test(imagen.src)) imagenes.push(imagen.src);
+        });
+        (producto.videos || []).forEach((video) => {
+          if (video?.src && !/^https?:/i.test(video.src)) videos.push(video.src);
+        });
+      });
+
+      const unicas = [...new Set(imagenes)];
+      let subidas = 0;
+      for (const src of unicas) {
+        subidas += 1;
+        setStatus(els.importStatus, `Subiendo foto ${subidas}/${unicas.length}…`);
+        try {
+          const origen = await fetch(imageURL(src), { cache: "no-store" });
+          if (!origen.ok) throw new Error(`HTTP ${origen.status}`);
+          const blob = await origen.blob();
+          const url = await subirCloudinary(blob, "image");
+          mapaImagenes.set(src, url);
+        } catch (error) {
+          throw new Error(`No se pudo subir ${src}: ${error.message}`);
+        }
+      }
+
+      const videosUnicos = [...new Set(videos)];
+      let videosSubidos = 0;
+      for (const src of videosUnicos) {
+        videosSubidos += 1;
+        setStatus(els.importStatus, `Subiendo video ${videosSubidos}/${videosUnicos.length}…`);
+        try {
+          const origen = await fetch(imageURL(src), { cache: "no-store" });
+          if (!origen.ok) throw new Error(`HTTP ${origen.status}`);
+          const blob = await origen.blob();
+          const url = await subirCloudinary(blob, "video");
+          mapaVideos.set(src, url);
+        } catch (error) {
+          throw new Error(`No se pudo subir ${src}: ${error.message}`);
+        }
+      }
+
+      base.productos.forEach((producto) => {
+        (producto.imagenes || []).forEach((imagen) => {
+          if (mapaImagenes.has(imagen.src)) imagen.src = mapaImagenes.get(imagen.src);
+        });
+        (producto.videos || []).forEach((video) => {
+          if (mapaVideos.has(video.src)) video.src = mapaVideos.get(video.src);
+        });
+      });
+
+      setStatus(els.importStatus, "Guardando catálogo migrado…");
+      const json = JSON.stringify(base);
+      const payload = { json, actualizadoPor: currentUser?.email || "" };
+      await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await db.collection(CATALOG_DOC).doc(PUBLISHED_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      catalog = base;
+      selectedId = null;
+      creating = false;
+      dirty = false;
+      renderCategorias();
+      renderProductos();
+      mostrarFormulario(false);
+      setStatus(els.importStatus, `Catálogo importado: ${unicas.length} fotos y ${videosUnicos.length} videos.`, "success");
+      toast("Catálogo migrado y publicado en la nube.");
+    } catch (error) {
+      setStatus(els.importStatus, `No se pudo importar: ${error.message}`, "error");
+    } finally {
+      importing = false;
+      if (els.importCatalog) els.importCatalog.disabled = false;
+    }
+  };
+
+  const renderSucursales = () => {
+    if (!els.branchList || !catalog) return;
+    els.branchList.innerHTML = (catalog.sucursales || []).length
+      ? catalog.sucursales
+          .map(
+            (sucursal, indice) => `
+            <div class="cloud-branch-row" data-branch-row="${indice}">
+              <label class="field">
+                <span>Nombre</span>
+                <input type="text" data-branch-name="${indice}" value="${escapeHTML(sucursal.nombre || "")}" maxlength="80" required>
+              </label>
+              <label class="field">
+                <span>Localidad</span>
+                <input type="text" data-branch-locality="${indice}" value="${escapeHTML(sucursal.localidad || "")}" maxlength="100" placeholder="Ciudad, zona">
+              </label>
+              <label class="field">
+                <span>WhatsApp</span>
+                <input type="tel" data-branch-phone="${indice}" value="${escapeHTML(sucursal.telefono || "")}" maxlength="30" placeholder="54911...">
+              </label>
+              <button class="cloud-danger" type="button" data-remove-branch="${indice}">Quitar</button>
+            </div>`
+          )
+          .join("")
+      : '<p class="cloud-muted">Todavía no hay sucursales.</p>';
+  };
+
+  const leerSucursales = () => {
+    if (!els.branchList) return;
+    const filas = [...els.branchList.querySelectorAll("[data-branch-row]")];
+    catalog.sucursales = filas.map((fila, indice) => {
+      const base = catalog.sucursales[indice] || {};
+      return {
+        ...base,
+        nombre: fila.querySelector(`[data-branch-name="${indice}"]`)?.value.trim() || "",
+        localidad: fila.querySelector(`[data-branch-locality="${indice}"]`)?.value.trim() || "",
+        telefono: fila.querySelector(`[data-branch-phone="${indice}"]`)?.value.trim() || "",
+      };
+    });
+  };
+
+  const agregarSucursal = () => {
+    if (!catalog) return;
+    const base = "sucursal";
+    let id = base;
+    let sufijo = 2;
+    while (catalog.sucursales.some((sucursal) => sucursal.id === id)) {
+      id = `${base}-${sufijo++}`;
+    }
+    catalog.sucursales.push({ id, nombre: "Nueva sucursal", localidad: "", telefono: "" });
+    dirty = true;
+    renderSucursales();
+    programarAutoguardado();
+    setStatus(els.branchStatus, "Completá los datos y guardá los cambios.");
+  };
+
+  const guardarSucursales = async () => {
+    if (!catalog) return;
+    leerSucursales();
+    const vacias = catalog.sucursales.filter((sucursal) => !sucursal.nombre);
+    if (vacias.length) {
+      setStatus(els.branchStatus, "Cada sucursal necesita un nombre.", "error");
+      return;
+    }
+    setStatus(els.branchStatus, "Guardando sucursales…");
+    const ok = await guardarBorrador();
+    setStatus(
+      els.branchStatus,
+      ok ? "Sucursales guardadas en el borrador." : "No se pudieron guardar las sucursales.",
+      ok ? "success" : "error"
+    );
+  };
+
+  const descargarJSON = (nombre, payload) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const construirCopiaCatalogo = () => {
+    const limpio = normalizarCatalogo(clone(catalog || {}));
+    return {
+      formato: "agresti-catalogo-backup",
+      version: 1,
+      exportadoEn: new Date().toISOString(),
+      exportadoPor: currentUser?.email || "",
+      resumen: {
+        productos: limpio.productos.length,
+        categorias: limpio.categorias.length,
+        sucursales: limpio.sucursales.length,
+      },
+      catalogo: limpio,
+    };
+  };
+
+  const fechaArchivoLocal = () => {
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date()).reduce((acc, parte) => {
+      acc[parte.type] = parte.value;
+      return acc;
+    }, {});
+    return `${partes.year}-${partes.month}-${partes.day}`;
+  };
+
+  const limpiarNombreCopia = (nombre) => {
+    const limpio = String(nombre || "catalogo")
+      .replace(/\.json$/i, "")
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+    return limpio || "catalogo";
+  };
+
+  const nombreArchivoCopia = (nombre = "catalogo") =>
+    `${fechaArchivoLocal()} - ${limpiarNombreCopia(nombre)}.json`;
+
+  const actualizarMetaExportacion = () => {
+    if (!els.exportCatalogMeta) return;
+    if (!catalog) {
+      els.exportCatalogMeta.textContent = "Cargando catálogo…";
+      return;
+    }
+    els.exportCatalogMeta.textContent = `${catalog.productos.length} productos · ${catalog.categorias.length} categorías · ${catalog.sucursales.length} sucursales`;
+  };
+
+  const exportarCopiaCatalogo = () => {
+    if (!catalog) return;
+    try { commitFormulario(); } catch (error) {}
+    const copia = construirCopiaCatalogo();
+    descargarJSON(nombreArchivoCopia(els.exportCatalogName?.value || "catalogo"), copia);
+    actualizarMetaExportacion();
+    setStatus(els.exportCatalogStatus, `Copia descargada: ${copia.resumen.productos} productos y ${copia.resumen.categorias} categorías.`, "success");
+    toast("Copia de seguridad descargada.");
+  };
+
+  const huellaTexto = (texto) => {
+    let hash = 2166136261;
+    for (let i = 0; i < texto.length; i += 1) {
+      hash ^= texto.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `${texto.length}-${hash >>> 0}`;
+  };
+
+  const formatearFechaHora = (valor) => {
+    const fecha = valor?.toDate ? valor.toDate() : valor ? new Date(valor) : null;
+    if (!fecha || Number.isNaN(fecha.getTime())) return "Sin fecha";
+    return fecha.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+  };
+
+  const registrarVersionCatalogo = async (motivo, forzar = false) => {
+    if (!db || !catalog || !puede("herramientas")) return false;
+    const limpio = normalizarCatalogo(clone(catalog));
+    const json = JSON.stringify(limpio);
+    const huella = huellaTexto(json);
+    if (!forzar && huella === ultimaHuellaHistorial) return false;
+    if (!forzar && Date.now() - ultimoTiempoHistorial < 5 * 60 * 1000) return false;
+    try {
+      await db.collection("catalogo_historial").add({
+        json,
+        fecha: firebase.firestore.FieldValue.serverTimestamp(),
+        autor: currentUser?.email || "",
+        motivo,
+        resumen: {
+          productos: limpio.productos.length,
+          categorias: limpio.categorias.length,
+          sucursales: limpio.sucursales.length,
+        },
+      });
+      ultimaHuellaHistorial = huella;
+      ultimoTiempoHistorial = Date.now();
+      if (els.panelHerramientas && !els.panelHerramientas.hidden) cargarHistorialVersiones();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const cargarHistorialVersiones = async () => {
+    if (!db || !els.catalogHistoryList) return;
+    setStatus(els.catalogHistoryStatus, "Cargando historial…");
+    try {
+      const snap = await db.collection("catalogo_historial").orderBy("fecha", "desc").limit(12).get();
+      const versiones = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      if (!versiones.length) {
+        els.catalogHistoryList.innerHTML = '<p class="cloud-tool-empty">Todavía no hay versiones guardadas. Se crearán automáticamente al guardar o publicar.</p>';
+        setStatus(els.catalogHistoryStatus, "Sin versiones todavía.");
+        return;
+      }
+      els.catalogHistoryList.innerHTML = `
+        <h4>Últimas versiones</h4>
+        <ul>${versiones.map((version) => `
+          <li>
+            <span><strong>${escapeHTML(formatearFechaHora(version.fecha))}</strong><br>${escapeHTML(version.motivo || "Cambios")} · ${escapeHTML(version.autor || "admin")} · ${Number(version.resumen?.productos) || 0} productos</span>
+            <button type="button" data-history-restore="${escapeHTML(version.id)}">Restaurar</button>
+          </li>`).join("")}</ul>`;
+      setStatus(els.catalogHistoryStatus, `${versiones.length} versión(es) más recientes.`);
+    } catch (error) {
+      els.catalogHistoryList.innerHTML = `<p class="cloud-tool-empty">No se pudo leer el historial: ${escapeHTML(error.message)}</p>`;
+      setStatus(els.catalogHistoryStatus, "Error al cargar el historial.", "error");
+    }
+  };
+
+  const aplicarCatalogoEnBorrador = async (catalogoImportado, statusEl) => {
+    try {
+      try { localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo())); } catch (error) {}
+      descargarJSON(nombreArchivoCopia("antes-de-restaurar"), construirCopiaCatalogo());
+      catalog = catalogoImportado;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = true;
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      setStatus(
+        statusEl,
+        guardado ? "Versión restaurada y guardada en el borrador. Revisá y publicá cuando estés listo." : "Versión cargada en memoria, pero no se pudo guardar automáticamente.",
+        guardado ? "success" : "error"
+      );
+      return guardado;
+    } catch (error) {
+      setStatus(statusEl, `No se pudo restaurar: ${error.message}`, "error");
+      return false;
+    }
+  };
+
+  const restaurarVersionHistorial = async (id) => {
+    if (!db) return;
+    try {
+      const snap = await db.collection("catalogo_historial").doc(id).get();
+      if (!snap.exists) throw new Error("La versión ya no existe.");
+      const datos = JSON.parse(snap.data()?.json || "null");
+      const importado = validarCopiaCatalogo(datos);
+      if (!window.confirm(`¿Restaurar la versión del ${formatearFechaHora(snap.data().fecha)}? Reemplazará el borrador actual; antes se descargará una copia de seguridad.`)) return;
+      await aplicarCatalogoEnBorrador(importado, els.catalogHistoryStatus);
+      await cargarHistorialVersiones();
+    } catch (error) {
+      setStatus(els.catalogHistoryStatus, `No se pudo restaurar: ${error.message}`, "error");
+    }
+  };
+
+  const cargarPublicacionAnterior = async () => {
+    if (!db) return;
+    if (els.restoreLastPublicationStatus) els.restoreLastPublicationStatus.textContent = "";
+    try {
+      const snap = await db.collection(CATALOG_DOC).doc("publicado_anterior").get();
+      if (!snap.exists) {
+        publicacionAnterior = null;
+        if (els.restoreLastPublicationMeta) els.restoreLastPublicationMeta.textContent = "No hay una publicación anterior guardada.";
+        if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+        return;
+      }
+      const datos = JSON.parse(snap.data()?.json || "null");
+      publicacionAnterior = validarCopiaCatalogo(datos);
+      if (els.restoreLastPublicationMeta) {
+        els.restoreLastPublicationMeta.textContent = `${formatearFechaHora(snap.data().actualizado)} · ${publicacionAnterior.productos.length} productos · ${publicacionAnterior.categorias.length} categorías`;
+      }
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = false;
+    } catch (error) {
+      publicacionAnterior = null;
+      if (els.restoreLastPublicationMeta) els.restoreLastPublicationMeta.textContent = `No se pudo leer la publicación anterior: ${error.message}`;
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+    }
+  };
+
+  const restaurarPublicacionAnterior = async () => {
+    if (!publicacionAnterior || !db) return;
+    if (!window.confirm("¿Restaurar la publicación anterior? Se reemplazará la web publicada y el borrador actual. Antes se descargará una copia de seguridad.")) return;
+    try {
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+      const json = JSON.stringify(publicacionAnterior);
+      const payload = { json, actualizadoPor: currentUser?.email || "" };
+      await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await db.collection(CATALOG_DOC).doc(PUBLISHED_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      try { localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo())); } catch (error) {}
+      descargarJSON(nombreArchivoCopia("antes-de-restaurar-publicacion"), construirCopiaCatalogo());
+      catalog = publicacionAnterior;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = false;
+      registrarVersionCatalogo("Restauración de publicación anterior", true).catch(() => {});
+      await cargarPublicacionAnterior();
+      setStatus(els.restoreLastPublicationStatus, "Publicación anterior restaurada en la web y en el borrador.", "success");
+      toast("Publicación anterior restaurada.");
+    } catch (error) {
+      setStatus(els.restoreLastPublicationStatus, `No se pudo restaurar: ${firebaseErrorMessage(error)}`, "error");
+    } finally {
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = !publicacionAnterior;
+    }
+  };
+
+  const compararBorradorPublicado = async () => {
+    if (!catalog) return;
+    setStatus(els.compareCatalogStatus, "Leyendo la versión publicada…");
+    try {
+      const publicado = await leerDocumento(PUBLISHED_DOC);
+      if (!publicado) throw new Error("Todavía no hay una versión publicada.");
+      const borrador = normalizarCatalogo(clone(catalog));
+      const publicadoNormal = normalizarCatalogo(publicado);
+      const comparar = (a, b, etiqueta) => {
+        const mapaA = new Map(a.map((item) => [item.id, item]));
+        const mapaB = new Map(b.map((item) => [item.id, item]));
+        const agregados = [...mapaA.values()].filter((item) => !mapaB.has(item.id));
+        const eliminados = [...mapaB.values()].filter((item) => !mapaA.has(item.id));
+        const modificados = [...mapaA.values()].filter((item) => mapaB.has(item.id) && JSON.stringify(item) !== JSON.stringify(mapaB.get(item.id)));
+        return { etiqueta, agregados, eliminados, modificados };
+      };
+      const grupos = [
+        comparar(borrador.productos, publicadoNormal.productos, "Productos"),
+        comparar(borrador.categorias, publicadoNormal.categorias, "Categorías"),
+        comparar(borrador.sucursales, publicadoNormal.sucursales, "Sucursales"),
+      ];
+      const total = grupos.reduce((n, grupo) => n + grupo.agregados.length + grupo.eliminados.length + grupo.modificados.length, 0);
+      if (!total) {
+        els.compareCatalogResult.innerHTML = '<p class="cloud-tool-empty">El borrador es idéntico a la versión publicada.</p>';
+        setStatus(els.compareCatalogStatus, "Sin diferencias.", "success");
+        return;
+      }
+      const html = grupos.map((grupo) => {
+        const items = [];
+        grupo.agregados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-add">+</span> ${escapeHTML(item.nombre || item.id)}</span><small>Nuevo</small></li>`));
+        grupo.eliminados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-del">−</span> ${escapeHTML(item.nombre || item.id)}</span><small>Se quitaría</small></li>`));
+        grupo.modificados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-bad">~</span> ${escapeHTML(item.nombre || item.id)}</span><small>Modificado</small></li>`));
+        const restantes = Math.max(0, grupo.agregados.length + grupo.eliminados.length + grupo.modificados.length - items.length);
+        return items.length ? `<h4>${grupo.etiqueta}</h4><ul>${items.join("")}${restantes ? `<li class="cloud-tool-empty">+${restantes} cambios más…</li>` : ""}</ul>` : "";
+      }).join("");
+      els.compareCatalogResult.innerHTML = html;
+      setStatus(els.compareCatalogStatus, `${total} diferencia(s) entre el borrador y lo publicado.`);
+    } catch (error) {
+      els.compareCatalogResult.innerHTML = `<p class="cloud-tool-empty">${escapeHTML(error.message)}</p>`;
+      setStatus(els.compareCatalogStatus, "No se pudo comparar.", "error");
+    }
+  };
+
+  const comprobarImagen = (src) => new Promise((resolve) => {
+    const imagen = new Image();
+    let terminado = false;
+    const terminar = (ok) => {
+      if (terminado) return;
+      terminado = true;
+      imagen.onload = null;
+      imagen.onerror = null;
+      resolve(ok);
+    };
+    const timer = window.setTimeout(() => terminar(false), 8000);
+    imagen.onload = () => { window.clearTimeout(timer); terminar(true); };
+    imagen.onerror = () => { window.clearTimeout(timer); terminar(false); };
+    imagen.src = imageURL(src);
+  });
+
+  const auditarCatalogo = async () => {
+    if (!catalog) return;
+    setStatus(els.auditCatalogStatus, "Revisando catálogo e imágenes…");
+    const sinFoto = [];
+    const sinPrecio = [];
+    const sinCategoria = [];
+    const idsCategorias = new Set(catalog.categorias.map((categoria) => categoria.id));
+    const imagenes = [];
+    catalog.productos.forEach((producto) => {
+      if (!(producto.imagenes || []).some((imagen) => imagen?.src)) sinFoto.push(producto);
+      if (!producto.precio || /consultar/i.test(String(producto.precio))) sinPrecio.push(producto);
+      if (!producto.categoria || !idsCategorias.has(producto.categoria)) sinCategoria.push(producto);
+      (producto.imagenes || []).forEach((imagen) => { if (imagen?.src) imagenes.push({ producto, src: imagen.src }); });
+    });
+    const unicas = [...new Map(imagenes.map((item) => [item.src, item])).values()].slice(0, 100);
+    const rotas = [];
+    let siguiente = 0;
+    const trabajadores = Array.from({ length: 6 }, async () => {
+      while (siguiente < unicas.length) {
+        const actual = unicas[siguiente++];
+        const ok = await comprobarImagen(actual.src);
+        if (!ok) rotas.push(actual);
+      }
+    });
+    await Promise.all(trabajadores);
+    const renderGrupo = (titulo, productos, tipo = "warning") => {
+      if (!productos.length) return "";
+      const items = productos.slice(0, 20).map((producto) => `<li><span><strong>${escapeHTML(producto.nombre || producto.id)}</strong><br><small>${escapeHTML(producto.id)}</small></span><button type="button" data-audit-edit="${escapeHTML(producto.id)}">Editar</button></li>`).join("");
+      return `<h4>${titulo} (${productos.length})</h4><ul>${items}${productos.length > 20 ? `<li class="cloud-tool-empty">+${productos.length - 20} más…</li>` : ""}</ul>`;
+    };
+    const html = [
+      renderGrupo("Sin foto", sinFoto),
+      renderGrupo("Sin precio", sinPrecio),
+      renderGrupo("Sin categoría válida", sinCategoria),
+      renderGrupo("Imágenes rotas", [...new Map(rotas.map((item) => [item.producto.id, item.producto])).values()]),
+    ].filter(Boolean).join("");
+    els.auditCatalogResult.innerHTML = html || '<p class="cloud-tool-empty">No se encontraron problemas.</p>';
+    const total = sinFoto.length + sinPrecio.length + sinCategoria.length + rotas.length;
+    setStatus(els.auditCatalogStatus, total ? `${total} problema(s) encontrados.` : "Catálogo sin problemas detectados.", total ? "error" : "success");
+  };
+
+  const recolectarImagenesCatalogo = () => {
+    const registros = [];
+    catalog.productos.forEach((producto) => {
+      (producto.imagenes || []).forEach((imagen) => { if (imagen?.src) registros.push({ tipo: "producto", producto, imagen, src: imagen.src }); });
+    });
+    (catalog.categorias || []).forEach((categoria) => { if (categoria.portada && categoria.portada !== "auto") registros.push({ tipo: "categoria", categoria, src: categoria.portada }); });
+    return registros;
+  };
+
+  const medirImagen = async (src) => {
+    try {
+      const respuesta = await fetch(imageURL(src), { method: "HEAD", cache: "no-store" });
+      if (respuesta.ok) {
+        const tamano = Number(respuesta.headers.get("content-length") || 0);
+        if (tamano > 0) return tamano;
+      }
+      const completa = await fetch(imageURL(src), { cache: "no-store" });
+      if (!completa.ok) return null;
+      return (await completa.blob()).size;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const transformarCloudinary = (src) => {
+    const url = imageURL(src);
+    if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return null;
+    const [base, resto] = url.split("/upload/");
+    if (!/^v\d+\//.test(resto)) return null;
+    return `${base}/upload/f_auto,q_auto,w_1400,c_limit/${resto}`;
+  };
+
+  const escanearImagenesPesadas = async () => {
+    if (!catalog) return;
+    setStatus(els.heavyImagesStatus, "Midiendo imágenes…");
+    imagenesPesadas = [];
+    const registros = recolectarImagenesCatalogo();
+    const unicos = [...new Map(registros.map((item) => [item.src, item])).values()].slice(0, 90);
+    let siguiente = 0;
+    const trabajadores = Array.from({ length: 6 }, async () => {
+      while (siguiente < unicos.length) {
+        const actual = unicos[siguiente++];
+        const tamano = await medirImagen(actual.src);
+        if (tamano && tamano > 300 * 1024) imagenesPesadas.push({ ...actual, tamano });
+      }
+    });
+    await Promise.all(trabajadores);
+    imagenesPesadas.sort((a, b) => b.tamano - a.tamano);
+    if (!imagenesPesadas.length) {
+      els.heavyImagesResult.innerHTML = '<p class="cloud-tool-empty">No se detectaron fotos de más de 300 KB.</p>';
+      if (els.optimizeHeavyImages) els.optimizeHeavyImages.hidden = true;
+      setStatus(els.heavyImagesStatus, "Todas las fotos están por debajo de 300 KB.", "success");
+      return;
+    }
+    els.heavyImagesResult.innerHTML = `<h4>Fotos pesadas (${imagenesPesadas.length})</h4><ul>${imagenesPesadas.slice(0, 20).map((item) => {
+      const nombre = item.tipo === "producto" ? item.producto.nombre : item.categoria.nombre;
+      return `<li><span><strong>${escapeHTML(nombre || "Sin nombre")}</strong><br><small>${Math.round(item.tamano / 1024)} KB</small></span></li>`;
+    }).join("")}</ul>`;
+    if (els.optimizeHeavyImages) els.optimizeHeavyImages.hidden = false;
+    setStatus(els.heavyImagesStatus, `${imagenesPesadas.length} foto(s) pesada(s) detectada(s).`);
+  };
+
+  const optimizarImagenesPesadas = async () => {
+    if (!imagenesPesadas.length) return;
+    if (!window.confirm(`¿Optimizar ${imagenesPesadas.length} foto(s) pesada(s)? Se modificarán las URLs del catálogo; no se publica automáticamente.`)) return;
+    setStatus(els.heavyImagesStatus, "Optimizando imágenes…");
+    let optimizadas = 0;
+    const cambios = new Map();
+    try {
+      for (const item of imagenesPesadas) {
+        const nueva = transformarCloudinary(item.src);
+        if (nueva) cambios.set(item.src, nueva);
+      }
+      if (!cambios.size) {
+        setStatus(els.heavyImagesStatus, "Las fotos pesadas no son de Cloudinary y no se pueden optimizar automáticamente desde acá.", "error");
+        return;
+      }
+      catalog.productos.forEach((producto) => {
+        (producto.imagenes || []).forEach((imagen) => {
+          if (cambios.has(imagen.src)) { imagen.src = cambios.get(imagen.src); optimizadas += 1; }
+        });
+      });
+      catalog.categorias.forEach((categoria) => {
+        if (cambios.has(categoria.portada)) { categoria.portada = cambios.get(categoria.portada); optimizadas += 1; }
+      });
+      dirty = true;
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      if (guardado) {
+        els.heavyImagesResult.innerHTML = `<p class="cloud-tool-empty">${optimizadas} imagen(es) optimizada(s). Guardá y publicá cuando quieras.</p>`;
+        setStatus(els.heavyImagesStatus, `${optimizadas} imagen(es) actualizadas a versiones optimizadas de Cloudinary.`, "success");
+      } else {
+        setStatus(els.heavyImagesStatus, "Las imágenes se actualizaron en memoria, pero no se pudo guardar el borrador.", "error");
+      }
+    } catch (error) {
+      setStatus(els.heavyImagesStatus, `No se pudieron optimizar: ${error.message}`, "error");
+    }
+  };
+
+  const validarCopiaCatalogo = (archivo) => {
+    const datos = archivo?.catalogo || archivo?.borrador || archivo;
+    if (!datos || typeof datos !== "object") throw new Error("El archivo no contiene un catálogo válido.");
+    if (!Array.isArray(datos.productos) || !Array.isArray(datos.categorias)) {
+      throw new Error("Faltan las listas de productos o categorías.");
+    }
+    if (datos.productos.length > 5000 || datos.categorias.length > 2000) throw new Error("El archivo es demasiado grande.");
+    const idsCategorias = new Set();
+    datos.categorias.forEach((categoria) => {
+      if (!categoria || typeof categoria.id !== "string" || !categoria.id.trim()) throw new Error("Hay una categoría sin ID válido.");
+      if (idsCategorias.has(categoria.id)) throw new Error(`ID de categoría duplicado: ${categoria.id}`);
+      if (typeof categoria.nombre !== "string" || !categoria.nombre.trim()) throw new Error(`La categoría ${categoria.id} no tiene nombre.`);
+      idsCategorias.add(categoria.id);
+    });
+    datos.categorias.forEach((categoria) => {
+      if (categoria.padre && !idsCategorias.has(categoria.padre)) throw new Error(`La categoría ${categoria.nombre} apunta a una categoría padre inexistente.`);
+      let actual = categoria.padre;
+      let guard = 0;
+      const visitadas = new Set();
+      while (actual && guard < 100) {
+        if (visitadas.has(actual) || actual === categoria.id) throw new Error("Las categorías contienen una jerarquía circular.");
+        visitadas.add(actual);
+        actual = datos.categorias.find((item) => item.id === actual)?.padre;
+        guard += 1;
+      }
+    });
+    const idsProductos = new Set();
+    datos.productos.forEach((producto) => {
+      if (!producto || typeof producto.id !== "string" || !producto.id.trim()) throw new Error("Hay un producto sin ID válido.");
+      if (idsProductos.has(producto.id)) throw new Error(`ID de producto duplicado: ${producto.id}`);
+      idsProductos.add(producto.id);
+      const categorias = Array.isArray(producto.categorias) && producto.categorias.length ? producto.categorias : [producto.categoria].filter(Boolean);
+      categorias.forEach((id) => {
+        if (id && !idsCategorias.has(id)) throw new Error(`El producto ${producto.nombre || producto.id} usa una categoría inexistente.`);
+      });
+    });
+    const normalizado = normalizarCatalogo(clone(datos));
+    migrarIdsProductos(normalizado);
+    if (JSON.stringify(normalizado).length > 900000) throw new Error("El catálogo supera el tamaño permitido por Firestore.");
+    return normalizado;
+  };
+
+  const cancelarImportacion = () => {
+    importacionPendiente = null;
+    if (els.importCatalogPreview) els.importCatalogPreview.hidden = true;
+    if (els.importCatalogFile) els.importCatalogFile.value = "";
+    if (els.importCatalogStatus) els.importCatalogStatus.textContent = "";
+  };
+
+  const prepararImportacion = async (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus(els.importCatalogStatus, "El archivo supera los 5 MB.", "error");
+      return;
+    }
+    setStatus(els.importCatalogStatus, "Leyendo y validando la copia…");
+    try {
+      const texto = await file.text();
+      let archivo;
+      try { archivo = JSON.parse(texto); } catch (error) { throw new Error("El archivo no es un JSON válido."); }
+      const catalogoImportado = validarCopiaCatalogo(archivo);
+      importacionPendiente = { catalogo: catalogoImportado, archivo, file };
+      const fecha = archivo?.exportadoEn ? new Date(archivo.exportadoEn).toLocaleString("es-AR") : "sin fecha";
+      if (els.importCatalogName) els.importCatalogName.textContent = file.name;
+      if (els.importCatalogMeta) {
+        els.importCatalogMeta.textContent = `${catalogoImportado.productos.length} productos · ${catalogoImportado.categorias.length} categorías · ${catalogoImportado.sucursales.length} sucursales · Exportado: ${fecha}`;
+      }
+      if (els.importCatalogPreview) els.importCatalogPreview.hidden = false;
+      setStatus(els.importCatalogStatus, "Copia validada. Confirmá la restauración para reemplazar el borrador.", "success");
+    } catch (error) {
+      cancelarImportacion();
+      setStatus(els.importCatalogStatus, `No se puede importar: ${error.message}`, "error");
+    }
+  };
+
+  const confirmarImportacion = async () => {
+    if (!importacionPendiente) return;
+    const importado = importacionPendiente.catalogo;
+    try {
+      try {
+        localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo()));
+      } catch (error) {}
+      descargarJSON(nombreArchivoCopia("antes-de-importar"), construirCopiaCatalogo());
+      catalog = importado;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = true;
+      importacionPendiente = null;
+      if (els.importCatalogPreview) els.importCatalogPreview.hidden = true;
+      if (els.importCatalogFile) els.importCatalogFile.value = "";
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      setStatus(
+        els.importCatalogStatus,
+        guardado
+          ? "Copia restaurada y guardada en el borrador. Revisá el catálogo y publicá cuando estés listo."
+          : "Copia cargada en memoria, pero no se pudo guardar automáticamente. Guardá el borrador manualmente.",
+        guardado ? "success" : "error"
+      );
+      toast(guardado ? "Copia restaurada en el borrador." : "Restaurada, pero falta guardar el borrador.", guardado ? "success" : "error");
+    } catch (error) {
+      setStatus(els.importCatalogStatus, `No se pudo restaurar: ${error.message}`, "error");
+    }
+  };
+
+  const activarCloudTab = (nombre) => {
+    if (!tabPermitida(nombre)) {
+      const primera = primerTabPermitida();
+      if (!primera) return;
+      nombre = primera;
+    }
+    document.querySelectorAll("[data-cloud-tab]").forEach((tab) => {
+      const activo = tab.dataset.cloudTab === nombre;
+      tab.setAttribute("aria-selected", String(activo));
+      tab.tabIndex = activo ? 0 : -1;
+    });
+    const paneles = {
+      productos: $("#panelProductos"),
+      categorias: $("#panelCategorias"),
+      sucursales: $("#panelSucursales"),
+      pedidos: $("#panelPedidos"),
+      instagram: $("#panelInstagram"),
+      etiquetas: $("#panelEtiquetas"),
+      herramientas: $("#panelHerramientas"),
+    };
+    Object.entries(paneles).forEach(([clave, panel]) => {
+      if (panel) panel.hidden = clave !== nombre;
+    });
+    if (nombre === "categorias") renderCategorias();
+    if (nombre === "sucursales") renderSucursales();
+    if (nombre === "pedidos") cargarPedidos();
+    if (nombre === "herramientas") {
+      actualizarMetaExportacion();
+      cargarHistorialVersiones();
+      cargarPublicacionAnterior();
+      if (currentAccess?.principal) cargarEditores();
+      if (!els.compareCatalogResult?.innerHTML) els.compareCatalogResult.innerHTML = "";
+      if (!els.auditCatalogResult?.innerHTML) els.auditCatalogResult.innerHTML = "";
+    }
+    const panelActivo = paneles[nombre];
+    const iframe = panelActivo?.querySelector("iframe[data-src]");
+    if (iframe && !iframe.getAttribute("src")) {
+      panelActivo.classList.remove("is-ready");
+      iframe.addEventListener(
+        "load",
+        () => panelActivo.classList.add("is-ready"),
+        { once: true }
+      );
+      iframe.src = iframe.dataset.src;
+    } else if (iframe) {
+      panelActivo.classList.add("is-ready");
+    }
+    if (nombre === "productos" && selectedId) {
+      const producto = catalog?.productos?.find((item) => item.id === selectedId);
+      if (producto) renderBranches(producto);
+    }
+  };
+
+  const activarFormTab = (nombre) => {
+    if (nombre === "resenas") cargarResenasPendientes();
+    document.querySelectorAll("[data-form-tab]").forEach((tab) => {
+      const activo = tab.dataset.formTab === nombre;
+      tab.setAttribute("aria-selected", String(activo));
+      tab.tabIndex = activo ? 0 : -1;
+    });
+    document.querySelectorAll("[data-form-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.formPanel !== nombre;
+    });
+  };
+
+  const duplicarProducto = () => {
+    if (!catalog || !selectedId) return;
+    const base = catalog.productos.find((producto) => producto.id === selectedId);
+    if (!base) return;
+    const baseId = `${base.id}-copia`;
+    let id = baseId;
+    let sufijo = 2;
+    while (catalog.productos.some((producto) => producto.id === id)) {
+      id = `${baseId}-${sufijo++}`;
+    }
+    const copia = {
+      ...JSON.parse(JSON.stringify(base)),
+      id,
+      nombre: `${base.nombre} (copia)`,
+    };
+    catalog.productos.unshift(copia);
+    selectedId = id;
+    creating = false;
+    dirty = true;
+    editarProducto(id);
+    programarAutoguardado();
+    toast("Producto duplicado. Guardá el borrador para confirmarlo.");
+  };
+
+
+  const ESTADOS_PEDIDO = [
+    ["pendiente", "Pedido recibido"],
+    ["confirmado", "Confirmado"],
+    ["en_produccion", "En producción"],
+    ["listo", "Listo"],
+    ["enviado", "Enviado"],
+    ["entregado", "Entregado"],
+    ["cancelado", "Cancelado"],
+  ];
+
+  const cargarPedidos = async () => {
+    if (!db || !els.pedidosList) return;
+    try {
+      setStatus(els.pedidosStatus, "Cargando pedidos…");
+      const snap = await db.collection("pedidos").orderBy("creado", "desc").limit(50).get();
+      if (snap.empty) {
+        els.pedidosList.innerHTML = '<p class="cloud-muted">Todavía no hay pedidos con seguimiento.</p>';
+        setStatus(els.pedidosStatus, "");
+        return;
+      }
+      els.pedidosList.innerHTML = snap.docs
+        .map((doc) => {
+          const pedido = doc.data();
+          const items = Array.isArray(pedido.items) ? pedido.items : [];
+          const fecha = pedido.creado?.toDate ? pedido.creado.toDate().toLocaleString("es-AR") : "";
+          const opciones = ESTADOS_PEDIDO.map(
+            ([valor, label]) => `<option value="${valor}" ${pedido.estado === valor ? "selected" : ""}>${label}</option>`
+          ).join("");
+          return `<article class="cloud-order" data-order="${escapeHTML(doc.id)}">
+            <div class="cloud-order__head">
+              <strong>${escapeHTML(pedido.codigo || doc.id)}</strong>
+              <small>${escapeHTML(fecha)}</small>
+            </div>
+            <ul>${items.map((item) => `<li>${escapeHTML(item.nombre || "Producto")} ×${item.cantidad || 1}</li>`).join("")}</ul>
+            <div class="cloud-order__foot">
+              <span>Total: $${Number(pedido.total || 0).toLocaleString("es-AR")}</span>
+              <label>Estado <select data-order-status>${opciones}</select></label>
+              <button class="btn btn--primary" type="button" data-save-order>Guardar estado</button>
+            </div>
+          </article>`;
+        })
+        .join("");
+      setStatus(els.pedidosStatus, `${snap.size} pedido(s).`, "success");
+    } catch (error) {
+      setStatus(els.pedidosStatus, `No se pudieron cargar: ${firebaseErrorMessage(error)}`, "error");
+    }
+  };
+
+  const guardarEstadoPedido = async (boton) => {
+    const fila = boton.closest("[data-order]");
+    const codigo = fila?.dataset.order;
+    const estado = fila?.querySelector("[data-order-status]")?.value;
+    if (!codigo || !estado) return;
+    boton.disabled = true;
+    try {
+      await db.collection("pedidos").doc(codigo).update({
+        estado,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      setStatus(els.pedidosStatus, "Estado actualizado. El cliente ya puede verlo.", "success");
+    } catch (error) {
+      setStatus(els.pedidosStatus, `No se actualizó: ${firebaseErrorMessage(error)}`, "error");
+    } finally {
+      boton.disabled = false;
     }
   };
 
@@ -749,45 +3208,6 @@
       setStatus(els.editorUserStatus, `Cuenta ${activo ? "activada" : "desactivada"}.`, "success");
     } catch (error) {
       setStatus(els.editorUserStatus, `No se pudo cambiar el estado: ${firebaseErrorMessage(error)}`, "error");
-    }
-  };
-
-  const conTiempoMaximo = (promesa, ms = 15000) =>
-    Promise.race([
-      promesa,
-      new Promise((_, rechazar) => {
-        window.setTimeout(() => rechazar(Object.assign(new Error("Tiempo de espera agotado."), { code: "auth/timeout" })), ms);
-      }),
-    ]);
-
-  const login = async (event) => {
-    event.preventDefault();
-    const email = els.loginEmail.value.trim();
-    const password = els.loginPassword.value;
-    if (!email || !password) {
-      setStatus(els.loginStatus, "Completá email y contraseña.", "error");
-      return;
-    }
-    setStatus(els.loginStatus, "Ingresando…");
-    try {
-      await conTiempoMaximo(auth.signInWithEmailAndPassword(email, password));
-      setStatus(els.loginStatus, "");
-    } catch (error) {
-      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
-    }
-  };
-
-  const resetPassword = async () => {
-    const email = els.loginEmail.value.trim();
-    if (!email) {
-      setStatus(els.loginStatus, "Escribí tu email para enviarte el enlace.", "error");
-      return;
-    }
-    try {
-      await auth.sendPasswordResetEmail(email);
-      setStatus(els.loginStatus, "Te enviamos un email para restablecer la contraseña.");
-    } catch (error) {
-      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
     }
   };
 
