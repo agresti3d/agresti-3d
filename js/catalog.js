@@ -197,6 +197,11 @@
   const leerProducto = () =>
     new URLSearchParams(location.hash.replace(/^#/, "")).get("p");
 
+  const buscarProductoPorId = (id) =>
+    productos.find((producto) =>
+      producto.id === id || (Array.isArray(producto.idsAnteriores) && producto.idsAnteriores.includes(id))
+    );
+
   const urlDe = (producto) => {
     if (location.protocol.startsWith("http")) {
       return new URL(`/productos/${encodeURIComponent(producto.id)}/`, location.href).href;
@@ -239,7 +244,7 @@
 
   // ---------- Render ----------
   const render = () => {
-    const detalle = productos.find((producto) => producto.id === leerProducto());
+    const detalle = buscarProductoPorId(leerProducto());
     document.body.classList.toggle("is-product-detail", Boolean(detalle));
     if (detalle) {
       if (el.sectionHead) el.sectionHead.hidden = true;
@@ -1331,8 +1336,9 @@
 
   // El mismo hash que se comparte por WhatsApp abre la ficha individual.
   const abrirProducto = (id) => {
-    const producto = productos.find((p) => p.id === id);
+    const producto = buscarProductoPorId(id);
     if (!producto) return false;
+    id = producto.id;
 
     verFavoritos = false;
     ruta = rutaDe(categoriasDe(producto)[0]);
@@ -1408,7 +1414,7 @@
   };
 
   const volverAListaDesdeFicha = () => {
-    const producto = productos.find((item) => item.id === leerProducto());
+    const producto = buscarProductoPorId(leerProducto());
     ruta = producto ? rutaDe(categoriasDe(producto)[0]) : [];
     verFavoritos = false;
     paginaActual = 0;
