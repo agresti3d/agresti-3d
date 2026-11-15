@@ -752,6 +752,45 @@
     }
   };
 
+  const conTiempoMaximo = (promesa, ms = 15000) =>
+    Promise.race([
+      promesa,
+      new Promise((_, rechazar) => {
+        window.setTimeout(() => rechazar(Object.assign(new Error("Tiempo de espera agotado."), { code: "auth/timeout" })), ms);
+      }),
+    ]);
+
+  const login = async (event) => {
+    event.preventDefault();
+    const email = els.loginEmail.value.trim();
+    const password = els.loginPassword.value;
+    if (!email || !password) {
+      setStatus(els.loginStatus, "Completá email y contraseña.", "error");
+      return;
+    }
+    setStatus(els.loginStatus, "Ingresando…");
+    try {
+      await conTiempoMaximo(auth.signInWithEmailAndPassword(email, password));
+      setStatus(els.loginStatus, "");
+    } catch (error) {
+      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
+    }
+  };
+
+  const resetPassword = async () => {
+    const email = els.loginEmail.value.trim();
+    if (!email) {
+      setStatus(els.loginStatus, "Escribí tu email para enviarte el enlace.", "error");
+      return;
+    }
+    try {
+      await auth.sendPasswordResetEmail(email);
+      setStatus(els.loginStatus, "Te enviamos un email para restablecer la contraseña.");
+    } catch (error) {
+      setStatus(els.loginStatus, firebaseErrorMessage(error), "error");
+    }
+  };
+
   const iniciarSesionUI = () => {
     if (els.loginForm) els.loginForm.addEventListener("submit", login);
     if (els.resetPassword) els.resetPassword.addEventListener("click", resetPassword);
