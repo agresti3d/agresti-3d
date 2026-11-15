@@ -254,6 +254,33 @@
     return (incluirTodas ? [{ id: "", ruta: "Todas las categorías" }] : []).concat(items);
   };
 
+  const esIdProvisional = (id) => /^producto-sin-titulo(?:-\d+)?$/.test(String(id || ""));
+
+  const generarIdProducto = (nombre, ignorarId = null, catalogo = catalog) => {
+    const base = slugify(nombre) || "producto";
+    let candidato = base;
+    let sufijo = 2;
+    while ((catalogo?.productos || []).some((producto) => producto.id === candidato && producto.id !== ignorarId)) {
+      candidato = `${base}-${sufijo++}`;
+    }
+    return candidato;
+  };
+
+  const migrarIdsProductos = (data) => {
+    let cambios = 0;
+    (data?.productos || []).forEach((producto) => {
+      if (!esIdProvisional(producto.id)) return;
+      const nombre = String(producto.nombre || "").trim();
+      if (!nombre || /^producto sin t[ií]tulo$/i.test(nombre)) return;
+      const nuevoId = generarIdProducto(nombre, producto.id, data);
+      if (nuevoId === producto.id) return;
+      producto.idsAnteriores = [...new Set([...(producto.idsAnteriores || []), producto.id])];
+      producto.id = nuevoId;
+      cambios += 1;
+    });
+    return cambios;
+  };
+
   const categoriasProducto = (producto) => {
     const ids = Array.isArray(producto?.categorias) ? producto.categorias : [];
     if (!ids.length && producto?.categoria) ids.push(producto.categoria);
@@ -541,6 +568,7 @@
       origen = "catálogo inicial";
     }
     catalog = normalizarCatalogo(data);
+    const idsMigrados = migrarIdsProductos(catalog);
     ultimaHuellaHistorial = huellaTexto(JSON.stringify(catalog));
     ultimoTiempoHistorial = Date.now();
     selectedId = null;
@@ -554,8 +582,14 @@
     mostrarFormulario(false);
     activarFormTab("medios");
     activarCloudTab("productos");
-    setStatus(els.saveStatus, `Catálogo cargado desde ${origen}.`);
-    dirty = false;
+    if (idsMigrados) {
+      dirty = true;
+      programarAutoguardado();
+      setStatus(els.saveStatus, `Catálogo cargado desde ${origen}. Se corrigieron ${idsMigrados} ID provisorios; guardá el borrador para confirmarlo.`, "success");
+    } else {
+      setStatus(els.saveStatus, `Catálogo cargado desde ${origen}.`);
+      dirty = false;
+    }
     advertirCloudinary();
   };
 
@@ -837,15 +871,7 @@
         precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
       }))
       .filter((variante) => variante.nombre);
-    const id = selectedId || (() => {
-      const baseId = slugify(nombre) || "producto";
-      let candidato = baseId;
-      let sufijo = 2;
-      while (catalog.productos.some((producto) => producto.id === candidato)) {
-        candidato = `${baseId}-${sufijo++}`;
-      }
-      return candidato;
-    })();
+    const id = selectedId || generarIdProducto(nombre);
     const mapaDetalles = {
       altura: els.productHeight,
       ancho: els.productWidth,
@@ -921,6 +947,13 @@
     } else {
       const indice = catalog.productos.findIndex((item) => item.id === selectedId);
       if (indice < 0) throw new Error("No se encontró el producto.");
+      const original = catalog.productos[indice];
+      if (esIdProvisional(original.id) && !/^producto sin t[ií]tulo$/i.test(producto.nombre)) {
+        const nuevoId = generarIdProducto(producto.nombre, original.id);
+        producto.idsAnteriores = [...new Set([...(original.idsAnteriores || []), original.id])];
+        producto.id = nuevoId;
+        selectedId = nuevoId;
+      }
       catalog.productos[indice] = producto;
     }
     if (els.formTitle) els.formTitle.textContent = producto.nombre;
@@ -2672,6 +2705,7 @@
       });
     });
     const normalizado = normalizarCatalogo(clone(datos));
+    migrarIdsProductos(normalizado);
     if (JSON.stringify(normalizado).length > 900000) throw new Error("El catálogo supera el tamaño permitido por Firestore.");
     return normalizado;
   };
