@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=25">
+  <link rel="stylesheet" href="editor.css?v=26">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -24,7 +24,7 @@
       <img class="login__logo" src="../assets/logo/agresti-a-claro.svg" alt="" width="54" height="54">
       <p class="login__eyebrow">AGRESTI.3D</p>
       <h1 id="loginTitle">Editor de catálogo</h1>
-      <p class="login__lead">Ingresá con la cuenta de administrador para editar el catálogo desde cualquier dispositivo.</p>
+      <p class="login__lead">Ingresá con una cuenta autorizada para editar el catálogo.</p>
 
       <label class="field">
         <span>Email</span>
@@ -390,6 +390,41 @@
           </div>
         </div>
         <div class="cloud-tools-grid">
+          <article class="cloud-tool-card cloud-users-card" id="editorUsersCard" hidden>
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">◎</span><div><h3>Usuarios y permisos</h3><p>Solo el administrador principal puede crear cuentas y cambiar accesos.</p></div></div>
+            <div class="cloud-tool-result cloud-editor-users" id="editorUsersList"><p class="cloud-muted">Cargando usuarios…</p></div>
+            <details class="cloud-user-form">
+              <summary id="editorUserFormSummary">Crear usuario</summary>
+              <form id="editorUserForm">
+                <div class="cloud-user-grid">
+                  <label class="field"><span>Email</span><input id="editorUserEmail" type="email" autocomplete="off" placeholder="hermano@email.com" required></label>
+                  <label class="field"><span>Nombre</span><input id="editorUserName" type="text" maxlength="80" placeholder="Nombre de la persona"></label>
+                </div>
+                <label class="field" id="editorUserPasswordField"><span>Contraseña temporal</span><input id="editorUserPassword" type="text" autocomplete="new-password" minlength="6" placeholder="Mínimo 6. Si queda vacía, se genera."></label>
+                <fieldset class="cloud-permissions">
+                  <legend>Secciones permitidas</legend>
+                  <label><input type="checkbox" data-editor-permission="productos" checked> Productos</label>
+                  <label><input type="checkbox" data-editor-permission="categorias"> Categorías</label>
+                  <label><input type="checkbox" data-editor-permission="sucursales"> Sucursales</label>
+                  <label><input type="checkbox" data-editor-permission="pedidos"> Pedidos</label>
+                  <label><input type="checkbox" data-editor-permission="instagram"> Instagram</label>
+                  <label><input type="checkbox" data-editor-permission="etiquetas"> Etiquetas</label>
+                  <label><input type="checkbox" data-editor-permission="herramientas"> Herramientas</label>
+                </fieldset>
+                <div class="cloud-user-checks">
+                  <label><input type="checkbox" id="editorUserPublish"> Puede publicar en la web</label>
+                  <label><input type="checkbox" id="editorUserActive" checked> Cuenta activa</label>
+                  <label><input type="checkbox" id="editorUserSendReset" checked> Enviar email para elegir contraseña</label>
+                </div>
+                <div class="cloud-tool-card__actions">
+                  <button class="btn" id="editorUserSave" type="submit">Crear usuario</button>
+                  <button class="btn btn--ghost" id="editorUserCancel" type="button" hidden>Cancelar</button>
+                </div>
+                <p class="cloud-status" id="editorUserStatus" role="status" aria-live="polite"></p>
+              </form>
+            </details>
+          </article>
+
           <article class="cloud-tool-card">
             <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">↓</span><div><h3>Exportar copia</h3><p>Descargá el catálogo actual completo en JSON.</p></div></div>
             <label class="cloud-tool-name"><span>Nombre del archivo</span><input id="exportCatalogName" type="text" value="catalogo" maxlength="60" placeholder="catálogo"></label>
@@ -507,7 +542,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="cloud-config.js?v=2"></script>
-  <script src="editor.js?v=36"></script>
+  <script src="cloud-config.js?v=3"></script>
+  <script src="editor.js?v=37"></script>
 </body>
 </html>
