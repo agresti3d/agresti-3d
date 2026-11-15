@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=24">
+  <link rel="stylesheet" href="editor.css?v=25">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -391,38 +391,57 @@
         </div>
         <div class="cloud-tools-grid">
           <article class="cloud-tool-card">
-            <div class="cloud-tool-card__head">
-              <span class="cloud-tool-card__icon" aria-hidden="true">↓</span>
-              <div><h3>Exportar copia de seguridad</h3><p>Descargá el catálogo actual completo en un archivo JSON.</p></div>
-            </div>
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">↓</span><div><h3>Exportar copia</h3><p>Descargá el catálogo actual completo en JSON.</p></div></div>
+            <label class="cloud-tool-name"><span>Nombre del archivo</span><input id="exportCatalogName" type="text" value="catalogo" maxlength="60" placeholder="catálogo"></label>
             <p class="cloud-tool-card__meta" id="exportCatalogMeta">Se incluyen productos, categorías y sucursales.</p>
             <div class="cloud-tool-card__actions"><button class="btn" id="exportCatalogBackup" type="button">Descargar copia .json</button></div>
             <p class="cloud-status" id="exportCatalogStatus" role="status" aria-live="polite"></p>
           </article>
 
           <article class="cloud-tool-card">
-            <div class="cloud-tool-card__head">
-              <span class="cloud-tool-card__icon" aria-hidden="true">↑</span>
-              <div><h3>Importar copia de seguridad</h3><p>Restaurá un archivo JSON exportado desde este editor.</p></div>
-            </div>
-            <p class="cloud-tool-card__meta">Se reemplaza el borrador actual. No se publica automáticamente.</p>
-            <div class="cloud-tool-card__actions">
-              <label class="btn btn--ghost cloud-file-btn">Elegir archivo .json
-                <input id="importCatalogFile" type="file" accept=".json,application/json">
-              </label>
-            </div>
-            <div class="cloud-import-preview" id="importCatalogPreview" hidden>
-              <strong id="importCatalogName">Copia de seguridad</strong>
-              <span id="importCatalogMeta"></span>
-              <div class="cloud-import-preview__actions">
-                <button class="btn btn--ghost" id="cancelImportCatalog" type="button">Cancelar</button>
-                <button class="btn" id="confirmImportCatalog" type="button">Restaurar en borrador</button>
-              </div>
-            </div>
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">↑</span><div><h3>Importar copia</h3><p>Restaurá un archivo JSON exportado desde este editor.</p></div></div>
+            <p class="cloud-tool-card__meta">Reemplaza el borrador. No publica automáticamente.</p>
+            <div class="cloud-tool-card__actions"><label class="btn btn--ghost cloud-file-btn">Elegir archivo .json<input id="importCatalogFile" type="file" accept=".json,application/json"></label></div>
+            <div class="cloud-import-preview" id="importCatalogPreview" hidden><strong id="importCatalogName">Copia de seguridad</strong><span id="importCatalogMeta"></span><div class="cloud-import-preview__actions"><button class="btn btn--ghost" id="cancelImportCatalog" type="button">Cancelar</button><button class="btn" id="confirmImportCatalog" type="button">Restaurar en borrador</button></div></div>
             <p class="cloud-status" id="importCatalogStatus" role="status" aria-live="polite"></p>
           </article>
+
+          <article class="cloud-tool-card">
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">↺</span><div><h3>Historial de versiones</h3><p>Se guardan versiones automáticas al editar y publicar.</p></div></div>
+            <div class="cloud-tool-card__actions"><button class="btn btn--ghost" id="refreshCatalogHistory" type="button">Actualizar historial</button></div>
+            <div class="cloud-tool-result" id="catalogHistoryList"><p class="cloud-muted">Abrí esta herramienta para cargar el historial.</p></div>
+            <p class="cloud-status" id="catalogHistoryStatus" role="status" aria-live="polite"></p>
+          </article>
+
+          <article class="cloud-tool-card">
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">⇄</span><div><h3>Comparar borrador y publicado</h3><p>Revisá qué cambia antes de publicar.</p></div></div>
+            <div class="cloud-tool-card__actions"><button class="btn btn--ghost" id="compareCatalog" type="button">Comparar ahora</button></div>
+            <div class="cloud-tool-result" id="compareCatalogResult"></div>
+            <p class="cloud-status" id="compareCatalogStatus" role="status" aria-live="polite"></p>
+          </article>
+
+          <article class="cloud-tool-card">
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">✓</span><div><h3>Auditoría del catálogo</h3><p>Detectá productos incompletos e imágenes rotas.</p></div></div>
+            <div class="cloud-tool-card__actions"><button class="btn btn--ghost" id="auditCatalog" type="button">Auditar catálogo</button></div>
+            <div class="cloud-tool-result" id="auditCatalogResult"></div>
+            <p class="cloud-status" id="auditCatalogStatus" role="status" aria-live="polite"></p>
+          </article>
+
+          <article class="cloud-tool-card">
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">⚡</span><div><h3>Optimizar imágenes</h3><p>Detectá fotos pesadas y reducilas en lote.</p></div></div>
+            <div class="cloud-tool-card__actions"><button class="btn btn--ghost" id="scanHeavyImages" type="button">Analizar peso</button><button class="btn" id="optimizeHeavyImages" type="button" hidden>Optimizar pesadas</button></div>
+            <div class="cloud-tool-result" id="heavyImagesResult"></div>
+            <p class="cloud-status" id="heavyImagesStatus" role="status" aria-live="polite"></p>
+          </article>
+
+          <article class="cloud-tool-card">
+            <div class="cloud-tool-card__head"><span class="cloud-tool-card__icon" aria-hidden="true">↶</span><div><h3>Restaurar publicación anterior</h3><p>Volvé a la versión que estaba publicada antes de la última publicación.</p></div></div>
+            <p class="cloud-tool-card__meta" id="restoreLastPublicationMeta">Consultando publicación anterior…</p>
+            <div class="cloud-tool-card__actions"><button class="btn btn--ghost" id="restoreLastPublication" type="button" disabled>Restaurar publicación anterior</button></div>
+            <p class="cloud-status" id="restoreLastPublicationStatus" role="status" aria-live="polite"></p>
+          </article>
         </div>
-        <p class="cloud-tools-note">Antes de restaurar se descarga automáticamente una copia del catálogo actual. La importación queda en el borrador: revisá y publicá cuando estés conforme.</p>
+        <p class="cloud-tools-note">Las copias y restauraciones manuales se descargan con el formato <strong>aaaa-mm-dd - nombre.json</strong>. Las restauraciones quedan en el borrador salvo la restauración de publicación, que también actualiza la web.</p>
       </section>
     </main>
   </div>
@@ -489,6 +508,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=2"></script>
-  <script src="editor.js?v=34"></script>
+  <script src="editor.js?v=35"></script>
 </body>
 </html>
