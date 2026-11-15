@@ -21,6 +21,16 @@ service cloud.firestore {
       allow read, write: if esAdmin();
     }
 
+    // Copia de la publicación inmediatamente anterior, para poder deshacer.
+    match /catalogo/publicado_anterior {
+      allow read, write: if esAdmin();
+    }
+
+    // Historial automático de versiones del catálogo.
+    match /catalogo_historial/{version} {
+      allow read, create, delete: if esAdmin();
+    }
+
     // Reseñas enviadas por clientes: se crean sin cuenta y quedan pendientes.
     // Solo el administrador puede leerlas, aprobarlas o borrarlas.
     function resenaValida() {
