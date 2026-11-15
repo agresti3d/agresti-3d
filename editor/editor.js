@@ -106,6 +106,16 @@
     imageFrameClose: $("#imageFrameClose"),
     imageFrameCancel: $("#imageFrameCancel"),
     imageFrameAccept: $("#imageFrameAccept"),
+    exportCatalogBackup: $("#exportCatalogBackup"),
+    exportCatalogMeta: $("#exportCatalogMeta"),
+    exportCatalogStatus: $("#exportCatalogStatus"),
+    importCatalogFile: $("#importCatalogFile"),
+    importCatalogPreview: $("#importCatalogPreview"),
+    importCatalogName: $("#importCatalogName"),
+    importCatalogMeta: $("#importCatalogMeta"),
+    importCatalogStatus: $("#importCatalogStatus"),
+    confirmImportCatalog: $("#confirmImportCatalog"),
+    cancelImportCatalog: $("#cancelImportCatalog"),
     videoFiles: $("#videoFiles"),
     videoList: $("#videoList"),
     videoStatus: $("#videoStatus"),
@@ -146,6 +156,7 @@
   let dropCategoria = null;
   let dropPosicion = null;
   let dropRaiz = false;
+  let importacionPendiente = null;
   let toastTimer = null;
   let loginNotice = "";
   let importing = false;
@@ -516,6 +527,7 @@
     renderCategorias();
     renderSucursales();
     renderProductos();
+    actualizarMetaExportacion();
     mostrarFormulario(false);
     activarFormTab("medios");
     activarCloudTab("productos");
@@ -2136,6 +2148,173 @@
     );
   };
 
+  const descargarJSON = (nombre, payload) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const construirCopiaCatalogo = () => {
+    const limpio = normalizarCatalogo(clone(catalog || {}));
+    return {
+      formato: "agresti-catalogo-backup",
+      version: 1,
+      exportadoEn: new Date().toISOString(),
+      exportadoPor: currentUser?.email || "",
+      resumen: {
+        productos: limpio.productos.length,
+        categorias: limpio.categorias.length,
+        sucursales: limpio.sucursales.length,
+      },
+      catalogo: limpio,
+    };
+  };
+
+  const nombreArchivoCopia = (prefijo = "agresti-catalogo") => {
+    const fecha = new Date();
+    const dos = (numero) => String(numero).padStart(2, "0");
+    return `${prefijo}-${fecha.getFullYear()}${dos(fecha.getMonth() + 1)}${dos(fecha.getDate())}-${dos(fecha.getHours())}${dos(fecha.getMinutes())}${dos(fecha.getSeconds())}.json`;
+  };
+
+  const actualizarMetaExportacion = () => {
+    if (!els.exportCatalogMeta) return;
+    if (!catalog) {
+      els.exportCatalogMeta.textContent = "Cargando catálogo…";
+      return;
+    }
+    els.exportCatalogMeta.textContent = `${catalog.productos.length} productos · ${catalog.categorias.length} categorías · ${catalog.sucursales.length} sucursales`;
+  };
+
+  const exportarCopiaCatalogo = () => {
+    if (!catalog) return;
+    try { commitFormulario(); } catch (error) {}
+    const copia = construirCopiaCatalogo();
+    descargarJSON(nombreArchivoCopia(), copia);
+    actualizarMetaExportacion();
+    setStatus(els.exportCatalogStatus, `Copia descargada: ${copia.resumen.productos} productos y ${copia.resumen.categorias} categorías.`, "success");
+    toast("Copia de seguridad descargada.");
+  };
+
+  const validarCopiaCatalogo = (archivo) => {
+    const datos = archivo?.catalogo || archivo?.borrador || archivo;
+    if (!datos || typeof datos !== "object") throw new Error("El archivo no contiene un catálogo válido.");
+    if (!Array.isArray(datos.productos) || !Array.isArray(datos.categorias)) {
+      throw new Error("Faltan las listas de productos o categorías.");
+    }
+    if (datos.productos.length > 5000 || datos.categorias.length > 2000) throw new Error("El archivo es demasiado grande.");
+    const idsCategorias = new Set();
+    datos.categorias.forEach((categoria) => {
+      if (!categoria || typeof categoria.id !== "string" || !categoria.id.trim()) throw new Error("Hay una categoría sin ID válido.");
+      if (idsCategorias.has(categoria.id)) throw new Error(`ID de categoría duplicado: ${categoria.id}`);
+      if (typeof categoria.nombre !== "string" || !categoria.nombre.trim()) throw new Error(`La categoría ${categoria.id} no tiene nombre.`);
+      idsCategorias.add(categoria.id);
+    });
+    datos.categorias.forEach((categoria) => {
+      if (categoria.padre && !idsCategorias.has(categoria.padre)) throw new Error(`La categoría ${categoria.nombre} apunta a una categoría padre inexistente.`);
+      let actual = categoria.padre;
+      let guard = 0;
+      const visitadas = new Set();
+      while (actual && guard < 100) {
+        if (visitadas.has(actual) || actual === categoria.id) throw new Error("Las categorías contienen una jerarquía circular.");
+        visitadas.add(actual);
+        actual = datos.categorias.find((item) => item.id === actual)?.padre;
+        guard += 1;
+      }
+    });
+    const idsProductos = new Set();
+    datos.productos.forEach((producto) => {
+      if (!producto || typeof producto.id !== "string" || !producto.id.trim()) throw new Error("Hay un producto sin ID válido.");
+      if (idsProductos.has(producto.id)) throw new Error(`ID de producto duplicado: ${producto.id}`);
+      idsProductos.add(producto.id);
+      const categorias = Array.isArray(producto.categorias) && producto.categorias.length ? producto.categorias : [producto.categoria].filter(Boolean);
+      categorias.forEach((id) => {
+        if (id && !idsCategorias.has(id)) throw new Error(`El producto ${producto.nombre || producto.id} usa una categoría inexistente.`);
+      });
+    });
+    const normalizado = normalizarCatalogo(clone(datos));
+    if (JSON.stringify(normalizado).length > 900000) throw new Error("El catálogo supera el tamaño permitido por Firestore.");
+    return normalizado;
+  };
+
+  const cancelarImportacion = () => {
+    importacionPendiente = null;
+    if (els.importCatalogPreview) els.importCatalogPreview.hidden = true;
+    if (els.importCatalogFile) els.importCatalogFile.value = "";
+    if (els.importCatalogStatus) els.importCatalogStatus.textContent = "";
+  };
+
+  const prepararImportacion = async (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus(els.importCatalogStatus, "El archivo supera los 5 MB.", "error");
+      return;
+    }
+    setStatus(els.importCatalogStatus, "Leyendo y validando la copia…");
+    try {
+      const texto = await file.text();
+      let archivo;
+      try { archivo = JSON.parse(texto); } catch (error) { throw new Error("El archivo no es un JSON válido."); }
+      const catalogoImportado = validarCopiaCatalogo(archivo);
+      importacionPendiente = { catalogo: catalogoImportado, archivo, file };
+      const fecha = archivo?.exportadoEn ? new Date(archivo.exportadoEn).toLocaleString("es-AR") : "sin fecha";
+      if (els.importCatalogName) els.importCatalogName.textContent = file.name;
+      if (els.importCatalogMeta) {
+        els.importCatalogMeta.textContent = `${catalogoImportado.productos.length} productos · ${catalogoImportado.categorias.length} categorías · ${catalogoImportado.sucursales.length} sucursales · Exportado: ${fecha}`;
+      }
+      if (els.importCatalogPreview) els.importCatalogPreview.hidden = false;
+      setStatus(els.importCatalogStatus, "Copia validada. Confirmá la restauración para reemplazar el borrador.", "success");
+    } catch (error) {
+      cancelarImportacion();
+      setStatus(els.importCatalogStatus, `No se puede importar: ${error.message}`, "error");
+    }
+  };
+
+  const confirmarImportacion = async () => {
+    if (!importacionPendiente) return;
+    const importado = importacionPendiente.catalogo;
+    try {
+      try {
+        localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo()));
+      } catch (error) {}
+      descargarJSON(nombreArchivoCopia("agresti-catalogo-antes-de-importar"), construirCopiaCatalogo());
+      catalog = importado;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = true;
+      importacionPendiente = null;
+      if (els.importCatalogPreview) els.importCatalogPreview.hidden = true;
+      if (els.importCatalogFile) els.importCatalogFile.value = "";
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      setStatus(
+        els.importCatalogStatus,
+        guardado
+          ? "Copia restaurada y guardada en el borrador. Revisá el catálogo y publicá cuando estés listo."
+          : "Copia cargada en memoria, pero no se pudo guardar automáticamente. Guardá el borrador manualmente.",
+        guardado ? "success" : "error"
+      );
+      toast(guardado ? "Copia restaurada en el borrador." : "Restaurada, pero falta guardar el borrador.", guardado ? "success" : "error");
+    } catch (error) {
+      setStatus(els.importCatalogStatus, `No se pudo restaurar: ${error.message}`, "error");
+    }
+  };
+
   const activarCloudTab = (nombre) => {
     document.querySelectorAll("[data-cloud-tab]").forEach((tab) => {
       const activo = tab.dataset.cloudTab === nombre;
@@ -2149,6 +2328,7 @@
       pedidos: $("#panelPedidos"),
       instagram: $("#panelInstagram"),
       etiquetas: $("#panelEtiquetas"),
+      herramientas: $("#panelHerramientas"),
     };
     Object.entries(paneles).forEach(([clave, panel]) => {
       if (panel) panel.hidden = clave !== nombre;
@@ -2156,6 +2336,7 @@
     if (nombre === "categorias") renderCategorias();
     if (nombre === "sucursales") renderSucursales();
     if (nombre === "pedidos") cargarPedidos();
+    if (nombre === "herramientas") actualizarMetaExportacion();
     const panelActivo = paneles[nombre];
     const iframe = panelActivo?.querySelector("iframe[data-src]");
     if (iframe && !iframe.getAttribute("src")) {
@@ -2514,6 +2695,10 @@
         setStatus(els.saveStatus, "Categoría movida. Guardá el borrador para confirmarlo.");
       });
     }
+    if (els.exportCatalogBackup) els.exportCatalogBackup.addEventListener("click", exportarCopiaCatalogo);
+    if (els.importCatalogFile) els.importCatalogFile.addEventListener("change", () => prepararImportacion(els.importCatalogFile.files?.[0]));
+    if (els.confirmImportCatalog) els.confirmImportCatalog.addEventListener("click", confirmarImportacion);
+    if (els.cancelImportCatalog) els.cancelImportCatalog.addEventListener("click", cancelarImportacion);
     if (els.imageFiles) {
       els.imageFiles.addEventListener("change", () => procesarImagenes(els.imageFiles.files));
     }
