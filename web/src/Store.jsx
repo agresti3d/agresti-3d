@@ -445,7 +445,16 @@ export default function Store() {
 
   useEffect(() => { setVisible(12); }, [query, category, price, sort]);
 
-  const detail = products.find((p) => p.id === detailId);
+  const detail = products.find((p) => p.id === detailId || (Array.isArray(p.idsAnteriores) && p.idsAnteriores.includes(detailId)));
+
+  useEffect(() => {
+    if (!detail || detail.id === detailId) return;
+    if (!Array.isArray(detail.idsAnteriores) || !detail.idsAnteriores.includes(detailId)) return;
+    const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+    params.set("p", detail.id);
+    history.replaceState(history.state, "", `#${params.toString()}`);
+    setDetailId(detail.id);
+  }, [detail, detailId]);
   const cartCount = cart.reduce((n, i) => n + i.cantidad, 0);
   const [fly, setFly] = useState(null);
   const [addToast, setAddToast] = useState(null);
