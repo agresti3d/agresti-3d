@@ -106,6 +106,7 @@
     imageFrameClose: $("#imageFrameClose"),
     imageFrameCancel: $("#imageFrameCancel"),
     imageFrameAccept: $("#imageFrameAccept"),
+    exportCatalogName: $("#exportCatalogName"),
     exportCatalogBackup: $("#exportCatalogBackup"),
     exportCatalogMeta: $("#exportCatalogMeta"),
     exportCatalogStatus: $("#exportCatalogStatus"),
@@ -116,6 +117,22 @@
     importCatalogStatus: $("#importCatalogStatus"),
     confirmImportCatalog: $("#confirmImportCatalog"),
     cancelImportCatalog: $("#cancelImportCatalog"),
+    catalogHistoryList: $("#catalogHistoryList"),
+    catalogHistoryStatus: $("#catalogHistoryStatus"),
+    refreshCatalogHistory: $("#refreshCatalogHistory"),
+    compareCatalog: $("#compareCatalog"),
+    compareCatalogResult: $("#compareCatalogResult"),
+    compareCatalogStatus: $("#compareCatalogStatus"),
+    auditCatalog: $("#auditCatalog"),
+    auditCatalogResult: $("#auditCatalogResult"),
+    auditCatalogStatus: $("#auditCatalogStatus"),
+    scanHeavyImages: $("#scanHeavyImages"),
+    optimizeHeavyImages: $("#optimizeHeavyImages"),
+    heavyImagesResult: $("#heavyImagesResult"),
+    heavyImagesStatus: $("#heavyImagesStatus"),
+    restoreLastPublication: $("#restoreLastPublication"),
+    restoreLastPublicationMeta: $("#restoreLastPublicationMeta"),
+    restoreLastPublicationStatus: $("#restoreLastPublicationStatus"),
     videoFiles: $("#videoFiles"),
     videoList: $("#videoList"),
     videoStatus: $("#videoStatus"),
@@ -157,6 +174,10 @@
   let dropPosicion = null;
   let dropRaiz = false;
   let importacionPendiente = null;
+  let ultimaHuellaHistorial = "";
+  let ultimoTiempoHistorial = 0;
+  let imagenesPesadas = [];
+  let publicacionAnterior = null;
   let toastTimer = null;
   let loginNotice = "";
   let importing = false;
@@ -520,6 +541,8 @@
       origen = "catálogo inicial";
     }
     catalog = normalizarCatalogo(data);
+    ultimaHuellaHistorial = huellaTexto(JSON.stringify(catalog));
+    ultimoTiempoHistorial = Date.now();
     selectedId = null;
     creating = false;
     query = "";
@@ -928,6 +951,7 @@
       });
       catalog = limpio;
       dirty = false;
+      registrarVersionCatalogo(opciones.silencioso ? "Autoguardado" : "Borrador guardado", !opciones.silencioso).catch(() => {});
       setStatus(
         els.saveStatus,
         opciones.silencioso ? "Borrador guardado automáticamente." : "Borrador guardado en la nube.",
@@ -999,6 +1023,14 @@
       if (els.publishCatalog) els.publishCatalog.disabled = true;
       setStatus(els.saveStatus, "Publicando…");
       const basePayload = { json, actualizadoPor: currentUser?.email || "" };
+      const publicadoActual = await leerDocumento(PUBLISHED_DOC);
+      if (publicadoActual) {
+        await db.collection(CATALOG_DOC).doc("publicado_anterior").set({
+          json: JSON.stringify(normalizarCatalogo(publicadoActual)),
+          actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+          actualizadoPor: currentUser?.email || "",
+        });
+      }
       await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
         ...basePayload,
         actualizado: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1009,6 +1041,8 @@
       });
       catalog = limpio;
       dirty = false;
+      registrarVersionCatalogo("Publicación", true).catch(() => {});
+      cargarPublicacionAnterior();
       setStatus(els.saveStatus, "Catálogo publicado en la web.", "success");
       toast("Catálogo publicado. El sitio ya muestra los cambios.");
       dispararSeo();
@@ -2176,11 +2210,31 @@
     };
   };
 
-  const nombreArchivoCopia = (prefijo = "agresti-catalogo") => {
-    const fecha = new Date();
-    const dos = (numero) => String(numero).padStart(2, "0");
-    return `${prefijo}-${fecha.getFullYear()}${dos(fecha.getMonth() + 1)}${dos(fecha.getDate())}-${dos(fecha.getHours())}${dos(fecha.getMinutes())}${dos(fecha.getSeconds())}.json`;
+  const fechaArchivoLocal = () => {
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date()).reduce((acc, parte) => {
+      acc[parte.type] = parte.value;
+      return acc;
+    }, {});
+    return `${partes.year}-${partes.month}-${partes.day}`;
   };
+
+  const limpiarNombreCopia = (nombre) => {
+    const limpio = String(nombre || "catalogo")
+      .replace(/\.json$/i, "")
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+    return limpio || "catalogo";
+  };
+
+  const nombreArchivoCopia = (nombre = "catalogo") =>
+    `${fechaArchivoLocal()} - ${limpiarNombreCopia(nombre)}.json`;
 
   const actualizarMetaExportacion = () => {
     if (!els.exportCatalogMeta) return;
@@ -2195,10 +2249,390 @@
     if (!catalog) return;
     try { commitFormulario(); } catch (error) {}
     const copia = construirCopiaCatalogo();
-    descargarJSON(nombreArchivoCopia(), copia);
+    descargarJSON(nombreArchivoCopia(els.exportCatalogName?.value || "catalogo"), copia);
     actualizarMetaExportacion();
     setStatus(els.exportCatalogStatus, `Copia descargada: ${copia.resumen.productos} productos y ${copia.resumen.categorias} categorías.`, "success");
     toast("Copia de seguridad descargada.");
+  };
+
+  const huellaTexto = (texto) => {
+    let hash = 2166136261;
+    for (let i = 0; i < texto.length; i += 1) {
+      hash ^= texto.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `${texto.length}-${hash >>> 0}`;
+  };
+
+  const formatearFechaHora = (valor) => {
+    const fecha = valor?.toDate ? valor.toDate() : valor ? new Date(valor) : null;
+    if (!fecha || Number.isNaN(fecha.getTime())) return "Sin fecha";
+    return fecha.toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+  };
+
+  const registrarVersionCatalogo = async (motivo, forzar = false) => {
+    if (!db || !catalog) return false;
+    const limpio = normalizarCatalogo(clone(catalog));
+    const json = JSON.stringify(limpio);
+    const huella = huellaTexto(json);
+    if (!forzar && huella === ultimaHuellaHistorial) return false;
+    if (!forzar && Date.now() - ultimoTiempoHistorial < 5 * 60 * 1000) return false;
+    try {
+      await db.collection("catalogo_historial").add({
+        json,
+        fecha: firebase.firestore.FieldValue.serverTimestamp(),
+        autor: currentUser?.email || "",
+        motivo,
+        resumen: {
+          productos: limpio.productos.length,
+          categorias: limpio.categorias.length,
+          sucursales: limpio.sucursales.length,
+        },
+      });
+      ultimaHuellaHistorial = huella;
+      ultimoTiempoHistorial = Date.now();
+      if (els.panelHerramientas && !els.panelHerramientas.hidden) cargarHistorialVersiones();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const cargarHistorialVersiones = async () => {
+    if (!db || !els.catalogHistoryList) return;
+    setStatus(els.catalogHistoryStatus, "Cargando historial…");
+    try {
+      const snap = await db.collection("catalogo_historial").orderBy("fecha", "desc").limit(12).get();
+      const versiones = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      if (!versiones.length) {
+        els.catalogHistoryList.innerHTML = '<p class="cloud-tool-empty">Todavía no hay versiones guardadas. Se crearán automáticamente al guardar o publicar.</p>';
+        setStatus(els.catalogHistoryStatus, "Sin versiones todavía.");
+        return;
+      }
+      els.catalogHistoryList.innerHTML = `
+        <h4>Últimas versiones</h4>
+        <ul>${versiones.map((version) => `
+          <li>
+            <span><strong>${escapeHTML(formatearFechaHora(version.fecha))}</strong><br>${escapeHTML(version.motivo || "Cambios")} · ${escapeHTML(version.autor || "admin")} · ${Number(version.resumen?.productos) || 0} productos</span>
+            <button type="button" data-history-restore="${escapeHTML(version.id)}">Restaurar</button>
+          </li>`).join("")}</ul>`;
+      setStatus(els.catalogHistoryStatus, `${versiones.length} versión(es) más recientes.`);
+    } catch (error) {
+      els.catalogHistoryList.innerHTML = `<p class="cloud-tool-empty">No se pudo leer el historial: ${escapeHTML(error.message)}</p>`;
+      setStatus(els.catalogHistoryStatus, "Error al cargar el historial.", "error");
+    }
+  };
+
+  const aplicarCatalogoEnBorrador = async (catalogoImportado, statusEl) => {
+    try {
+      try { localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo())); } catch (error) {}
+      descargarJSON(nombreArchivoCopia("antes-de-restaurar"), construirCopiaCatalogo());
+      catalog = catalogoImportado;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = true;
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      setStatus(
+        statusEl,
+        guardado ? "Versión restaurada y guardada en el borrador. Revisá y publicá cuando estés listo." : "Versión cargada en memoria, pero no se pudo guardar automáticamente.",
+        guardado ? "success" : "error"
+      );
+      return guardado;
+    } catch (error) {
+      setStatus(statusEl, `No se pudo restaurar: ${error.message}`, "error");
+      return false;
+    }
+  };
+
+  const restaurarVersionHistorial = async (id) => {
+    if (!db) return;
+    try {
+      const snap = await db.collection("catalogo_historial").doc(id).get();
+      if (!snap.exists) throw new Error("La versión ya no existe.");
+      const datos = JSON.parse(snap.data()?.json || "null");
+      const importado = validarCopiaCatalogo(datos);
+      if (!window.confirm(`¿Restaurar la versión del ${formatearFechaHora(snap.data().fecha)}? Reemplazará el borrador actual; antes se descargará una copia de seguridad.`)) return;
+      await aplicarCatalogoEnBorrador(importado, els.catalogHistoryStatus);
+      await cargarHistorialVersiones();
+    } catch (error) {
+      setStatus(els.catalogHistoryStatus, `No se pudo restaurar: ${error.message}`, "error");
+    }
+  };
+
+  const cargarPublicacionAnterior = async () => {
+    if (!db) return;
+    if (els.restoreLastPublicationStatus) els.restoreLastPublicationStatus.textContent = "";
+    try {
+      const snap = await db.collection(CATALOG_DOC).doc("publicado_anterior").get();
+      if (!snap.exists) {
+        publicacionAnterior = null;
+        if (els.restoreLastPublicationMeta) els.restoreLastPublicationMeta.textContent = "No hay una publicación anterior guardada.";
+        if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+        return;
+      }
+      const datos = JSON.parse(snap.data()?.json || "null");
+      publicacionAnterior = validarCopiaCatalogo(datos);
+      if (els.restoreLastPublicationMeta) {
+        els.restoreLastPublicationMeta.textContent = `${formatearFechaHora(snap.data().actualizado)} · ${publicacionAnterior.productos.length} productos · ${publicacionAnterior.categorias.length} categorías`;
+      }
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = false;
+    } catch (error) {
+      publicacionAnterior = null;
+      if (els.restoreLastPublicationMeta) els.restoreLastPublicationMeta.textContent = `No se pudo leer la publicación anterior: ${error.message}`;
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+    }
+  };
+
+  const restaurarPublicacionAnterior = async () => {
+    if (!publicacionAnterior || !db) return;
+    if (!window.confirm("¿Restaurar la publicación anterior? Se reemplazará la web publicada y el borrador actual. Antes se descargará una copia de seguridad.")) return;
+    try {
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = true;
+      const json = JSON.stringify(publicacionAnterior);
+      const payload = { json, actualizadoPor: currentUser?.email || "" };
+      await db.collection(CATALOG_DOC).doc(DRAFT_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await db.collection(CATALOG_DOC).doc(PUBLISHED_DOC).set({
+        ...payload,
+        actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      try { localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo())); } catch (error) {}
+      descargarJSON(nombreArchivoCopia("antes-de-restaurar-publicacion"), construirCopiaCatalogo());
+      catalog = publicacionAnterior;
+      selectedId = null;
+      creating = false;
+      query = "";
+      filterCategory = "";
+      categoriasAbiertas.clear();
+      categoriasAbiertasInicializadas = false;
+      if (els.searchProducts) els.searchProducts.value = "";
+      if (els.categoryFilter) els.categoryFilter.value = "";
+      mostrarFormulario(false);
+      renderCategorias();
+      renderSucursales();
+      renderProductos();
+      actualizarMetaExportacion();
+      dirty = false;
+      registrarVersionCatalogo("Restauración de publicación anterior", true).catch(() => {});
+      await cargarPublicacionAnterior();
+      setStatus(els.restoreLastPublicationStatus, "Publicación anterior restaurada en la web y en el borrador.", "success");
+      toast("Publicación anterior restaurada.");
+    } catch (error) {
+      setStatus(els.restoreLastPublicationStatus, `No se pudo restaurar: ${firebaseErrorMessage(error)}`, "error");
+    } finally {
+      if (els.restoreLastPublication) els.restoreLastPublication.disabled = !publicacionAnterior;
+    }
+  };
+
+  const compararBorradorPublicado = async () => {
+    if (!catalog) return;
+    setStatus(els.compareCatalogStatus, "Leyendo la versión publicada…");
+    try {
+      const publicado = await leerDocumento(PUBLISHED_DOC);
+      if (!publicado) throw new Error("Todavía no hay una versión publicada.");
+      const borrador = normalizarCatalogo(clone(catalog));
+      const publicadoNormal = normalizarCatalogo(publicado);
+      const comparar = (a, b, etiqueta) => {
+        const mapaA = new Map(a.map((item) => [item.id, item]));
+        const mapaB = new Map(b.map((item) => [item.id, item]));
+        const agregados = [...mapaA.values()].filter((item) => !mapaB.has(item.id));
+        const eliminados = [...mapaB.values()].filter((item) => !mapaA.has(item.id));
+        const modificados = [...mapaA.values()].filter((item) => mapaB.has(item.id) && JSON.stringify(item) !== JSON.stringify(mapaB.get(item.id)));
+        return { etiqueta, agregados, eliminados, modificados };
+      };
+      const grupos = [
+        comparar(borrador.productos, publicadoNormal.productos, "Productos"),
+        comparar(borrador.categorias, publicadoNormal.categorias, "Categorías"),
+        comparar(borrador.sucursales, publicadoNormal.sucursales, "Sucursales"),
+      ];
+      const total = grupos.reduce((n, grupo) => n + grupo.agregados.length + grupo.eliminados.length + grupo.modificados.length, 0);
+      if (!total) {
+        els.compareCatalogResult.innerHTML = '<p class="cloud-tool-empty">El borrador es idéntico a la versión publicada.</p>';
+        setStatus(els.compareCatalogStatus, "Sin diferencias.", "success");
+        return;
+      }
+      const html = grupos.map((grupo) => {
+        const items = [];
+        grupo.agregados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-add">+</span> ${escapeHTML(item.nombre || item.id)}</span><small>Nuevo</small></li>`));
+        grupo.eliminados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-del">−</span> ${escapeHTML(item.nombre || item.id)}</span><small>Se quitaría</small></li>`));
+        grupo.modificados.slice(0, 10).forEach((item) => items.push(`<li><span><span class="cloud-tool-bad">~</span> ${escapeHTML(item.nombre || item.id)}</span><small>Modificado</small></li>`));
+        const restantes = Math.max(0, grupo.agregados.length + grupo.eliminados.length + grupo.modificados.length - items.length);
+        return items.length ? `<h4>${grupo.etiqueta}</h4><ul>${items.join("")}${restantes ? `<li class="cloud-tool-empty">+${restantes} cambios más…</li>` : ""}</ul>` : "";
+      }).join("");
+      els.compareCatalogResult.innerHTML = html;
+      setStatus(els.compareCatalogStatus, `${total} diferencia(s) entre el borrador y lo publicado.`);
+    } catch (error) {
+      els.compareCatalogResult.innerHTML = `<p class="cloud-tool-empty">${escapeHTML(error.message)}</p>`;
+      setStatus(els.compareCatalogStatus, "No se pudo comparar.", "error");
+    }
+  };
+
+  const comprobarImagen = (src) => new Promise((resolve) => {
+    const imagen = new Image();
+    let terminado = false;
+    const terminar = (ok) => {
+      if (terminado) return;
+      terminado = true;
+      imagen.onload = null;
+      imagen.onerror = null;
+      resolve(ok);
+    };
+    const timer = window.setTimeout(() => terminar(false), 8000);
+    imagen.onload = () => { window.clearTimeout(timer); terminar(true); };
+    imagen.onerror = () => { window.clearTimeout(timer); terminar(false); };
+    imagen.src = imageURL(src);
+  });
+
+  const auditarCatalogo = async () => {
+    if (!catalog) return;
+    setStatus(els.auditCatalogStatus, "Revisando catálogo e imágenes…");
+    const sinFoto = [];
+    const sinPrecio = [];
+    const sinCategoria = [];
+    const idsCategorias = new Set(catalog.categorias.map((categoria) => categoria.id));
+    const imagenes = [];
+    catalog.productos.forEach((producto) => {
+      if (!(producto.imagenes || []).some((imagen) => imagen?.src)) sinFoto.push(producto);
+      if (!producto.precio || /consultar/i.test(String(producto.precio))) sinPrecio.push(producto);
+      if (!producto.categoria || !idsCategorias.has(producto.categoria)) sinCategoria.push(producto);
+      (producto.imagenes || []).forEach((imagen) => { if (imagen?.src) imagenes.push({ producto, src: imagen.src }); });
+    });
+    const unicas = [...new Map(imagenes.map((item) => [item.src, item])).values()].slice(0, 100);
+    const rotas = [];
+    let siguiente = 0;
+    const trabajadores = Array.from({ length: 6 }, async () => {
+      while (siguiente < unicas.length) {
+        const actual = unicas[siguiente++];
+        const ok = await comprobarImagen(actual.src);
+        if (!ok) rotas.push(actual);
+      }
+    });
+    await Promise.all(trabajadores);
+    const renderGrupo = (titulo, productos, tipo = "warning") => {
+      if (!productos.length) return "";
+      const items = productos.slice(0, 20).map((producto) => `<li><span><strong>${escapeHTML(producto.nombre || producto.id)}</strong><br><small>${escapeHTML(producto.id)}</small></span><button type="button" data-audit-edit="${escapeHTML(producto.id)}">Editar</button></li>`).join("");
+      return `<h4>${titulo} (${productos.length})</h4><ul>${items}${productos.length > 20 ? `<li class="cloud-tool-empty">+${productos.length - 20} más…</li>` : ""}</ul>`;
+    };
+    const html = [
+      renderGrupo("Sin foto", sinFoto),
+      renderGrupo("Sin precio", sinPrecio),
+      renderGrupo("Sin categoría válida", sinCategoria),
+      renderGrupo("Imágenes rotas", [...new Map(rotas.map((item) => [item.producto.id, item.producto])).values()]),
+    ].filter(Boolean).join("");
+    els.auditCatalogResult.innerHTML = html || '<p class="cloud-tool-empty">No se encontraron problemas.</p>';
+    const total = sinFoto.length + sinPrecio.length + sinCategoria.length + rotas.length;
+    setStatus(els.auditCatalogStatus, total ? `${total} problema(s) encontrados.` : "Catálogo sin problemas detectados.", total ? "error" : "success");
+  };
+
+  const recolectarImagenesCatalogo = () => {
+    const registros = [];
+    catalog.productos.forEach((producto) => {
+      (producto.imagenes || []).forEach((imagen) => { if (imagen?.src) registros.push({ tipo: "producto", producto, imagen, src: imagen.src }); });
+    });
+    (catalog.categorias || []).forEach((categoria) => { if (categoria.portada && categoria.portada !== "auto") registros.push({ tipo: "categoria", categoria, src: categoria.portada }); });
+    return registros;
+  };
+
+  const medirImagen = async (src) => {
+    try {
+      const respuesta = await fetch(imageURL(src), { method: "HEAD", cache: "no-store" });
+      if (respuesta.ok) {
+        const tamano = Number(respuesta.headers.get("content-length") || 0);
+        if (tamano > 0) return tamano;
+      }
+      const completa = await fetch(imageURL(src), { cache: "no-store" });
+      if (!completa.ok) return null;
+      return (await completa.blob()).size;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const transformarCloudinary = (src) => {
+    const url = imageURL(src);
+    if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return null;
+    const [base, resto] = url.split("/upload/");
+    if (!/^v\d+\//.test(resto)) return null;
+    return `${base}/upload/f_auto,q_auto,w_1400,c_limit/${resto}`;
+  };
+
+  const escanearImagenesPesadas = async () => {
+    if (!catalog) return;
+    setStatus(els.heavyImagesStatus, "Midiendo imágenes…");
+    imagenesPesadas = [];
+    const registros = recolectarImagenesCatalogo();
+    const unicos = [...new Map(registros.map((item) => [item.src, item])).values()].slice(0, 90);
+    let siguiente = 0;
+    const trabajadores = Array.from({ length: 6 }, async () => {
+      while (siguiente < unicos.length) {
+        const actual = unicos[siguiente++];
+        const tamano = await medirImagen(actual.src);
+        if (tamano && tamano > 300 * 1024) imagenesPesadas.push({ ...actual, tamano });
+      }
+    });
+    await Promise.all(trabajadores);
+    imagenesPesadas.sort((a, b) => b.tamano - a.tamano);
+    if (!imagenesPesadas.length) {
+      els.heavyImagesResult.innerHTML = '<p class="cloud-tool-empty">No se detectaron fotos de más de 300 KB.</p>';
+      if (els.optimizeHeavyImages) els.optimizeHeavyImages.hidden = true;
+      setStatus(els.heavyImagesStatus, "Todas las fotos están por debajo de 300 KB.", "success");
+      return;
+    }
+    els.heavyImagesResult.innerHTML = `<h4>Fotos pesadas (${imagenesPesadas.length})</h4><ul>${imagenesPesadas.slice(0, 20).map((item) => {
+      const nombre = item.tipo === "producto" ? item.producto.nombre : item.categoria.nombre;
+      return `<li><span><strong>${escapeHTML(nombre || "Sin nombre")}</strong><br><small>${Math.round(item.tamano / 1024)} KB</small></span></li>`;
+    }).join("")}</ul>`;
+    if (els.optimizeHeavyImages) els.optimizeHeavyImages.hidden = false;
+    setStatus(els.heavyImagesStatus, `${imagenesPesadas.length} foto(s) pesada(s) detectada(s).`);
+  };
+
+  const optimizarImagenesPesadas = async () => {
+    if (!imagenesPesadas.length) return;
+    if (!window.confirm(`¿Optimizar ${imagenesPesadas.length} foto(s) pesada(s)? Se modificarán las URLs del catálogo; no se publica automáticamente.`)) return;
+    setStatus(els.heavyImagesStatus, "Optimizando imágenes…");
+    let optimizadas = 0;
+    const cambios = new Map();
+    try {
+      for (const item of imagenesPesadas) {
+        const nueva = transformarCloudinary(item.src);
+        if (nueva) cambios.set(item.src, nueva);
+      }
+      if (!cambios.size) {
+        setStatus(els.heavyImagesStatus, "Las fotos pesadas no son de Cloudinary y no se pueden optimizar automáticamente desde acá.", "error");
+        return;
+      }
+      catalog.productos.forEach((producto) => {
+        (producto.imagenes || []).forEach((imagen) => {
+          if (cambios.has(imagen.src)) { imagen.src = cambios.get(imagen.src); optimizadas += 1; }
+        });
+      });
+      catalog.categorias.forEach((categoria) => {
+        if (cambios.has(categoria.portada)) { categoria.portada = cambios.get(categoria.portada); optimizadas += 1; }
+      });
+      dirty = true;
+      const guardado = await guardarBorrador(null, { silencioso: true });
+      if (guardado) {
+        els.heavyImagesResult.innerHTML = `<p class="cloud-tool-empty">${optimizadas} imagen(es) optimizada(s). Guardá y publicá cuando quieras.</p>`;
+        setStatus(els.heavyImagesStatus, `${optimizadas} imagen(es) actualizadas a versiones optimizadas de Cloudinary.`, "success");
+      } else {
+        setStatus(els.heavyImagesStatus, "Las imágenes se actualizaron en memoria, pero no se pudo guardar el borrador.", "error");
+      }
+    } catch (error) {
+      setStatus(els.heavyImagesStatus, `No se pudieron optimizar: ${error.message}`, "error");
+    }
   };
 
   const validarCopiaCatalogo = (archivo) => {
@@ -2282,7 +2716,7 @@
       try {
         localStorage.setItem("agresti:catalogo-import-safety", JSON.stringify(construirCopiaCatalogo()));
       } catch (error) {}
-      descargarJSON(nombreArchivoCopia("agresti-catalogo-antes-de-importar"), construirCopiaCatalogo());
+      descargarJSON(nombreArchivoCopia("antes-de-importar"), construirCopiaCatalogo());
       catalog = importado;
       selectedId = null;
       creating = false;
@@ -2336,7 +2770,13 @@
     if (nombre === "categorias") renderCategorias();
     if (nombre === "sucursales") renderSucursales();
     if (nombre === "pedidos") cargarPedidos();
-    if (nombre === "herramientas") actualizarMetaExportacion();
+    if (nombre === "herramientas") {
+      actualizarMetaExportacion();
+      cargarHistorialVersiones();
+      cargarPublicacionAnterior();
+      if (!els.compareCatalogResult?.innerHTML) els.compareCatalogResult.innerHTML = "";
+      if (!els.auditCatalogResult?.innerHTML) els.auditCatalogResult.innerHTML = "";
+    }
     const panelActivo = paneles[nombre];
     const iframe = panelActivo?.querySelector("iframe[data-src]");
     if (iframe && !iframe.getAttribute("src")) {
@@ -2696,6 +3136,22 @@
       });
     }
     if (els.exportCatalogBackup) els.exportCatalogBackup.addEventListener("click", exportarCopiaCatalogo);
+    if (els.refreshCatalogHistory) els.refreshCatalogHistory.addEventListener("click", cargarHistorialVersiones);
+    if (els.catalogHistoryList) els.catalogHistoryList.addEventListener("click", (event) => {
+      const boton = event.target.closest("[data-history-restore]");
+      if (boton) restaurarVersionHistorial(boton.dataset.historyRestore);
+    });
+    if (els.restoreLastPublication) els.restoreLastPublication.addEventListener("click", restaurarPublicacionAnterior);
+    if (els.compareCatalog) els.compareCatalog.addEventListener("click", compararBorradorPublicado);
+    if (els.auditCatalog) els.auditCatalog.addEventListener("click", auditarCatalogo);
+    if (els.auditCatalogResult) els.auditCatalogResult.addEventListener("click", (event) => {
+      const boton = event.target.closest("[data-audit-edit]");
+      if (!boton) return;
+      activarCloudTab("productos");
+      editarProducto(boton.dataset.auditEdit);
+    });
+    if (els.scanHeavyImages) els.scanHeavyImages.addEventListener("click", escanearImagenesPesadas);
+    if (els.optimizeHeavyImages) els.optimizeHeavyImages.addEventListener("click", optimizarImagenesPesadas);
     if (els.importCatalogFile) els.importCatalogFile.addEventListener("change", () => prepararImportacion(els.importCatalogFile.files?.[0]));
     if (els.confirmImportCatalog) els.confirmImportCatalog.addEventListener("click", confirmarImportacion);
     if (els.cancelImportCatalog) els.cancelImportCatalog.addEventListener("click", cancelarImportacion);
