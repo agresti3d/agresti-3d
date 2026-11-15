@@ -999,3 +999,21 @@
 .cloud-tool-result .cloud-tool-bad { color: #ffb19e; }
 .cloud-tool-result .cloud-tool-add { color: #7dd3a9; }
 .cloud-tool-result .cloud-tool-del { color: #ff9b86; }
+.cloud-users-card { grid-column: 1 / -1; }
+.cloud-editor-users { max-height: 260px; }
+.cloud-user-form { border-top: 1px solid var(--cloud-line); padding-top: .7rem; }
+.cloud-user-form summary { color: var(--cloud-accent); cursor: pointer; font-size: .72rem; font-weight: 600; list-style: none; }
+.cloud-user-form summary::-webkit-details-marker { display: none; }
+.cloud-user-form summary::before { content: "＋ "; }
+.cloud-user-form[open] summary::before { content: "− "; }
+.cloud-user-form form { display: grid; gap: .65rem; margin-top: .7rem; }
+.cloud-user-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.cloud-permissions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem .7rem; margin: 0; padding: .6rem; border: 1px solid var(--cloud-line); border-radius: 7px; }
+.cloud-permissions legend { padding: 0 .3rem; color: var(--cloud-muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
+.cloud-permissions label, .cloud-user-checks label { display: flex; align-items: center; gap: .35rem; min-height: 32px; color: var(--cloud-ink); font-size: .7rem; }
+.cloud-user-checks { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+.cloud-user-permissions { color: var(--cloud-muted); font-size: .65rem; }
+@media (max-width: 720px) {
+  .cloud-user-grid { grid-template-columns: 1fr; }
+  .cloud-permissions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
