@@ -178,10 +178,14 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
   const [qty, setQty] = useState(1);
   const [slide, setSlide] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [variantIndex, setVariantIndex] = useState(null);
   const imageRef = useRef(null);
-  useEffect(() => { setQty(1); setSlide(0); setLightbox(false); }, [product?.id]);
+  useEffect(() => { setQty(1); setSlide(0); setLightbox(false); setVariantIndex(null); }, [product?.id]);
   if (!product) return null;
+  const variantes = Array.isArray(product.variantes) ? product.variantes.filter((v) => v?.nombre) : [];
+  const varianteActiva = variantIndex !== null ? variantes[variantIndex] : null;
   const media = [
+    ...(varianteActiva?.imagen ? [{ src: varianteActiva.imagen, alt: `${product.nombre} ${varianteActiva.nombre}`, type: "image" }] : []),
     ...(product.imagenes || []).map((img) => ({ ...img, type: "image" })),
     ...(product.videos || []).map((video) => ({ ...video, type: "video" })),
   ];
@@ -219,7 +223,6 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
     ["Envío", "Todo el país"],
   ].filter(Boolean);
   const incluye = String(detalles.contenido || "").replace(/^incluye\s+/i, "").trim();
-  const variantes = Array.isArray(product.variantes) ? product.variantes.filter((v) => v?.nombre) : [];
   const extras = [
     detalles.colores && ["Colores", detalles.colores],
     incluye && ["Incluye", incluye],
@@ -254,7 +257,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
               <button type="button" onClick={() => onCategory(product.categoria)} className="max-w-[85%] truncate rounded-full border border-line bg-surface2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] text-accent transition hover:border-accent" aria-label={`Ver productos de ${categoryName || product.categoria}`}>{categoryName || product.categoria}</button>
             </div>
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
-            <p className="mt-2 text-xl font-semibold text-accent">{money(product.precio)}</p>
+            <p className="mt-2 text-xl font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
             {(medidasPartes.length > 0 || detalles.medidas) && (
               <div className="mt-4 rounded-xl border border-line p-3">
@@ -288,8 +291,19 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
             )}
             {variantes.length > 0 && (
               <div className="mt-3 border-t border-line pt-3 text-xs">
-                <p className="text-muted">Opciones</p>
-                <ul className="mt-1 grid gap-1.5 text-ink">{variantes.map((v) => <li key={v.nombre} className="flex items-start justify-between gap-3"><span>{v.nombre}</span>{v.precio && <span className="flex-none text-accent">{v.precio}</span>}</li>)}</ul>
+                <p className="text-muted">Elegí una opción</p>
+                <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Opciones del producto">
+                  {variantes.map((v, i) => {
+                    const activa = variantIndex === i;
+                    return (
+                      <button key={`${v.nombre}-${i}`} type="button" role="radio" aria-checked={activa} onClick={() => { setVariantIndex(i); setSlide(0); }} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition ${activa ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/60 hover:text-ink"}`}>
+                        {v.imagen && <img src={imageUrl(v.imagen)} alt="" loading="lazy" className="h-7 w-7 flex-none rounded-md object-contain" />}
+                        <span className="font-medium">{v.nombre}</span>
+                        {v.precio && <span className="flex-none text-accent">{v.precio}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
             <div className="mt-4 flex items-center gap-3">
