@@ -2014,12 +2014,9 @@
         setStatus(els.saveStatus, error.message, "error");
         return false;
       }
-      activarFormTab("datos");
-      els.productName.focus();
-      els.productName.select();
       setStatus(
         els.saveStatus,
-        "Archivo preparado. Cambiá «Producto sin título» por el nombre real y elegí la categoría.",
+        "Foto preparada. Podés seguir cargando fotos; cuando termines, cambiá «Producto sin título» por el nombre real en la pestaña Datos.",
         ""
       );
       return true;
