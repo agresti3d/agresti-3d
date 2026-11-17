@@ -66,6 +66,12 @@
     variantList: $("#variantList"),
     addVariant: $("#addVariant"),
     variantPhotoFile: $("#variantPhotoFile"),
+    variantImageDialog: $("#variantImageDialog"),
+    variantImageChoices: $("#variantImageChoices"),
+    variantImageUpload: $("#variantImageUpload"),
+    variantImageRemove: $("#variantImageRemove"),
+    variantImageClose: $("#variantImageClose"),
+    variantImageCancel: $("#variantImageCancel"),
     reviewList: $("#reviewList"),
     addReview: $("#addReview"),
     reviewStatus: $("#reviewStatus"),
@@ -189,6 +195,7 @@
   let removeBackgroundPromise = null;
   let procesandoFotos = false;
   let varianteFotoPendiente = null;
+  let varianteImagenIndice = null;
   let editorRecorteState = null;
   let editorEncuadreState = null;
   let categoriasAbiertas = new Set();
@@ -1206,6 +1213,59 @@
     dirty = true;
     renderProductos();
     await guardarBorrador();
+  };
+
+  const cerrarSelectorFotoVariante = () => {
+    varianteImagenIndice = null;
+    els.variantImageDialog?.close();
+  };
+
+  const abrirSelectorFotoVariante = (indice) => {
+    if (!catalog || !els.variantImageDialog) return;
+    if (!asegurarProductoParaMedios()) return;
+    try {
+      commitFormulario();
+    } catch (error) {
+      setStatus(els.saveStatus, error.message, "error");
+      return;
+    }
+    const producto = catalog.productos.find((item) => item.id === selectedId);
+    const variante = producto?.variantes?.[indice];
+    if (!variante) return;
+    varianteImagenIndice = indice;
+    const imagenes = (producto.imagenes || []).filter((imagen) => imagen?.src);
+    els.variantImageChoices.innerHTML = imagenes.length
+      ? imagenes.map((imagen) => `<button type="button" data-variant-image-choice="${escapeHTML(imagen.src)}" aria-label="Usar esta foto"><img src="${escapeHTML(imageURL(imagen.src))}" alt="${escapeHTML(imagen.alt || "Foto del producto")}" loading="lazy"></button>`).join("")
+      : '<p class="cloud-variant-picker__empty">Este producto todavía no tiene fotos cargadas. Subí una nueva para asignarla a la opción.</p>';
+    if (els.variantImageRemove) els.variantImageRemove.hidden = !variante.imagen;
+    if (typeof els.variantImageDialog.showModal === "function") els.variantImageDialog.showModal();
+    else els.variantImageDialog.setAttribute("open", "");
+  };
+
+  const asignarImagenVariante = (src) => {
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    const variante = producto?.variantes?.[varianteImagenIndice];
+    if (!producto || !variante || !src) return;
+    variante.imagen = src;
+    dirty = true;
+    renderVariantes(producto);
+    renderProductos();
+    programarAutoguardado();
+    cerrarSelectorFotoVariante();
+    setStatus(els.saveStatus, "Foto de la opción asignada. Guardá el borrador para confirmar.", "success");
+  };
+
+  const quitarImagenVariante = () => {
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    const variante = producto?.variantes?.[varianteImagenIndice];
+    if (!producto || !variante) return;
+    delete variante.imagen;
+    dirty = true;
+    renderVariantes(producto);
+    renderProductos();
+    programarAutoguardado();
+    cerrarSelectorFotoVariante();
+    setStatus(els.saveStatus, "Foto de la opción quitada.", "success");
   };
 
   const procesarFotoVariante = async (file, indice) => {
@@ -3442,11 +3502,7 @@
       els.variantList.addEventListener("click", (event) => {
         const fotoBoton = event.target.closest("[data-variant-photo]");
         if (fotoBoton) {
-          varianteFotoPendiente = Number(fotoBoton.dataset.variantPhoto);
-          if (els.variantPhotoFile) {
-            els.variantPhotoFile.value = "";
-            els.variantPhotoFile.click();
-          }
+          abrirSelectorFotoVariante(Number(fotoBoton.dataset.variantPhoto));
           return;
         }
         const quitarFoto = event.target.closest("[data-remove-variant-photo]");
@@ -3494,6 +3550,28 @@
         }
       });
     }
+    if (els.variantImageChoices) {
+      els.variantImageChoices.addEventListener("click", (event) => {
+        const boton = event.target.closest("[data-variant-image-choice]");
+        if (boton) asignarImagenVariante(boton.dataset.variantImageChoice);
+      });
+    }
+    if (els.variantImageUpload) {
+      els.variantImageUpload.addEventListener("click", () => {
+        varianteFotoPendiente = varianteImagenIndice;
+        cerrarSelectorFotoVariante();
+        if (els.variantPhotoFile) {
+          els.variantPhotoFile.value = "";
+          els.variantPhotoFile.click();
+        }
+      });
+    }
+    if (els.variantImageRemove) els.variantImageRemove.addEventListener("click", quitarImagenVariante);
+    if (els.variantImageClose) els.variantImageClose.addEventListener("click", cerrarSelectorFotoVariante);
+    if (els.variantImageCancel) els.variantImageCancel.addEventListener("click", cerrarSelectorFotoVariante);
+    els.variantImageDialog?.addEventListener("click", (event) => {
+      if (event.target === els.variantImageDialog) cerrarSelectorFotoVariante();
+    });
     if (els.variantPhotoFile) {
       els.variantPhotoFile.addEventListener("change", () => {
         const file = els.variantPhotoFile.files?.[0];
