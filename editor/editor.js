@@ -65,6 +65,7 @@
     categoryFilter: $("#categoryFilter"),
     variantList: $("#variantList"),
     addVariant: $("#addVariant"),
+    variantPhotoFile: $("#variantPhotoFile"),
     reviewList: $("#reviewList"),
     addReview: $("#addReview"),
     reviewStatus: $("#reviewStatus"),
@@ -187,6 +188,7 @@
   let saving = false;
   let removeBackgroundPromise = null;
   let procesandoFotos = false;
+  let varianteFotoPendiente = null;
   let editorRecorteState = null;
   let editorEncuadreState = null;
   let categoriasAbiertas = new Set();
@@ -958,10 +960,14 @@
       if (Number.isInteger(cantidad) && cantidad >= 0) stockPorSucursal[id] = cantidad;
     });
     const variantes = [...els.variantList.querySelectorAll("[data-variant-row]")]
-      .map((fila, indice) => ({
-        nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
-        precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
-      }))
+      .map((fila, indice) => {
+        const imagen = fila.dataset.variantImage || "";
+        return {
+          nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
+          precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
+          ...(imagen ? { imagen } : {}),
+        };
+      })
       .filter((variante) => variante.nombre);
     const id = selectedId || generarIdProducto(nombre);
     const mapaDetalles = {
@@ -1202,6 +1208,57 @@
     await guardarBorrador();
   };
 
+  const procesarFotoVariante = async (file, indice) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus(els.saveStatus, "El archivo no es una imagen.", "error");
+      return;
+    }
+    if (procesandoFotos) {
+      setStatus(els.saveStatus, "Ya hay una foto procesándose. Esperá a que termine.", "error");
+      return;
+    }
+    if (!asegurarProductoParaMedios()) return;
+    try {
+      commitFormulario();
+    } catch (error) {
+      setStatus(els.saveStatus, error.message, "error");
+      return;
+    }
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    if (!producto?.variantes?.[indice]) return;
+    procesandoFotos = true;
+    try {
+      setStatus(els.saveStatus, `Quitando el fondo de «${file.name}»…`);
+      mostrarProgresoImagen("Procesando foto…", `Quitando el fondo de «${file.name}».`);
+      const recorte = await quitarFondo(file);
+      ocultarProgresoImagen();
+      setStatus(els.saveStatus, "Revisá el recorte de la foto de la opción.");
+      const editado = await abrirEditorRecorte(file, recorte);
+      if (!editado) return;
+      const enmarcado = await abrirEditorEncuadre(editado);
+      if (!enmarcado) return;
+      setStatus(els.saveStatus, `Subiendo la foto de la opción «${file.name}»…`);
+      mostrarProgresoImagen("Subiendo la foto…", "Guardando la foto de la opción en Cloudinary.");
+      const url = await subirCloudinary(enmarcado, "image");
+      const actual = catalog.productos.find((item) => item.id === selectedId);
+      const variante = actual?.variantes?.[indice];
+      if (!variante) throw new Error("La opción se cerró mientras se procesaba la foto.");
+      variante.imagen = url;
+      dirty = true;
+      renderVariantes(actual);
+      renderProductos();
+      programarAutoguardado();
+      setStatus(els.saveStatus, "Foto de la opción lista. Guardá el borrador para confirmar.", "success");
+    } catch (error) {
+      setStatus(els.saveStatus, `No se pudo cargar la foto de la opción: ${error.message}`, "error");
+    } finally {
+      procesandoFotos = false;
+      ocultarProgresoImagen();
+      if (els.variantPhotoFile) els.variantPhotoFile.value = "";
+    }
+  };
+
   const renderVariantes = (producto) => {
     if (!els.variantList) return;
     const variantes = producto?.variantes || [];
@@ -1209,10 +1266,17 @@
       ? variantes
           .map(
             (variante, indice) => `
-            <div class="cloud-variant" data-variant-row="${indice}">
+            <div class="cloud-variant" data-variant-row="${indice}" data-variant-image="${escapeHTML(variante.imagen || "")}">
+              <div class="cloud-variant__photo">
+                <div class="cloud-variant__thumb">${variante.imagen ? `<img src="${escapeHTML(imageURL(variante.imagen))}" alt="" loading="lazy">` : "<span>Sin foto</span>"}</div>
+                <div class="cloud-variant__photo-actions">
+                  <button type="button" data-variant-photo="${indice}">${variante.imagen ? "Cambiar" : "Foto"}</button>
+                  ${variante.imagen ? `<button type="button" data-remove-variant-photo="${indice}" aria-label="Quitar foto de la opción">×</button>` : ""}
+                </div>
+              </div>
               <label class="field">
                 <span>Opción</span>
-                <input type="text" data-variant-name="${indice}" value="${escapeHTML(variante.nombre || "")}" placeholder="Ej.: 10 cm" maxlength="80">
+                <input type="text" data-variant-name="${indice}" value="${escapeHTML(variante.nombre || "")}" placeholder="Ej.: Azul / 10 cm" maxlength="80">
               </label>
               <label class="field">
                 <span>Precio</span>
@@ -3376,13 +3440,48 @@
     });
     if (els.variantList) {
       els.variantList.addEventListener("click", (event) => {
+        const fotoBoton = event.target.closest("[data-variant-photo]");
+        if (fotoBoton) {
+          varianteFotoPendiente = Number(fotoBoton.dataset.variantPhoto);
+          if (els.variantPhotoFile) {
+            els.variantPhotoFile.value = "";
+            els.variantPhotoFile.click();
+          }
+          return;
+        }
+        const quitarFoto = event.target.closest("[data-remove-variant-photo]");
+        if (quitarFoto) {
+          const indice = Number(quitarFoto.dataset.removeVariantPhoto);
+          const filas = [...els.variantList.querySelectorAll("[data-variant-row]")];
+          const valores = filas.map((fila, i) => {
+            const imagen = fila.dataset.variantImage || "";
+            return {
+              nombre: fila.querySelector(`[data-variant-name="${i}"]`)?.value.trim() || "",
+              precio: fila.querySelector(`[data-variant-price="${i}"]`)?.value.trim() || "",
+              ...(imagen ? { imagen } : {}),
+            };
+          });
+          if (valores[indice]) delete valores[indice].imagen;
+          const producto = catalog?.productos?.find((item) => item.id === selectedId);
+          if (producto) {
+            producto.variantes = valores;
+            dirty = true;
+            renderVariantes(producto);
+            programarAutoguardado();
+          }
+          return;
+        }
         const boton = event.target.closest("[data-remove-variant]");
         if (!boton) return;
         const filas = [...els.variantList.querySelectorAll("[data-variant-row]")];
-        const valores = filas.map((fila, indice) => ({
-          nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
-          precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
-        }));
+        const valores = filas.map((fila, indice) => {
+          const imagen = fila.dataset.variantImage || "";
+          return {
+            nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
+            precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
+            ...(imagen ? { imagen } : {}),
+          };
+        });
         valores.splice(Number(boton.dataset.removeVariant), 1);
         const producto = catalog?.productos?.find((item) => item.id === selectedId);
         if (producto) {
@@ -3393,6 +3492,14 @@
         } else {
           renderVariantes({ variantes: valores });
         }
+      });
+    }
+    if (els.variantPhotoFile) {
+      els.variantPhotoFile.addEventListener("change", () => {
+        const file = els.variantPhotoFile.files?.[0];
+        const indice = varianteFotoPendiente;
+        varianteFotoPendiente = null;
+        if (file && Number.isInteger(indice)) procesarFotoVariante(file, indice);
       });
     }
     if (els.productBranches) {
