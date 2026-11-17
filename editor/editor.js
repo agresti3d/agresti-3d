@@ -105,6 +105,10 @@
     imageEditorUndo: $("#imageEditorUndo"),
     imageEditorTools: $("#imageEditorTools"),
     imageBrushSize: $("#imageBrushSize"),
+    imageBrushZoom: $("#imageBrushZoom"),
+    imageBrushZoomValue: $("#imageBrushZoomValue"),
+    imageEditorPanToggle: $("#imageEditorPanToggle"),
+    imageEditorViewReset: $("#imageEditorViewReset"),
     imageLightbox: $("#imageLightbox"),
     imageLightboxImg: $("#imageLightboxImg"),
     imageLightboxCaption: $("#imageLightboxCaption"),
@@ -113,6 +117,8 @@
     imageFrameCanvas: $("#imageFrameCanvas"),
     imageFrameZoom: $("#imageFrameZoom"),
     imageFrameZoomValue: $("#imageFrameZoomValue"),
+    imageFrameRotate: $("#imageFrameRotate"),
+    imageFrameRotateValue: $("#imageFrameRotateValue"),
     imageFrameCenter: $("#imageFrameCenter"),
     imageFrameReset: $("#imageFrameReset"),
     imageFrameClose: $("#imageFrameClose"),
@@ -1594,7 +1600,7 @@
   };
 
   const mostrarCursorBrocha = (event) => {
-    if (!editorRecorteState || !els.imageBrushCursor || !els.imageEditorStage) return;
+    if (!editorRecorteState || editorRecorteState.panMode || !els.imageBrushCursor || !els.imageEditorStage) return;
     const escenario = els.imageEditorStage.getBoundingClientRect();
     const tamano = Number(els.imageBrushSize?.value || 36) * 2;
     els.imageBrushCursor.hidden = false;
@@ -1612,6 +1618,14 @@
   };
   const ocultarCursorBrocha = () => {
     if (els.imageBrushCursor) els.imageBrushCursor.hidden = true;
+  };
+
+  const aplicarVistaRecorte = () => {
+    const estado = editorRecorteState;
+    if (!estado) return;
+    estado.canvas.style.transform = `translate(${estado.panX}px, ${estado.panY}px) scale(${estado.zoom})`;
+    if (els.imageBrushZoom) els.imageBrushZoom.value = String(Math.round(estado.zoom * 100));
+    if (els.imageBrushZoomValue) els.imageBrushZoomValue.textContent = `${Math.round(estado.zoom * 100)}%`;
   };
 
   const limpiarAlfa = (imageData, ancho, alto, erosion = 0) => {
@@ -1733,11 +1747,15 @@
     editorRecorteState = {
       canvas, ctx, data: originalData, originalPixels,
       brushMode: "restore", drawing: false, undo: [], finalizado: false, resolve: null,
+      zoom: 1, panX: 0, panY: 0, panMode: false, panning: false, panStart: null,
     };
     if (els.imageEditorTitle) els.imageEditorTitle.textContent = `Revisar «${file.name}»`;
     if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
     els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
     if (els.imageBrushSize) els.imageBrushSize.value = "36";
+    if (els.imageEditorPanToggle) els.imageEditorPanToggle.classList.remove("is-active");
+    canvas.style.cursor = "none";
+    aplicarVistaRecorte();
     ocultarCursorBrocha();
     if (typeof els.imageEditorDialog.showModal === "function") els.imageEditorDialog.showModal();
     else els.imageEditorDialog.setAttribute("open", "");
@@ -1749,7 +1767,7 @@
   const renderizarEncuadre = () => {
     const estado = editorEncuadreState;
     if (!estado) return;
-    const { ctx, imagen, ancho, alto, bbox, baseScale, zoom, offsetX, offsetY } = estado;
+    const { ctx, imagen, ancho, alto, bbox, baseScale, zoom, rotation, offsetX, offsetY } = estado;
     ctx.clearRect(0, 0, ancho, alto);
     const escala = baseScale * zoom;
     const anchoDibujo = bbox.ancho * escala;
@@ -1757,7 +1775,11 @@
     const x = (ancho - anchoDibujo) / 2 + offsetX;
     const y = 1010 - altoDibujo + offsetY;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(imagen, bbox.x, bbox.y, bbox.ancho, bbox.alto, x, y, anchoDibujo, altoDibujo);
+    ctx.save();
+    ctx.translate(x + anchoDibujo / 2, y + altoDibujo / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.drawImage(imagen, bbox.x, bbox.y, bbox.ancho, bbox.alto, -anchoDibujo / 2, -altoDibujo / 2, anchoDibujo, altoDibujo);
+    ctx.restore();
   };
 
   const finalizarEditorEncuadre = (blob) => {
@@ -1809,10 +1831,12 @@
     const baseScale = Math.min(900 / bbox.ancho, 900 / bbox.alto);
     editorEncuadreState = {
       ctx, imagen, ancho, alto, bbox, baseScale,
-      zoom: 1, offsetX: 0, offsetY: 0, drawing: false, drag: null, finalizado: false, resolve: null,
+      zoom: 1, rotation: 0, offsetX: 0, offsetY: 0, drawing: false, drag: null, finalizado: false, resolve: null,
     };
     if (els.imageFrameZoom) els.imageFrameZoom.value = "100";
     if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = "100%";
+    if (els.imageFrameRotate) els.imageFrameRotate.value = "0";
+    if (els.imageFrameRotateValue) els.imageFrameRotateValue.textContent = "0°";
     renderizarEncuadre();
     if (typeof els.imageFrameDialog.showModal === "function") els.imageFrameDialog.showModal();
     else els.imageFrameDialog.setAttribute("open", "");
@@ -3790,6 +3814,13 @@
         if (!editorRecorteState) return;
         event.preventDefault();
         canvas.setPointerCapture?.(event.pointerId);
+        if (editorRecorteState.panMode) {
+          editorRecorteState.panning = true;
+          editorRecorteState.panStart = { x: event.clientX, y: event.clientY, panX: editorRecorteState.panX, panY: editorRecorteState.panY };
+          canvas.style.cursor = "grabbing";
+          ocultarCursorBrocha();
+          return;
+        }
         editorRecorteState.drawing = true;
         editorRecorteState.undo.push(new ImageData(new Uint8ClampedArray(editorRecorteState.data.data), canvas.width, canvas.height));
         if (editorRecorteState.undo.length > 12) editorRecorteState.undo.shift();
@@ -3797,10 +3828,23 @@
         pintarRecorte(event.clientX, event.clientY);
       });
       canvas.addEventListener("pointermove", (event) => {
+        const estado = editorRecorteState;
+        if (estado?.panning && estado.panStart) {
+          estado.panX = estado.panStart.panX + (event.clientX - estado.panStart.x);
+          estado.panY = estado.panStart.panY + (event.clientY - estado.panStart.y);
+          aplicarVistaRecorte();
+          return;
+        }
         mostrarCursorBrocha(event);
-        if (editorRecorteState?.drawing) pintarRecorte(event.clientX, event.clientY);
+        if (estado?.drawing) pintarRecorte(event.clientX, event.clientY);
       });
-      const terminarTrazo = () => { if (editorRecorteState) editorRecorteState.drawing = false; };
+      const terminarTrazo = () => {
+        if (!editorRecorteState) return;
+        editorRecorteState.drawing = false;
+        editorRecorteState.panning = false;
+        editorRecorteState.panStart = null;
+        canvas.style.cursor = editorRecorteState.panMode ? "grab" : "none";
+      };
       canvas.addEventListener("pointerup", terminarTrazo);
       canvas.addEventListener("pointercancel", terminarTrazo);
       canvas.addEventListener("pointerleave", () => { terminarTrazo(); ocultarCursorBrocha(); });
@@ -3810,11 +3854,38 @@
         const boton = event.target.closest("[data-brush]");
         if (!boton || !editorRecorteState) return;
         editorRecorteState.brushMode = boton.dataset.brush === "erase" ? "erase" : "restore";
+        editorRecorteState.panMode = false;
+        els.imageEditorPanToggle?.classList.remove("is-active");
+        els.imageEditorCanvas.style.cursor = "none";
         if (els.imageBrushCursor) els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
         els.imageEditorTools.querySelectorAll("[data-brush]").forEach((item) => item.classList.toggle("is-active", item === boton));
       });
     }
     if (els.imageBrushSize) els.imageBrushSize.addEventListener("input", actualizarCursorBrocha);
+    if (els.imageBrushZoom) {
+      els.imageBrushZoom.addEventListener("input", () => {
+        if (!editorRecorteState) return;
+        editorRecorteState.zoom = Math.max(0.5, Math.min(4, Number(els.imageBrushZoom.value) / 100));
+        aplicarVistaRecorte();
+      });
+    }
+    if (els.imageEditorPanToggle) {
+      els.imageEditorPanToggle.addEventListener("click", () => {
+        if (!editorRecorteState) return;
+        editorRecorteState.panMode = !editorRecorteState.panMode;
+        els.imageEditorPanToggle.classList.toggle("is-active", editorRecorteState.panMode);
+        els.imageEditorCanvas.style.cursor = editorRecorteState.panMode ? "grab" : "none";
+        ocultarCursorBrocha();
+      });
+    }
+    if (els.imageEditorViewReset) {
+      els.imageEditorViewReset.addEventListener("click", () => {
+        if (!editorRecorteState) return;
+        editorRecorteState.panX = 0;
+        editorRecorteState.panY = 0;
+        aplicarVistaRecorte();
+      });
+    }
     if (els.imageEditorUndo) {
       els.imageEditorUndo.addEventListener("click", () => {
         const estado = editorRecorteState;
@@ -3885,6 +3956,14 @@
         renderizarEncuadre();
       });
     }
+    if (els.imageFrameRotate) {
+      els.imageFrameRotate.addEventListener("input", () => {
+        if (!editorEncuadreState) return;
+        editorEncuadreState.rotation = Number(els.imageFrameRotate.value) || 0;
+        if (els.imageFrameRotateValue) els.imageFrameRotateValue.textContent = `${editorEncuadreState.rotation}°`;
+        renderizarEncuadre();
+      });
+    }
     els.imageFrameCenter?.addEventListener("click", () => {
       if (!editorEncuadreState) return;
       editorEncuadreState.offsetX = 0;
@@ -3894,10 +3973,13 @@
     els.imageFrameReset?.addEventListener("click", () => {
       if (!editorEncuadreState) return;
       editorEncuadreState.zoom = 1;
+      editorEncuadreState.rotation = 0;
       editorEncuadreState.offsetX = 0;
       editorEncuadreState.offsetY = 0;
       if (els.imageFrameZoom) els.imageFrameZoom.value = "100";
       if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = "100%";
+      if (els.imageFrameRotate) els.imageFrameRotate.value = "0";
+      if (els.imageFrameRotateValue) els.imageFrameRotateValue.textContent = "0°";
       renderizarEncuadre();
     });
     if (els.imageFrameAccept) {
