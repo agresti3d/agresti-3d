@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css?v=28">
   <link rel="stylesheet" href="../css/theme.css?v=6">
-  <link rel="stylesheet" href="editor.css?v=28">
+  <link rel="stylesheet" href="editor.css?v=29">
 </head>
 <body class="cloud-body">
   <a class="skip-link" href="#appView">Saltar al editor</a>
@@ -532,6 +532,22 @@
     </div>
   </dialog>
 
+  <dialog class="cloud-image-editor cloud-variant-picker" id="variantImageDialog" aria-labelledby="variantImageTitle">
+    <div class="cloud-image-editor__inner">
+      <div class="cloud-image-editor__head">
+        <div><p class="cloud-eyebrow">Variante</p><h2 id="variantImageTitle">Elegir foto de la opción</h2></div>
+        <button class="cloud-image-editor__close" id="variantImageClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <p class="cloud-image-editor__help">Elegí una foto de este producto o subí una nueva. La foto se mostrará al seleccionar esta opción en la ficha.</p>
+      <div class="cloud-variant-picker__grid" id="variantImageChoices"></div>
+      <div class="cloud-image-editor__actions">
+        <button class="btn btn--ghost" id="variantImageUpload" type="button">Subir nueva foto</button>
+        <button class="btn btn--ghost" id="variantImageRemove" type="button" hidden>Quitar foto actual</button>
+        <button class="btn btn--ghost" id="variantImageCancel" type="button">Cancelar</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="cloud-image-lightbox" id="imageLightbox" aria-label="Vista grande de la foto">
     <button class="cloud-image-lightbox__close" id="imageLightboxClose" type="button" aria-label="Cerrar">×</button>
     <img id="imageLightboxImg" alt="">
@@ -544,6 +560,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="cloud-config.js?v=3"></script>
-  <script src="editor.js?v=40"></script>
+  <script src="editor.js?v=41"></script>
 </body>
 </html>
