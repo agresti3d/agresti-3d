@@ -259,6 +259,23 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
             <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
             <p className="mt-2 text-xl font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
+            {variantes.length > 0 && (
+              <div className="mt-3 border-t border-line pt-3 text-xs">
+                <p className="text-muted">Elegí una opción</p>
+                <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Opciones del producto">
+                  {variantes.map((v, i) => {
+                    const activa = variantIndex === i;
+                    return (
+                      <button key={`${v.nombre}-${i}`} type="button" role="radio" aria-checked={activa} onClick={() => { setVariantIndex(i); setSlide(0); }} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition ${activa ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/60 hover:text-ink"}`}>
+                        {v.imagen && <img src={imageUrl(v.imagen)} alt="" loading="lazy" className="h-7 w-7 flex-none rounded-md object-contain" />}
+                        <span className="font-medium">{v.nombre}</span>
+                        {v.precio && <span className="flex-none text-accent">{v.precio}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {(medidasPartes.length > 0 || detalles.medidas) && (
               <div className="mt-4 rounded-xl border border-line p-3">
                 <span className="block text-[9px] font-semibold uppercase tracking-[.14em] text-muted">Medidas</span>
@@ -288,23 +305,6 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
               <dl className="mt-4 grid grid-cols-[88px_1fr] items-start gap-x-3 gap-y-2 border-t border-line pt-3 text-xs">
                 {extras.map(([label, value]) => <div key={label} className="contents"><dt className="text-left text-muted">{label}</dt><dd className="text-left leading-relaxed text-ink">{value}</dd></div>)}
               </dl>
-            )}
-            {variantes.length > 0 && (
-              <div className="mt-3 border-t border-line pt-3 text-xs">
-                <p className="text-muted">Elegí una opción</p>
-                <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Opciones del producto">
-                  {variantes.map((v, i) => {
-                    const activa = variantIndex === i;
-                    return (
-                      <button key={`${v.nombre}-${i}`} type="button" role="radio" aria-checked={activa} onClick={() => { setVariantIndex(i); setSlide(0); }} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition ${activa ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/60 hover:text-ink"}`}>
-                        {v.imagen && <img src={imageUrl(v.imagen)} alt="" loading="lazy" className="h-7 w-7 flex-none rounded-md object-contain" />}
-                        <span className="font-medium">{v.nombre}</span>
-                        {v.precio && <span className="flex-none text-accent">{v.precio}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             )}
             <div className="mt-4 flex items-center gap-3">
               <div className="flex items-center rounded-full border border-line"><button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-11 w-11 place-items-center" aria-label="Menos"><Minus size={15} /></button><span className="w-8 text-center text-sm">{qty}</span><button type="button" onClick={() => setQty((q) => q + 1)} className="grid h-11 w-11 place-items-center" aria-label="Más"><Plus size={15} /></button></div>
