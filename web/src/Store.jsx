@@ -494,14 +494,17 @@ function Cart({ items, products, onClose, onChange, onRemove, onCheckout, sugges
 }
 
 function CheckoutDialog({ open, onClose, branches, message, summary = null, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
+  const [modoEntrega, setModoEntrega] = useState("retiro");
   useEffect(() => {
     if (!open) return undefined;
+    setModoEntrega("retiro");
     const anterior = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = anterior; window.removeEventListener("keydown", onKey); };
   }, [open, onClose]);
+  const mensajeFinal = summary ? `${message}\n\nModalidad: ${modoEntrega === "retiro" ? "Retiro en sucursal" : "Envío a coordinar por WhatsApp"}` : message;
 
   return (
     <AnimatePresence>
@@ -524,10 +527,19 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
                 <p className="mt-2 text-[10px] leading-relaxed text-muted">El envío o retiro se coordina por WhatsApp según tu zona.</p>
               </div>
             )}
+            {summary && (
+              <div className="border-b border-line px-5 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-muted">¿Cómo lo querés recibir?</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button type="button" aria-pressed={modoEntrega === "retiro"} onClick={() => setModoEntrega("retiro")} className={`min-h-11 rounded-xl border px-3 text-left text-[11px] font-semibold transition ${modoEntrega === "retiro" ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:border-accent/60"}`}>Retiro en sucursal</button>
+                  <button type="button" aria-pressed={modoEntrega === "envio"} onClick={() => setModoEntrega("envio")} className={`min-h-11 rounded-xl border px-3 text-left text-[11px] font-semibold transition ${modoEntrega === "envio" ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:border-accent/60"}`}>Envío a coordinar</button>
+                </div>
+              </div>
+            )}
             <div className="grid gap-2 p-5">
               {(branches.length ? branches : [{ id: "agresti", nombre: "Agresti.3D", localidad: "Buenos Aires, Wilde", telefono: WA_PHONE }]).map((sucursal) => {
                 const telefono = String(sucursal.telefono || "").replace(/\D/g, "");
-                const href = `https://wa.me/${telefono}?text=${encodeURIComponent(message)}`;
+                const href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeFinal)}`;
                 return (
                   <a key={sucursal.id || sucursal.nombre} href={href} target="_blank" rel="noopener" onClick={onClose} className="flex min-h-[64px] items-center gap-3 rounded-2xl border border-line bg-paper/40 p-3 transition hover:border-accent hover:bg-accent/5">
                     <span className="grid h-10 w-10 flex-none place-items-center rounded-full border border-accent/40 bg-accent/10 text-accent"><MapPin size={17} /></span>
