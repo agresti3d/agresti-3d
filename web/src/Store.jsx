@@ -380,6 +380,12 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
             </div>
             <p className="mt-2 text-xl font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+              <button type="button" onClick={compartirProducto} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-3 font-semibold text-ink transition hover:border-accent hover:text-accent"><Share2 size={14} /> Compartir</button>
+              <a href={whatsappShare} target="_blank" rel="noopener" className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-3 font-semibold text-ink transition hover:border-accent hover:text-accent"><MessageCircle size={14} /> WhatsApp</a>
+              <button type="button" onClick={copiarEnlace} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-3 font-semibold text-muted transition hover:border-accent hover:text-accent"><Copy size={14} /> Copiar link</button>
+              {shareStatus && <span className="text-[10px] text-accent" role="status" aria-live="polite">{shareStatus}</span>}
+            </div>
             {variantes.length > 0 && (
               <div className="mt-3 border-t border-line pt-3 text-xs">
                 <p className="text-muted">Elegí una opción</p>
