@@ -496,8 +496,10 @@ function Cart({ items, products, onClose, onChange, onRemove, onCheckout, sugges
 function CheckoutDialog({ open, onClose, branches, message, summary = null, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
   const [modoEntrega, setModoEntrega] = useState("retiro");
   useEffect(() => {
+    if (open) setModoEntrega("retiro");
+  }, [open]);
+  useEffect(() => {
     if (!open) return undefined;
-    setModoEntrega("retiro");
     const anterior = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event) => { if (event.key === "Escape") onClose(); };
