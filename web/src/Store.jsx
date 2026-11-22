@@ -24,10 +24,29 @@ const normalizarBusqueda = (valor) => String(valor || "")
   .toLowerCase();
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+const COLORES_VARIANTE = {
+  azul: "#3b82f6", rojo: "#ef4444", amarillo: "#facc15", negro: "#111827", negra: "#111827",
+  blanco: "#f8fafc", blanca: "#f8fafc", verde: "#22c55e", rosa: "#f472b6", violeta: "#8b5cf6",
+  morado: "#8b5cf6", naranja: "#f97316", gris: "#94a3b8", plateado: "#cbd5e1", dorado: "#d4a72c",
+  beige: "#d6c3a5", marron: "#92400e", marrón: "#92400e", celeste: "#38bdf8", turquesa: "#2dd4bf",
+};
+const colorDeVariante = (nombre) => {
+  const texto = normalizarBusqueda(nombre);
+  return Object.entries(COLORES_VARIANTE).find(([color]) => texto.includes(color))?.[1] || "";
+};
+const variantesDe = (product) => (Array.isArray(product?.variantes) ? product.variantes.filter((v) => v?.nombre) : []);
+const claveItem = (id, variante) => `${id}::${variante?.nombre || ""}`;
+const precioItem = (item, product) => item?.precio || item?.variante?.precio || product?.precio || "";
+const imagenItem = (item, product) => item?.variante?.imagen || product?.imagenes?.[0]?.src || "";
+const stockTotalProducto = (product) => Object.values(product?.stockPorSucursal || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+const tieneDatosStock = (product) => Boolean(product?.stockPorSucursal && Object.keys(product.stockPorSucursal).length);
+
 function readCart() {
   try {
     const raw = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-    return Array.isArray(raw) ? raw.filter((i) => i && i.id) : [];
+    return Array.isArray(raw)
+      ? raw.filter((i) => i && i.id).map((item) => ({ ...item, key: item.key || claveItem(item.id, item.variante) }))
+      : [];
   } catch { return []; }
 }
 
@@ -109,11 +128,21 @@ function Header({ cartCount, onCart }) {
 
 function ProductCard({ product, onOpen, onAdd, onCategory, categoryName }) {
   const [foto, setFoto] = useState(0);
+  const [variantePreview, setVariantePreview] = useState(null);
   const imageRef = useRef(null);
   const touchStart = useRef(null);
   const swipeConsumed = useRef(false);
   const imagenes = Array.isArray(product.imagenes) ? product.imagenes.filter((imagen) => imagen?.src) : [];
-  const actual = imagenes[foto] || imagenes[0];
+  const variantes = variantesDe(product);
+  const actual = variantePreview?.imagen
+    ? { src: variantePreview.imagen, alt: `${product.nombre} ${variantePreview.nombre}` }
+    : imagenes[foto] || imagenes[0];
+  const preciosVariantes = variantes.map((variante) => numberPrice(variante.precio)).filter((precio) => precio > 0);
+  const precioBase = numberPrice(product.precio);
+  const precios = [...preciosVariantes, precioBase].filter((precio) => precio > 0);
+  const precioMinimo = precios.length ? Math.min(...precios) : 0;
+  const mostrarDesde = preciosVariantes.length > 0 && (preciosVariantes.some((precio) => precio !== precioBase) || !precioBase);
+  const precioTexto = mostrarDesde && precioMinimo ? `Desde $${precioMinimo.toLocaleString("es-AR")}` : money(product.precio);
   const cambiarFoto = (direccion) => {
     if (imagenes.length < 2) return;
     setFoto((indice) => (indice + direccion + imagenes.length) % imagenes.length);
@@ -140,9 +169,10 @@ function ProductCard({ product, onOpen, onAdd, onCategory, categoryName }) {
         <button type="button" onClick={(event) => { event.stopPropagation(); onCategory(product.categoria); }} className="max-w-[80%] truncate rounded-full border border-line bg-surface2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.08em] text-muted transition hover:border-accent hover:text-accent" aria-label={`Ver productos de ${categoryName || product.categoria}`}>{categoryName || product.categoria}</button>
       </div>
       <button type="button" onClick={abrir} onTouchStart={iniciarSwipe} onTouchEnd={terminarSwipe} className="relative grid aspect-square touch-pan-y place-items-center overflow-hidden rounded-[14px] bg-surface2" aria-label={`Ver ${product.nombre}`}>
-        {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} loading="lazy" width="500" height="500" className="h-[88%] w-[88%] object-contain transition duration-500 group-hover:scale-[1.04]" /> : <span className="text-xs text-muted">Sin foto</span>}
-        {imagenes.length > 1 && <span className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1" aria-hidden="true">{imagenes.map((_, i) => <i key={i} className={`h-1.5 rounded-full transition-all ${i === foto ? "w-4 bg-accent" : "w-1.5 bg-ink/30"}`} />)}</span>}
+        {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} loading="lazy" decoding="async" width="500" height="500" className="h-[88%] w-[88%] object-contain transition duration-500 group-hover:scale-[1.04]" /> : <span className="text-xs text-muted">Sin foto</span>}
+        {imagenes.length > 1 && !variantePreview && <span className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1" aria-hidden="true">{imagenes.map((_, i) => <i key={i} className={`h-1.5 rounded-full transition-all ${i === foto ? "w-4 bg-accent" : "w-1.5 bg-ink/30"}`} />)}</span>}
         {product.videos?.length > 0 && <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-line bg-paper/80 px-2 py-1 text-[9px] font-semibold text-ink backdrop-blur" aria-hidden="true"><Play size={9} fill="currentColor" /> Video</span>}
+        {variantes.length > 0 && <span className="pointer-events-none absolute right-2 top-2 rounded-full border border-line bg-paper/80 px-2 py-1 text-[9px] font-semibold text-muted backdrop-blur">{variantes.length} opciones</span>}
       </button>
       <div className="flex flex-1 flex-col pt-3">
         <div className="flex items-center gap-1.5 pb-1.5">
@@ -150,13 +180,38 @@ function ProductCard({ product, onOpen, onAdd, onCategory, categoryName }) {
           <span className="font-display text-[10px] font-semibold tracking-[.08em] text-ink/80">AGRESTI<span className="text-accent">.3D</span></span>
         </div>
         <button type="button" onClick={() => onOpen(product)} className="text-left"><h3 className="line-clamp-2 min-h-[2.4rem] text-base font-semibold leading-snug">{product.nombre}</h3></button>
+        {variantes.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Colores y opciones disponibles">
+            {variantes.slice(0, 5).map((variante, indice) => {
+              const color = colorDeVariante(variante.nombre);
+              return (
+                <button key={`${variante.nombre}-${indice}`} type="button" onMouseEnter={() => setVariantePreview(variante)} onMouseLeave={() => setVariantePreview(null)} onClick={() => onOpen(product, indice)} className="grid h-7 w-7 place-items-center overflow-hidden rounded-full border border-line bg-surface2 transition hover:scale-110 hover:border-accent" aria-label={`Ver opción ${variante.nombre}`} title={variante.nombre}>
+                  {variante.imagen ? <img src={imageUrl(variante.imagen)} alt="" loading="lazy" className="h-full w-full object-contain" /> : color ? <span className="h-4 w-4 rounded-full border border-black/20" style={{ backgroundColor: color }} /> : <span className="text-[8px] font-semibold text-muted">{variante.nombre.slice(0, 2)}</span>}
+                </button>
+              );
+            })}
+            {variantes.length > 5 && <span className="text-[10px] text-muted">+{variantes.length - 5}</span>}
+          </div>
+        )}
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <span className="text-base font-semibold text-accent">{money(product.precio)}</span>
-          <button type="button" onClick={() => onAdd(product, 1, imageRef.current)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-3 text-[11px] font-semibold text-white transition hover:bg-accentDeep" aria-label={`Agregar ${product.nombre} al carrito`}><ShoppingCart size={14} /> Agregar</button>
+          <span className="text-base font-semibold text-accent">{precioTexto}</span>
+          <button type="button" onClick={() => variantes.length ? onOpen(product, 0) : onAdd(product, 1, imageRef.current)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-3 text-[11px] font-semibold text-white transition hover:bg-accentDeep" aria-label={variantes.length ? `Elegir opción de ${product.nombre}` : `Agregar ${product.nombre} al carrito`}><ShoppingCart size={14} /> {variantes.length ? "Elegir" : "Agregar"}</button>
         </div>
         <button type="button" onClick={() => onOpen(product)} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-line text-[11px] font-semibold text-muted transition hover:border-accent hover:text-accent"><Info size={13} /> + Info</button>
       </div>
     </motion.article>
+  );
+}
+
+function ProductSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-[20px] border border-line bg-surface p-3" aria-hidden="true">
+      <div className="h-8 w-24 rounded-full bg-surface2" />
+      <div className="mt-2 aspect-square rounded-[14px] bg-surface2" />
+      <div className="mt-3 h-4 w-4/5 rounded bg-surface2" />
+      <div className="mt-2 h-4 w-2/5 rounded bg-surface2" />
+      <div className="mt-4 flex justify-between"><div className="h-6 w-20 rounded bg-surface2" /><div className="h-10 w-24 rounded-full bg-surface2" /></div>
+    </div>
   );
 }
 
@@ -174,15 +229,25 @@ function CategoryCard({ category, onClick }) {
   );
 }
 
-function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }) {
+function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, initialVariantIndex = null, related = [], onOpenRelated }) {
   const [qty, setQty] = useState(1);
   const [slide, setSlide] = useState(0);
   const [lightbox, setLightbox] = useState(false);
-  const [variantIndex, setVariantIndex] = useState(null);
+  const variantes = variantesDe(product);
+  const indiceInicial = initialVariantIndex ?? (variantes.length ? 0 : null);
+  const [variantIndex, setVariantIndex] = useState(indiceInicial);
   const imageRef = useRef(null);
-  useEffect(() => { setQty(1); setSlide(0); setLightbox(false); setVariantIndex(null); }, [product?.id]);
+  useEffect(() => { setQty(1); setSlide(0); setLightbox(false); setVariantIndex(initialVariantIndex ?? (variantesDe(product).length ? 0 : null)); }, [product?.id, initialVariantIndex]);
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      if (lightbox) setLightbox(false);
+      else onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, onClose]);
   if (!product) return null;
-  const variantes = Array.isArray(product.variantes) ? product.variantes.filter((v) => v?.nombre) : [];
   const varianteActiva = variantIndex !== null ? variantes[variantIndex] : null;
   const media = [
     ...(varianteActiva?.imagen ? [{ src: varianteActiva.imagen, alt: `${product.nombre} ${varianteActiva.nombre}`, type: "image" }] : []),
@@ -215,11 +280,15 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
     detalles.ancho && { etiqueta: "Ancho", valor: detalles.ancho },
     detalles.largo && { etiqueta: "Largo", valor: detalles.largo },
   ].filter(Boolean);
+  const resenas = Array.isArray(product.resenas) ? product.resenas.filter((resena) => resena?.nombre || resena?.texto) : [];
+  const promedioResenas = resenas.length ? resenas.reduce((sum, resena) => sum + (Number(resena.rating) || 0), 0) / resenas.length : 0;
+  const stock = stockTotalProducto(product);
+  const stockLabel = tieneDatosStock(product) ? (stock > 0 ? `Stock disponible${stock ? ` (${stock})` : ""}` : "Sin stock") : "A pedido";
   const beneficios = [
     detalles.material && ["Material", detalles.material],
     detalles.capacidad && ["Capacidad", detalles.capacidad],
     detalles.peso && ["Peso", detalles.peso],
-    ["Producción", "A pedido"],
+    ["Producción", stock > 0 ? "Con stock" : "A pedido"],
     ["Envío", "Todo el país"],
   ].filter(Boolean);
   const incluye = String(detalles.contenido || "").replace(/^incluye\s+/i, "").trim();
@@ -229,10 +298,14 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
     detalles.personalizacion && ["Personalización", detalles.personalizacion],
     detalles.cuidados && ["Cuidados", detalles.cuidados],
   ].filter(Boolean);
+  const agregar = () => {
+    onAdd(product, qty, imageRef.current, varianteActiva);
+    onClose();
+  };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-paper/80 p-3 backdrop-blur-md sm:p-6">
       <div className="flex w-full items-center justify-center">
-        <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={(e) => e.stopPropagation()} className="relative mx-auto grid max-h-[calc(100dvh-1.5rem)] w-full max-w-[1000px] overflow-y-auto rounded-[24px] border border-line bg-surface shadow-2xl sm:max-h-[calc(100dvh-3rem)] lg:grid-cols-2">
+        <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="productDetailTitle" className="relative mx-auto grid max-h-[calc(100dvh-1.5rem)] w-full max-w-[1000px] overflow-y-auto rounded-[24px] border border-line bg-surface shadow-2xl sm:max-h-[calc(100dvh-3rem)] lg:grid-cols-2">
           <div className="relative flex flex-col bg-surface2 p-4">
             <button type="button" onClick={onClose} className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-line bg-paper/80 text-ink" aria-label="Cerrar ficha"><X size={18} /></button>
             <div className="relative flex h-[310px] items-center justify-center sm:h-[390px] lg:h-[460px]">
@@ -252,11 +325,15 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
             </div>
             {media.length > 1 && <div className="relative z-10 flex justify-center gap-2 py-3">{media.map((m, i) => <button key={i} type="button" onClick={() => setSlide(i)} className={`h-2.5 rounded-full transition-all ${i === slide ? "w-6 bg-accent" : "w-2.5 bg-[#64748b]"}`} aria-label={`${m.type === "video" ? "Video" : "Foto"} ${i + 1}`} />)}</div>}
           </div>
-          <div className="p-5 pb-7 sm:p-7">
+          <div className="p-5 pb-32 sm:p-7 lg:pb-7">
             <div className="flex justify-end">
               <button type="button" onClick={() => onCategory(product.categoria)} className="max-w-[85%] truncate rounded-full border border-line bg-surface2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.1em] text-accent transition hover:border-accent" aria-label={`Ver productos de ${categoryName || product.categoria}`}>{categoryName || product.categoria}</button>
             </div>
-            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
+            <h2 id="productDetailTitle" className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+              {resenas.length > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface2 px-2 py-1 text-ink"><span className="text-accent">★</span> {promedioResenas.toFixed(1)} <span className="text-muted">({resenas.length})</span></span>}
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${stock > 0 ? "border-[#7dd3a9]/40 text-[#7dd3a9]" : "border-line text-muted"}`}>{stockLabel}</span>
+            </div>
             <p className="mt-2 text-xl font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
             {variantes.length > 0 && (
@@ -308,11 +385,30 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
             )}
             <div className="mt-4 flex items-center gap-3">
               <div className="flex items-center rounded-full border border-line"><button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-11 w-11 place-items-center" aria-label="Menos"><Minus size={15} /></button><span className="w-8 text-center text-sm">{qty}</span><button type="button" onClick={() => setQty((q) => q + 1)} className="grid h-11 w-11 place-items-center" aria-label="Más"><Plus size={15} /></button></div>
-              <button type="button" onClick={() => { onAdd(product, qty, imageRef.current); onClose(); }} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white">Agregar al carrito <ShoppingBag size={15} /></button>
+              <button type="button" onClick={agregar} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white">Agregar al carrito <ShoppingBag size={15} /></button>
             </div>
             <button type="button" onClick={() => onInquiry(product)} className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full border border-line text-xs font-semibold text-ink transition hover:border-accent">Consultar por WhatsApp</button>
+            {related.length > 0 && (
+              <section className="mt-5 border-t border-line pt-4">
+                <div className="flex items-end justify-between gap-3"><div><h3 className="text-sm font-semibold">Completá tu set</h3><p className="mt-0.5 text-[10px] text-muted">Otras piezas de la misma colección.</p></div><span className="text-[10px] text-muted">{related.length} ideas</span></div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {related.map((item) => (
+                    <button key={item.id} type="button" onClick={() => onOpenRelated?.(item)} className="group flex min-h-[92px] items-center gap-2 rounded-xl border border-line bg-surface2 p-2 text-left transition hover:border-accent">
+                      <span className="grid h-14 w-14 flex-none place-items-center overflow-hidden rounded-lg bg-paper/40">{item.imagenes?.[0]?.src ? <img src={imageUrl(item.imagenes[0].src)} alt="" loading="lazy" className="h-[88%] w-[88%] object-contain transition group-hover:scale-105" /> : <Info size={16} className="text-muted" />}</span>
+                      <span className="min-w-0"><span className="line-clamp-2 text-[11px] font-semibold leading-snug">{item.nombre}</span><span className="mt-1 block text-[10px] text-accent">{money(item.precio)}</span></span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </motion.div>
+      </div>
+      <div onClick={(event) => event.stopPropagation()} className="fixed inset-x-0 bottom-0 z-[96] border-t border-line bg-surface/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_45px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-[1000px] items-center gap-3">
+          <div className="min-w-0 flex-1"><p className="truncate text-[10px] text-muted">{varianteActiva?.nombre || (variantes.length ? "Elegí una opción" : "Precio")}</p><p className="truncate text-lg font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p></div>
+          <button type="button" onClick={agregar} className="inline-flex min-h-12 flex-none items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-white">Agregar <ShoppingBag size={15} /></button>
+        </div>
       </div>
       <AnimatePresence>
         {lightbox && actual?.type === "image" && (
@@ -328,31 +424,60 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName }
   );
 }
 
-function Cart({ items, products, onClose, onChange, onRemove, onCheckout }) {
-  const rows = items.map((item) => ({ ...item, product: products.find((p) => p.id === item.id) })).filter((i) => i.product);
-  const total = rows.reduce((sum, i) => sum + numberPrice(i.product.precio) * i.cantidad, 0);
-  const message = `Hola Agresti.3D, quiero pedir:\n${rows.map((i) => `• ${i.cantidad} × ${i.product.nombre}${i.product.precio ? ` — ${i.product.precio}` : " — a consultar"}`).join("\n")}\n\nTotal estimado: $${total.toLocaleString("es-AR")}`;
+function Cart({ items, products, onClose, onChange, onRemove, onCheckout, suggestions = [], onOpenSuggestion }) {
+  const rows = items
+    .map((item) => {
+      const product = products.find((p) => p.id === item.id);
+      if (!product) return null;
+      const variante = item.variante || null;
+      return { ...item, product, variante, key: item.key || claveItem(item.id, variante), precio: precioItem(item, product) };
+    })
+    .filter(Boolean);
+  const total = rows.reduce((sum, item) => sum + numberPrice(item.precio) * item.cantidad, 0);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[95] bg-paper/70 backdrop-blur-sm" onClick={onClose}>
-      <motion.aside initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 260 }} onClick={(e) => e.stopPropagation()} className="ml-auto flex h-full w-full max-w-[430px] flex-col border-l border-line bg-surface p-5">
-        <div className="flex items-center justify-between border-b border-line pb-4"><h2 className="font-display text-xl">Tu carrito</h2><button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full border border-line" aria-label="Cerrar carrito"><X size={18} /></button></div>
+      <motion.aside initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 260 }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="cartTitle" className="ml-auto flex h-full w-full max-w-[430px] flex-col border-l border-line bg-surface p-5">
+        <div className="flex items-center justify-between border-b border-line pb-4"><div><h2 id="cartTitle" className="font-display text-xl">Tu carrito</h2><p className="mt-0.5 text-[11px] text-muted">{rows.reduce((n, item) => n + item.cantidad, 0)} artículo(s)</p></div><button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full border border-line" aria-label="Cerrar carrito"><X size={18} /></button></div>
         <div className="flex-1 overflow-y-auto py-4">
           {!rows.length && <p className="text-sm text-muted">Todavía no agregaste nada.</p>}
-          {rows.map(({ product, cantidad }) => (
-            <div key={product.id} className="flex gap-3 border-b border-line py-3">
-              <div className="grid h-16 w-16 flex-none place-items-center rounded-xl bg-surface2"><img src={imageUrl(product.imagenes?.[0]?.src)} alt="" className="h-[85%] w-[85%] object-contain" /></div>
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{product.nombre}</p><p className="mt-1 text-xs text-accent">{money(product.precio)}</p><div className="mt-2 flex items-center gap-2"><button type="button" onClick={() => onChange(product.id, cantidad - 1)} className="grid h-8 w-8 place-items-center rounded-full border border-line" aria-label="Menos"><Minus size={12} /></button><span className="w-5 text-center text-xs">{cantidad}</span><button type="button" onClick={() => onChange(product.id, cantidad + 1)} className="grid h-8 w-8 place-items-center rounded-full border border-line" aria-label="Más"><Plus size={12} /></button></div></div>
-              <button type="button" onClick={() => onRemove(product.id)} className="self-start text-muted hover:text-accent" aria-label="Quitar"><Trash2 size={16} /></button>
+          {rows.map((row) => (
+            <div key={row.key} className="flex gap-3 border-b border-line py-3">
+              <div className="grid h-16 w-16 flex-none place-items-center overflow-hidden rounded-xl bg-surface2"><img src={imageUrl(imagenItem(row, row.product))} alt="" loading="lazy" className="h-[85%] w-[85%] object-contain" /></div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{row.product.nombre}</p>
+                {row.variante?.nombre && <p className="mt-0.5 truncate text-[10px] font-medium text-muted">{row.variante.nombre}</p>}
+                <p className="mt-1 text-xs text-accent">{money(row.precio)}</p>
+                <div className="mt-2 flex items-center gap-2"><button type="button" onClick={() => onChange(row.key, row.cantidad - 1)} className="grid h-8 w-8 place-items-center rounded-full border border-line" aria-label="Menos"><Minus size={12} /></button><span className="w-5 text-center text-xs">{row.cantidad}</span><button type="button" onClick={() => onChange(row.key, row.cantidad + 1)} className="grid h-8 w-8 place-items-center rounded-full border border-line" aria-label="Más"><Plus size={12} /></button></div>
+              </div>
+              <button type="button" onClick={() => onRemove(row.key)} className="self-start text-muted hover:text-accent" aria-label="Quitar"><Trash2 size={16} /></button>
             </div>
           ))}
+          {rows.length > 0 && suggestions.length > 0 && (
+            <div className="mt-4 rounded-xl border border-line bg-surface2/60 p-3">
+              <p className="text-[11px] font-semibold text-ink">Sumá otra pieza</p>
+              <div className="mt-2 grid gap-2">
+                {suggestions.slice(0, 3).map((product) => (
+                  <button key={product.id} type="button" onClick={() => onOpenSuggestion?.(product)} className="flex items-center gap-2 rounded-lg border border-line bg-surface p-2 text-left transition hover:border-accent">
+                    <span className="grid h-10 w-10 flex-none place-items-center overflow-hidden rounded-md bg-surface2">{product.imagenes?.[0]?.src ? <img src={imageUrl(product.imagenes[0].src)} alt="" loading="lazy" className="h-[88%] w-[88%] object-contain" /> : <Info size={14} className="text-muted" />}</span>
+                    <span className="min-w-0 flex-1"><span className="line-clamp-1 text-[11px] font-semibold">{product.nombre}</span><span className="mt-0.5 block text-[10px] text-accent">{money(product.precio)}</span></span>
+                    <ArrowRight size={13} className="flex-none text-muted" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="border-t border-line pt-4"><div className="flex justify-between text-sm"><span className="text-muted">Total estimado</span><strong>${total.toLocaleString("es-AR")}</strong></div><p className="mt-1 text-[10px] text-muted">Los productos “A consultar” se confirman por WhatsApp.</p><button type="button" onClick={onCheckout} className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">Cerrar pedido por WhatsApp</button></div>
+        <div className="border-t border-line pt-4">
+          <div className="flex justify-between text-sm"><span className="text-muted">Total estimado</span><strong>${total.toLocaleString("es-AR")}</strong></div>
+          <p className="mt-1 text-[10px] text-muted">Los productos “A consultar” se confirman por WhatsApp.</p>
+          <button type="button" onClick={onCheckout} disabled={!rows.length} className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-accent text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Revisar pedido por WhatsApp</button>
+        </div>
       </motion.aside>
     </motion.div>
   );
 }
 
-function CheckoutDialog({ open, onClose, branches, message, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
+function CheckoutDialog({ open, onClose, branches, message, summary = null, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
   useEffect(() => {
     if (!open) return undefined;
     const anterior = document.body.style.overflow;
@@ -371,6 +496,18 @@ function CheckoutDialog({ open, onClose, branches, message, eyebrow = "Cerrar pe
               <div><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-accent">{eyebrow}</p><h2 id="checkoutDialogTitle" className="mt-1 font-display text-2xl font-semibold">{title}</h2><p className="mt-1 text-xs leading-relaxed text-muted">{description}</p></div>
               <button type="button" onClick={onClose} className="grid h-10 w-10 flex-none place-items-center rounded-full border border-line text-ink" aria-label="Cerrar"><X size={18} /></button>
             </div>
+            {summary && (
+              <div className="border-b border-line bg-paper/30 px-5 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-accent">Resumen del pedido</p>
+                <ul className="mt-2 grid gap-1.5">
+                  {summary.items.map((item, indice) => (
+                    <li key={`${item.nombre}-${indice}`} className="flex items-start justify-between gap-3 text-[11px]"><span className="min-w-0 text-muted">{item.cantidad} × {item.nombre}{item.variante ? ` · ${item.variante}` : ""}</span><span className="flex-none text-ink">{money(item.precio)}</span></li>
+                  ))}
+                </ul>
+                <div className="mt-2 flex justify-between border-t border-line pt-2 text-xs"><span className="text-muted">Total estimado</span><strong>${summary.total.toLocaleString("es-AR")}</strong></div>
+                <p className="mt-2 text-[10px] leading-relaxed text-muted">El envío o retiro se coordina por WhatsApp según tu zona.</p>
+              </div>
+            )}
             <div className="grid gap-2 p-5">
               {(branches.length ? branches : [{ id: "agresti", nombre: "Agresti.3D", localidad: "Buenos Aires, Wilde", telefono: WA_PHONE }]).map((sucursal) => {
                 const telefono = String(sucursal.telefono || "").replace(/\D/g, "");
@@ -400,8 +537,11 @@ export default function Store() {
   const [category, setCategory] = useState(() => new URLSearchParams(location.hash.replace(/^#/, "")).get("cat") || "todos");
   const [price, setPrice] = useState("todos");
   const [sort, setSort] = useState("relevancia");
+  const [optionsOnly, setOptionsOnly] = useState(false);
+  const [stockOnly, setStockOnly] = useState(false);
   const [visible, setVisible] = useState(12);
   const [detailId, setDetailId] = useState(() => new URLSearchParams(location.hash.replace(/^#/, "")).get("p"));
+  const [detailVariantIndex, setDetailVariantIndex] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [inquiry, setInquiry] = useState(null);
@@ -448,18 +588,36 @@ export default function Store() {
     let list = products.filter((p) => {
       const inCategory = category === "todos" || pathOf(p.categoria).some((c) => c.id === category);
       const inPrice = price === "todos" || (price === "consultar" ? !p.precio : Boolean(p.precio));
-      const text = normalizarBusqueda(`${p.nombre} ${p.descripcion || ""} ${p.categoria} ${catMap.get(p.categoria)?.nombre || ""}`);
-      return inCategory && inPrice && (!q || text.includes(q));
+      const variantes = variantesDe(p);
+      const variantesTexto = variantes.map((variante) => `${variante.nombre} ${variante.precio || ""}`).join(" ");
+      const text = normalizarBusqueda(`${p.nombre} ${p.descripcion || ""} ${p.categoria} ${catMap.get(p.categoria)?.nombre || ""} ${variantesTexto} ${p.detalles?.colores || ""} ${p.detalles?.material || ""}`);
+      const hasOptions = variantes.length > 0;
+      const hasStock = tieneDatosStock(p) && stockTotalProducto(p) > 0;
+      return inCategory && inPrice && (!optionsOnly || hasOptions) && (!stockOnly || hasStock) && (!q || text.includes(q));
     });
     if (sort === "precio-asc") list = [...list].sort((a, b) => (numberPrice(a.precio) || 99999999) - (numberPrice(b.precio) || 99999999));
     if (sort === "precio-desc") list = [...list].sort((a, b) => (numberPrice(b.precio) || 0) - (numberPrice(a.precio) || 0));
     if (sort === "nombre") list = [...list].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     return list;
-  }, [products, query, category, price, sort, catMap]);
+  }, [products, query, category, price, sort, optionsOnly, stockOnly, catMap]);
 
-  useEffect(() => { setVisible(12); }, [query, category, price, sort]);
+  useEffect(() => { setVisible(12); }, [query, category, price, sort, optionsOnly, stockOnly]);
 
   const detail = products.find((p) => p.id === detailId || (Array.isArray(p.idsAnteriores) && p.idsAnteriores.includes(detailId)));
+  const detailRelated = useMemo(() => {
+    if (!detail) return [];
+    return products
+      .filter((producto) => producto.id !== detail.id && (producto.categoria === detail.categoria || pathOf(producto.categoria).some((categoria) => categoria.id === detail.categoria)))
+      .slice(0, 4);
+  }, [detail, products, catMap]);
+  const cartSuggestions = useMemo(() => {
+    if (!cart.length) return [];
+    const ids = new Set(cart.map((item) => item.id));
+    const referencia = products.find((producto) => producto.id === cart[0]?.id);
+    const disponibles = products.filter((producto) => !ids.has(producto.id));
+    const mismaCategoria = disponibles.filter((producto) => producto.categoria === referencia?.categoria);
+    return [...mismaCategoria, ...disponibles].slice(0, 3);
+  }, [cart, products]);
 
   useEffect(() => {
     if (!detail || detail.id === detailId) return;
@@ -478,19 +636,27 @@ export default function Store() {
     window.clearTimeout(flyTimer.current);
     window.clearTimeout(toastTimer.current);
   }, []);
-  const add = (product, cantidad = 1, sourceEl = null) => {
+  const add = (product, cantidad = 1, sourceEl = null, variante = null) => {
+    const opcion = variante?.nombre
+      ? { nombre: variante.nombre, precio: variante.precio || "", imagen: variante.imagen || "" }
+      : null;
+    const key = claveItem(product.id, opcion);
+    const precio = opcion?.precio || product.precio || "";
     const siguienteTotal = cartCount + cantidad;
     setCart((prev) => {
-      const exists = prev.find((i) => i.id === product.id);
-      return exists ? prev.map((i) => i.id === product.id ? { ...i, cantidad: i.cantidad + cantidad } : i) : [...prev, { id: product.id, cantidad }];
+      const exists = prev.find((item) => (item.key || claveItem(item.id, item.variante)) === key);
+      return exists
+        ? prev.map((item) => (item.key || claveItem(item.id, item.variante)) === key ? { ...item, cantidad: item.cantidad + cantidad } : item)
+        : [...prev, { id: product.id, cantidad, variante: opcion, precio, key }];
     });
     const source = sourceEl?.getBoundingClientRect?.();
     const target = document.getElementById("cartButton")?.getBoundingClientRect();
-    if (source && target && product.imagenes?.[0]?.src) {
+    const src = opcion?.imagen || product.imagenes?.[0]?.src;
+    if (source && target && src) {
       window.clearTimeout(flyTimer.current);
       setFly({
         key: Date.now(),
-        src: imageUrl(product.imagenes[0].src),
+        src: imageUrl(src),
         cantidad,
         from: { left: source.left + source.width / 2, top: source.top + source.height / 2, width: Math.min(source.width, 140), height: Math.min(source.height, 140) },
         to: { left: target.left + target.width / 2 - 11, top: target.top + target.height / 2 - 11 },
@@ -498,15 +664,16 @@ export default function Store() {
       flyTimer.current = window.setTimeout(() => setFly(null), 900);
     }
     window.clearTimeout(toastTimer.current);
-    setAddToast({ key: Date.now(), cantidad, total: siguienteTotal, nombre: product.nombre });
+    setAddToast({ key: Date.now(), cantidad, total: siguienteTotal, nombre: `${product.nombre}${opcion ? ` · ${opcion.nombre}` : ""}` });
     toastTimer.current = window.setTimeout(() => setAddToast(null), 2300);
   };
-  const change = (id, cantidad) => setCart((prev) => cantidad <= 0 ? prev.filter((i) => i.id !== id) : prev.map((i) => i.id === id ? { ...i, cantidad } : i));
-  const remove = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
+  const change = (key, cantidad) => setCart((prev) => cantidad <= 0 ? prev.filter((item) => (item.key || claveItem(item.id, item.variante)) !== key) : prev.map((item) => (item.key || claveItem(item.id, item.variante)) === key ? { ...item, cantidad } : item));
+  const remove = (key) => setCart((prev) => prev.filter((item) => (item.key || claveItem(item.id, item.variante)) !== key));
   const catalogScrollRef = useRef(0);
-  const openDetail = (product) => {
+  const openDetail = (product, variantIndex = null) => {
     catalogScrollRef.current = window.scrollY;
     history.pushState({ productId: product.id, from: location.hash || "#productos", scrollY: window.scrollY }, "", `#p=${encodeURIComponent(product.id)}`);
+    setDetailVariantIndex(variantIndex);
     setDetailId(product.id);
   };
   const closeDetail = () => {
@@ -516,6 +683,7 @@ export default function Store() {
     }
     history.replaceState(null, "", "#productos");
     setDetailId(null);
+    setDetailVariantIndex(null);
   };
   const irACategoria = (id) => {
     setCategory(id);
@@ -532,15 +700,31 @@ export default function Store() {
       .map((item) => {
         const producto = products.find((p) => p.id === item.id);
         if (!producto) return null;
+        const variante = item.variante?.nombre ? ` (${item.variante.nombre})` : "";
+        const precio = precioItem(item, producto);
         const link = `https://agresti3d.web.app/tienda.html#p=${encodeURIComponent(producto.id)}`;
-        return `• ${item.cantidad} × ${producto.nombre} — ${producto.precio || "A consultar"}\n  ${link}`;
+        return `• ${item.cantidad} × ${producto.nombre}${variante} — ${precio || "A consultar"}\n  ${link}`;
       })
       .filter(Boolean);
     const total = cart.reduce((sum, item) => {
       const producto = products.find((p) => p.id === item.id);
-      return sum + numberPrice(producto?.precio) * item.cantidad;
+      return sum + numberPrice(precioItem(item, producto)) * item.cantidad;
     }, 0);
     return `Hola Agresti.3D, quiero pedir:\n\n${filas.join("\n\n")}\n\nTotal estimado: $${total.toLocaleString("es-AR")}\n\nLos productos “A consultar” se confirman por WhatsApp.`;
+  }, [cart, products]);
+  const resumenPedido = useMemo(() => {
+    const items = cart
+      .map((item) => {
+        const producto = products.find((p) => p.id === item.id);
+        if (!producto) return null;
+        return { nombre: producto.nombre, variante: item.variante?.nombre || "", cantidad: item.cantidad, precio: precioItem(item, producto) };
+      })
+      .filter(Boolean);
+    const total = cart.reduce((sum, item) => {
+      const producto = products.find((p) => p.id === item.id);
+      return sum + numberPrice(precioItem(item, producto)) * item.cantidad;
+    }, 0);
+    return { items, total };
   }, [cart, products]);
 
   return (
@@ -557,7 +741,7 @@ export default function Store() {
 
           <div className="flex items-center gap-2 rounded-full border border-line bg-surface px-4">
             <Search size={17} className="flex-none text-muted" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, categoría o descripción…" aria-label="Buscar productos" className="min-h-12 w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, color, tamaño o categoría…" aria-label="Buscar productos" className="min-h-12 w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted" />
             {query && <button type="button" onClick={() => setQuery("")} className="grid h-9 w-9 place-items-center rounded-full text-muted hover:text-ink" aria-label="Limpiar búsqueda"><X size={15} /></button>}
           </div>
 
@@ -565,6 +749,8 @@ export default function Store() {
             <button type="button" onClick={() => irACategoria("todos")} className={`min-h-10 rounded-full px-4 text-xs font-semibold ${category === "todos" ? "bg-ink text-paper" : "border border-line text-muted hover:text-ink"}`}>Todos</button>
             {roots.map((c) => <button key={c.id} type="button" onClick={() => irACategoria(c.id)} className={`min-h-10 rounded-full px-4 text-xs font-semibold ${category === c.id ? "bg-ink text-paper" : "border border-line text-muted hover:text-ink"}`}>{c.nombre}</button>)}
             <span className="hidden h-6 w-px bg-line sm:block" />
+            <button type="button" aria-pressed={optionsOnly} onClick={() => setOptionsOnly((valor) => !valor)} className={`min-h-10 rounded-full px-3 text-[11px] font-semibold ${optionsOnly ? "border border-accent bg-accent/10 text-accent" : "border border-line text-muted hover:text-ink"}`}>Con opciones</button>
+            <button type="button" aria-pressed={stockOnly} onClick={() => setStockOnly((valor) => !valor)} className={`min-h-10 rounded-full px-3 text-[11px] font-semibold ${stockOnly ? "border border-accent bg-accent/10 text-accent" : "border border-line text-muted hover:text-ink"}`}>Con stock</button>
             <label className="relative ml-auto"><span className="sr-only">Precio</span><select value={price} onChange={(e) => setPrice(e.target.value)} className="h-10 appearance-none rounded-full border border-line bg-surface pl-4 pr-9 text-xs text-ink outline-none"><option value="todos">Precio: todos</option><option value="con-precio">Con precio</option><option value="consultar">A consultar</option></select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" /></label>
             <label className="relative"><span className="sr-only">Ordenar</span><select value={sort} onChange={(e) => setSort(e.target.value)} className="h-10 appearance-none rounded-full border border-line bg-surface pl-4 pr-9 text-xs text-ink outline-none"><option value="relevancia">Relevancia</option><option value="precio-asc">Menor precio</option><option value="precio-desc">Mayor precio</option><option value="nombre">Nombre</option></select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" /></label>
           </div>
@@ -584,8 +770,8 @@ export default function Store() {
                 <span className="text-xs text-muted">{filtered.length} productos en esta categoría</span>
               </div>
             )}
-            <div className="flex items-end justify-between gap-3"><h2 className="text-lg font-semibold">{category === "todos" ? "Todos los productos" : roots.find((c) => c.id === category)?.nombre || catMap.get(category)?.nombre || "Productos"}</h2><span className="text-xs text-muted">{filtered.length} resultados</span></div>
-            {filtered.length ? <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{filtered.slice(0, visible).map((p) => <ProductCard key={p.id} product={p} onOpen={openDetail} onAdd={add} onCategory={irACategoria} categoryName={catMap.get(p.categoria)?.nombre || p.categoria} />)}</div> : <p className="mt-6 rounded-2xl border border-line p-6 text-sm text-muted">No encontramos productos con esos filtros.</p>}
+            <div className="flex items-end justify-between gap-3"><h2 className="text-lg font-semibold">{category === "todos" ? "Todos los productos" : roots.find((c) => c.id === category)?.nombre || catMap.get(category)?.nombre || "Productos"}</h2><span className="text-xs text-muted">{catalog ? `${filtered.length} resultados` : "Cargando productos…"}</span></div>
+            {!catalog ? <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, indice) => <ProductSkeleton key={indice} />)}</div> : filtered.length ? <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{filtered.slice(0, visible).map((p) => <ProductCard key={p.id} product={p} onOpen={openDetail} onAdd={add} onCategory={irACategoria} categoryName={catMap.get(p.categoria)?.nombre || p.categoria} />)}</div> : <p className="mt-6 rounded-2xl border border-line p-6 text-sm text-muted">No encontramos productos con esos filtros.</p>}
             {visible < filtered.length && <div className="mt-6 flex justify-center"><button type="button" onClick={() => setVisible((v) => v + 12)} className="min-h-11 rounded-full border border-line px-5 text-xs font-semibold text-ink hover:border-accent">Cargar más productos</button></div>}
           </section>
           <p className="mt-10 text-center text-xs text-muted">Los precios dependen del tamaño, el color y el material. <a href={WA_URL} className="text-accent underline underline-offset-2">Escribime</a> y te paso el valor exacto en el día.</p>
@@ -595,9 +781,9 @@ export default function Store() {
           <p>Hecho a pedido en Buenos Aires. <a href="/" className="text-accent">Volver al inicio</a></p>
         </footer>
       </div>
-      <AnimatePresence>{detail && <Detail product={detail} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
-      <AnimatePresence>{cartOpen && <Cart items={cart} products={products} onClose={() => setCartOpen(false)} onChange={change} onRemove={remove} onCheckout={() => setCheckoutOpen(true)} />}</AnimatePresence>
-      <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={sucursales} message={mensajePedido} />
+      <AnimatePresence>{detail && <Detail product={detail} initialVariantIndex={detailVariantIndex} related={detailRelated} onOpenRelated={(producto) => openDetail(producto, variantesDe(producto).length ? 0 : null)} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setDetailVariantIndex(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
+      <AnimatePresence>{cartOpen && <Cart items={cart} products={products} suggestions={cartSuggestions} onOpenSuggestion={(producto) => { setCartOpen(false); openDetail(producto, variantesDe(producto).length ? 0 : null); }} onClose={() => setCartOpen(false)} onChange={change} onRemove={remove} onCheckout={() => setCheckoutOpen(true)} />}</AnimatePresence>
+      <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={sucursales} message={mensajePedido} summary={resumenPedido} footer="Elegí la sucursal más cercana. El envío o retiro se coordina por WhatsApp." />
       <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={sucursales} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí la sucursal y el mensaje incluirá el link de este producto." footer="Al elegir una sucursal se abre WhatsApp con la consulta y el link del producto." />
       <AnimatePresence>
         {fly && (
