@@ -379,7 +379,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
               {resenas.length > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface2 px-2 py-1 text-ink"><span className="text-accent">★</span> {promedioResenas.toFixed(1)} <span className="text-muted">({resenas.length})</span></span>}
               <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${stock > 0 ? "border-[#7dd3a9]/40 text-[#7dd3a9]" : "border-line text-muted"}`}>{stockLabel}</span>
             </div>
-            <p className="mt-2 text-xl font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p>
+            <p className="mt-2 font-display text-3xl font-bold leading-none tracking-tight text-accent sm:text-[2.1rem]">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
               <button type="button" onClick={compartirProducto} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-3 font-semibold text-ink transition hover:border-accent hover:text-accent"><Share2 size={14} /> Compartir</button>
@@ -457,7 +457,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
       </div>
       <div onClick={(event) => event.stopPropagation()} className="fixed inset-x-0 bottom-0 z-[96] border-t border-line bg-surface/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_45px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-[1000px] items-center gap-3">
-          <div className="min-w-0 flex-1"><p className="truncate text-[10px] text-muted">{varianteActiva?.nombre || (variantes.length ? "Elegí una opción" : "Precio")}</p><p className="truncate text-lg font-semibold text-accent">{money(varianteActiva?.precio || product.precio)}</p></div>
+          <div className="min-w-0 flex-1"><p className="truncate text-[10px] text-muted">{varianteActiva?.nombre || (variantes.length ? "Elegí una opción" : "Precio")}</p><p className="truncate font-display text-xl font-bold leading-none tracking-tight text-accent">{money(varianteActiva?.precio || product.precio)}</p></div>
           <button type="button" onClick={agregar} className="inline-flex min-h-12 flex-none items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-white">Agregar <ShoppingBag size={15} /></button>
         </div>
       </div>
