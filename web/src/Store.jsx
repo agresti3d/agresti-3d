@@ -303,6 +303,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
   const seleccionarVariante = (indice, variante) => {
     setVariantIndex(indice);
     setSlide(0);
+    actualizarHashVariante(variante);
     if (variante?.imagen && typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
       window.requestAnimationFrame(() => {
         const rect = imageRef.current?.getBoundingClientRect();
