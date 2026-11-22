@@ -572,6 +572,7 @@ export default function Store() {
   const [visible, setVisible] = useState(12);
   const [detailId, setDetailId] = useState(() => new URLSearchParams(location.hash.replace(/^#/, "")).get("p"));
   const [detailVariantIndex, setDetailVariantIndex] = useState(null);
+  const [detailVariantName, setDetailVariantName] = useState(() => new URLSearchParams(location.hash.replace(/^#/, "")).get("v"));
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [inquiry, setInquiry] = useState(null);
@@ -580,7 +581,12 @@ export default function Store() {
 
   useEffect(() => {
     document.title = "Catálogo — Agresti.3D";
-    const onHash = () => setDetailId(new URLSearchParams(location.hash.replace(/^#/, "")).get("p"));
+    const onHash = () => {
+      const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+      setDetailId(params.get("p"));
+      setDetailVariantName(params.get("v"));
+      setDetailVariantIndex(null);
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -657,6 +663,13 @@ export default function Store() {
     history.replaceState(history.state, "", `#${params.toString()}`);
     setDetailId(detail.id);
   }, [detail, detailId]);
+  const detailInitialVariantIndex = useMemo(() => {
+    if (!detail) return null;
+    if (detailVariantIndex !== null) return detailVariantIndex;
+    if (!detailVariantName) return null;
+    const indice = variantesDe(detail).findIndex((variante) => variante.nombre === detailVariantName);
+    return indice >= 0 ? indice : null;
+  }, [detail, detailVariantIndex, detailVariantName]);
   const cartCount = cart.reduce((n, i) => n + i.cantidad, 0);
   const [fly, setFly] = useState(null);
   const [addToast, setAddToast] = useState(null);
@@ -702,8 +715,11 @@ export default function Store() {
   const catalogScrollRef = useRef(0);
   const openDetail = (product, variantIndex = null) => {
     catalogScrollRef.current = window.scrollY;
-    history.pushState({ productId: product.id, from: location.hash || "#productos", scrollY: window.scrollY }, "", `#p=${encodeURIComponent(product.id)}`);
+    const variante = variantIndex !== null ? variantesDe(product)[variantIndex] : null;
+    const varianteHash = variante?.nombre ? `&v=${encodeURIComponent(variante.nombre)}` : "";
+    history.pushState({ productId: product.id, from: location.hash || "#productos", scrollY: window.scrollY }, "", `#p=${encodeURIComponent(product.id)}${varianteHash}`);
     setDetailVariantIndex(variantIndex);
+    setDetailVariantName(variante?.nombre || null);
     setDetailId(product.id);
   };
   const closeDetail = () => {
@@ -714,6 +730,7 @@ export default function Store() {
     history.replaceState(null, "", "#productos");
     setDetailId(null);
     setDetailVariantIndex(null);
+    setDetailVariantName(null);
   };
   const irACategoria = (id) => {
     setCategory(id);
@@ -731,8 +748,9 @@ export default function Store() {
         const producto = products.find((p) => p.id === item.id);
         if (!producto) return null;
         const variante = item.variante?.nombre ? ` (${item.variante.nombre})` : "";
+        const varianteHash = item.variante?.nombre ? `&v=${encodeURIComponent(item.variante.nombre)}` : "";
         const precio = precioItem(item, producto);
-        const link = `https://agresti3d.web.app/tienda.html#p=${encodeURIComponent(producto.id)}`;
+        const link = `https://agresti3d.web.app/tienda.html#p=${encodeURIComponent(producto.id)}${varianteHash}`;
         return `• ${item.cantidad} × ${producto.nombre}${variante} — ${precio || "A consultar"}\n  ${link}`;
       })
       .filter(Boolean);
@@ -812,7 +830,7 @@ export default function Store() {
           <p>Hecho a pedido en Buenos Aires. <a href="/" className="text-accent">Volver al inicio</a></p>
         </footer>
       </div>
-      <AnimatePresence>{detail && <Detail product={detail} initialVariantIndex={detailVariantIndex} related={detailRelated} onOpenRelated={(producto) => openDetail(producto, variantesDe(producto).length ? 0 : null)} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setDetailVariantIndex(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
+      <AnimatePresence>{detail && <Detail product={detail} initialVariantIndex={detailInitialVariantIndex} related={detailRelated} onOpenRelated={(producto) => openDetail(producto, variantesDe(producto).length ? 0 : null)} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setDetailVariantIndex(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
       <AnimatePresence>{cartOpen && <Cart items={cart} products={products} suggestions={cartSuggestions} onOpenSuggestion={(producto) => { setCartOpen(false); openDetail(producto, variantesDe(producto).length ? 0 : null); }} onClose={() => setCartOpen(false)} onChange={change} onRemove={remove} onCheckout={() => setCheckoutOpen(true)} />}</AnimatePresence>
       <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={sucursales} message={mensajePedido} summary={resumenPedido} footer="Elegí la sucursal más cercana. El envío o retiro se coordina por WhatsApp." />
       <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={sucursales} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí la sucursal y el mensaje incluirá el link de este producto." footer="Al elegir una sucursal se abre WhatsApp con la consulta y el link del producto." />
