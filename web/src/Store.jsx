@@ -298,6 +298,17 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
     detalles.personalizacion && ["Personalización", detalles.personalizacion],
     detalles.cuidados && ["Cuidados", detalles.cuidados],
   ].filter(Boolean);
+  const seleccionarVariante = (indice, variante) => {
+    setVariantIndex(indice);
+    setSlide(0);
+    if (variante?.imagen && typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      window.requestAnimationFrame(() => {
+        const rect = imageRef.current?.getBoundingClientRect();
+        const fueraDeVista = !rect || rect.top < 0 || rect.bottom > window.innerHeight;
+        if (fueraDeVista) imageRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  };
   const agregar = () => {
     onAdd(product, qty, imageRef.current, varianteActiva);
     onClose();
@@ -343,7 +354,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
                   {variantes.map((v, i) => {
                     const activa = variantIndex === i;
                     return (
-                      <button key={`${v.nombre}-${i}`} type="button" role="radio" aria-checked={activa} onClick={() => { setVariantIndex(i); setSlide(0); }} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition ${activa ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/60 hover:text-ink"}`}>
+                      <button key={`${v.nombre}-${i}`} type="button" role="radio" aria-checked={activa} onClick={() => seleccionarVariante(i, v)} className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-left transition ${activa ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/60 hover:text-ink"}`}>
                         {v.imagen && <img src={imageUrl(v.imagen)} alt="" loading="lazy" className="h-7 w-7 flex-none rounded-md object-contain" />}
                         <span className="font-medium">{v.nombre}</span>
                         {v.precio && <span className="flex-none text-accent">{v.precio}</span>}
@@ -425,6 +436,11 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
 }
 
 function Cart({ items, products, onClose, onChange, onRemove, onCheckout, suggestions = [], onOpenSuggestion }) {
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   const rows = items
     .map((item) => {
       const product = products.find((p) => p.id === item.id);
@@ -501,7 +517,7 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
                 <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-accent">Resumen del pedido</p>
                 <ul className="mt-2 grid gap-1.5">
                   {summary.items.map((item, indice) => (
-                    <li key={`${item.nombre}-${indice}`} className="flex items-start justify-between gap-3 text-[11px]"><span className="min-w-0 text-muted">{item.cantidad} × {item.nombre}{item.variante ? ` · ${item.variante}` : ""}</span><span className="flex-none text-ink">{money(item.precio)}</span></li>
+                    <li key={`${item.nombre}-${indice}`} className="flex items-start justify-between gap-3 text-[11px]"><span className="min-w-0 text-muted">{item.cantidad} × {item.nombre}{item.variante ? ` · ${item.variante}` : ""}</span><span className="flex-none text-ink">{item.subtotal ? `$${item.subtotal.toLocaleString("es-AR")}` : money(item.precio)}</span></li>
                   ))}
                 </ul>
                 <div className="mt-2 flex justify-between border-t border-line pt-2 text-xs"><span className="text-muted">Total estimado</span><strong>${summary.total.toLocaleString("es-AR")}</strong></div>
@@ -717,7 +733,8 @@ export default function Store() {
       .map((item) => {
         const producto = products.find((p) => p.id === item.id);
         if (!producto) return null;
-        return { nombre: producto.nombre, variante: item.variante?.nombre || "", cantidad: item.cantidad, precio: precioItem(item, producto) };
+        const precio = precioItem(item, producto);
+        return { nombre: producto.nombre, variante: item.variante?.nombre || "", cantidad: item.cantidad, precio, subtotal: numberPrice(precio) * item.cantidad };
       })
       .filter(Boolean);
     const total = cart.reduce((sum, item) => {
