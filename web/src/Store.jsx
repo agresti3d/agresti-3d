@@ -6,7 +6,7 @@ import ThemeLogo from "./ThemeLogo";
 import ThemeToggle from "./ThemeToggle";
 import {
   ArrowLeft, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Home, LayoutGrid, Layers,
-  Info, MapPin, Menu, MessageCircle, Minus, PackageSearch, Play, Plus, Search, ShoppingBag, ShoppingCart, Trash2, X, ArrowUpRight,
+  Info, MapPin, Menu, MessageCircle, Minus, PackageSearch, Play, Plus, Search, ShoppingBag, ShoppingCart, Trash2, X, ArrowUpRight, Share2, Copy,
 } from "lucide-react";
 
 const WA_PHONE = "5491169957575";
@@ -236,7 +236,9 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
   const variantes = variantesDe(product);
   const indiceInicial = initialVariantIndex ?? (variantes.length ? 0 : null);
   const [variantIndex, setVariantIndex] = useState(indiceInicial);
+  const [shareStatus, setShareStatus] = useState("");
   const imageRef = useRef(null);
+  useEffect(() => setShareStatus(""), [product?.id, variantIndex]);
   useEffect(() => { setQty(1); setSlide(0); setLightbox(false); setVariantIndex(initialVariantIndex ?? (variantesDe(product).length ? 0 : null)); }, [product?.id, initialVariantIndex]);
   useEffect(() => {
     const onKey = (event) => {
@@ -308,6 +310,37 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
         if (fueraDeVista) imageRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     }
+  };
+  const shareUrl = `https://agresti3d.web.app/tienda.html#p=${encodeURIComponent(product.id)}${varianteActiva?.nombre ? `&v=${encodeURIComponent(varianteActiva.nombre)}` : ""}`;
+  const shareText = `${product.nombre}${varianteActiva?.nombre ? ` · ${varianteActiva.nombre}` : ""} — Agresti.3D`;
+  const whatsappShare = `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+  const copiarEnlace = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("Link copiado.");
+    } catch (error) {
+      setShareStatus("No se pudo copiar el link.");
+    }
+  };
+  const compartirProducto = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareText, text: shareText, url: shareUrl });
+        setShareStatus("Producto compartido.");
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+    await copiarEnlace();
+  };
+  const actualizarHashVariante = (variante) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(location.hash.replace(/^#/, ""));
+    params.set("p", product.id);
+    if (variante?.nombre) params.set("v", variante.nombre);
+    else params.delete("v");
+    history.replaceState(history.state, "", `#${params.toString()}`);
   };
   const agregar = () => {
     onAdd(product, qty, imageRef.current, varianteActiva);
