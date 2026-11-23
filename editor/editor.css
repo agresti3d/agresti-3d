@@ -489,7 +489,7 @@
 .cloud-branch-list { display: grid; gap: var(--cloud-s3); }
 .cloud-branch-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, .9fr) auto;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, .9fr) minmax(0, .6fr) minmax(0, .6fr) auto;
   gap: var(--cloud-s3);
   align-items: end;
   padding: var(--cloud-s3);
