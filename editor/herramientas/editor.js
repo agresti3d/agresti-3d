@@ -55,6 +55,7 @@
     instagramSelect: $("#instagramProduct"),
     instagramSearch: $("#instagramProductSearch"),
     instagramProductCount: $("#instagramProductCount"),
+    instagramPhoto: $("#instagramPhoto"),
     instagramCanvas: $("#instagramCanvas"),
     instagramCaption: $("#instagramCaption"),
     instagramHashtags: $("#instagramHashtags"),
@@ -1845,6 +1846,7 @@
     instagramDiseno = localStorage.getItem("agresti:ig-diseno") || "archivo";
   } catch (_) {}
   let instagramSlide = 1;
+  let instagramFotoKey = "";
 
   const igStatus = (mensaje, error = false) => {
     if (!els.instagramStatus) return;
@@ -1855,17 +1857,67 @@
   const igProducto = () =>
     catalog?.productos.find((producto) => producto.id === instagramProductoId) || null;
 
-  const igCaption = (producto) => {
+  const igOpcionesFoto = (producto) => {
+    if (!producto) return [];
+    const opciones = [];
+    (producto.imagenes || []).forEach((imagen, indice) => {
+      if (!imagen?.src) return;
+      opciones.push({
+        key: `${producto.id}:foto:${indice}`,
+        src: imagen.src,
+        etiqueta: `Foto ${indice + 1}${imagen.alt ? ` · ${imagen.alt}` : ""}`,
+        alt: imagen.alt || "",
+        tipo: "foto",
+      });
+    });
+    (producto.variantes || []).forEach((variante, indice) => {
+      if (!variante?.imagen) return;
+      opciones.push({
+        key: `${producto.id}:variante:${indice}`,
+        src: variante.imagen,
+        etiqueta: `Variante · ${variante.nombre || `Opción ${indice + 1}`}`,
+        alt: `${producto.nombre} ${variante.nombre || ""}`.trim(),
+        tipo: "variante",
+        variante,
+      });
+    });
+    return opciones;
+  };
+
+  const igFotoActual = (producto = igProducto()) => {
+    const opciones = igOpcionesFoto(producto);
+    return opciones.find((opcion) => opcion.key === instagramFotoKey) || opciones[0] || null;
+  };
+
+  const igPrepararFotos = (producto = igProducto()) => {
+    if (!els.instagramPhoto) return;
+    const opciones = igOpcionesFoto(producto);
+    if (!opciones.some((opcion) => opcion.key === instagramFotoKey)) {
+      instagramFotoKey = opciones[0]?.key || "";
+    }
+    const fotos = opciones.filter((opcion) => opcion.tipo === "foto");
+    const variantes = opciones.filter((opcion) => opcion.tipo === "variante");
+    const grupo = (titulo, items) => items.length
+      ? `<optgroup label="${esc(titulo)}">${items.map((opcion) => `<option value="${esc(opcion.key)}">${esc(opcion.etiqueta)}</option>`).join("")}</optgroup>`
+      : "";
+    els.instagramPhoto.innerHTML = (grupo("Fotos del producto", fotos) + grupo("Variantes", variantes)) || '<option value="">Sin fotos cargadas</option>';
+    if (instagramFotoKey) els.instagramPhoto.value = instagramFotoKey;
+  };
+
+  const igCaption = (producto, opcionFoto = igFotoActual(producto)) => {
     const detalles = producto.detalles || {};
     const bloques = [producto.nombre];
     if (producto.descripcion) bloques.push(producto.descripcion);
+    const variante = opcionFoto?.tipo === "variante" ? opcionFoto.variante : null;
+    if (variante?.nombre) bloques.push(`Opción: ${variante.nombre}`);
     const datos = [];
     if (detalles.material) datos.push(`🧵 Material: ${detalles.material}`);
     const medidas = [detalles.altura, detalles.ancho, detalles.largo].filter(Boolean);
     if (medidas.length) datos.push(`📏 Medidas: ${medidas.join(" × ")}`);
     if (detalles.colores) datos.push(`🎨 Colores: ${detalles.colores}`);
     if (datos.length) bloques.push(datos.join("\n"));
-    bloques.push(`Pedilo por WhatsApp o mirá la ficha:\n${IG_SITE}/#p=${encodeURIComponent(producto.id)}`);
+    const varianteHash = variante?.nombre ? `&v=${encodeURIComponent(variante.nombre)}` : "";
+    bloques.push(`Pedilo por WhatsApp o mirá la ficha:\n${IG_SITE}/#p=${encodeURIComponent(producto.id)}${varianteHash}`);
     return bloques.join("\n\n").trim();
   };
 
@@ -2473,8 +2525,9 @@
 
     if (!portadaDiseno) igFondo(ctx, ancho, alto);
 
-    const fotoOriginal = producto?.imagenes?.[0]?.src
-      ? await igCargarImagen(imageURL(producto.imagenes[0].src))
+    const opcionFoto = igFotoActual(producto);
+    const fotoOriginal = opcionFoto?.src
+      ? await igCargarImagen(imageURL(opcionFoto.src))
       : null;
     const foto = fotoOriginal ? igRecortarImagen(fotoOriginal) : null;
 
@@ -2517,7 +2570,7 @@
       igStatus("Elegí un producto del catálogo.", true);
       return;
     }
-    const tieneFoto = Boolean(producto.imagenes?.[0]?.src);
+    const tieneFoto = Boolean(igFotoActual(producto)?.src);
     const esCarrusel = instagramFormato === "carousel";
     const esStory = instagramFormato === "story";
 
@@ -2548,7 +2601,7 @@
     igStatus(
       tieneFoto
         ? "Listo para descargar y publicar."
-        : "Este producto no tiene fotos: agregá una antes de generar el post.",
+        : "Este producto no tiene fotos ni variantes con foto: agregá una antes de generar el post.",
       !tieneFoto
     );
   };
@@ -2605,6 +2658,7 @@
       candidatos.find((id) => id && catalog.productos.some((producto) => producto.id === id)) || "";
     filtrarInstagramProductos();
     els.instagramSelect.value = instagramProductoId;
+    igPrepararFotos();
     if (els.instagramFormat) els.instagramFormat.value = instagramFormato;
     if (els.instagramDiseno) els.instagramDiseno.value = instagramDiseno;
     if (els.instagramBackground) {
@@ -2882,6 +2936,12 @@
 
   els.instagramSelect?.addEventListener("change", () => {
     instagramProductoId = els.instagramSelect.value;
+    igPrepararFotos();
+    igActualizarTexto();
+    igActualizar();
+  });
+  els.instagramPhoto?.addEventListener("change", () => {
+    instagramFotoKey = els.instagramPhoto.value;
     igActualizarTexto();
     igActualizar();
   });
@@ -2940,6 +3000,7 @@
       if (els.instagramSearch) els.instagramSearch.value = "";
       filtrarInstagramProductos();
       if (els.instagramSelect) els.instagramSelect.value = instagramProductoId;
+      igPrepararFotos();
       igActualizarTexto();
       igActualizar();
       return;
