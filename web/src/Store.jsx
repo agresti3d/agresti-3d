@@ -231,18 +231,19 @@ function ProductSkeleton() {
 
 function CategoryGroupCard({ category, subcategorias, onSelect }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface p-3 transition hover:border-line-strong">
-      <button type="button" onClick={() => onSelect(category.id)} className="group flex min-h-[64px] items-center gap-3 text-left" aria-label={`Ver categoría ${category.nombre}`}>
-        <span className="grid h-14 w-14 flex-none place-items-center overflow-hidden rounded-xl bg-surface2">
-          {category.imagen ? <img src={imageUrl(category.imagen)} alt="" loading="lazy" decoding="async" className="h-[86%] w-[86%] object-contain transition duration-500 group-hover:scale-105" /> : <LayoutGrid size={24} className="text-muted" />}
+    <div className="grid gap-3 rounded-[18px] border border-line bg-surface p-3 transition hover:border-line-strong sm:grid-cols-[minmax(0,240px)_1fr] sm:items-center">
+      <button type="button" onClick={() => onSelect(category.id)} className="group flex min-h-[60px] items-center gap-3 text-left" aria-label={`Ver categoría ${category.nombre}`}>
+        <span className="grid h-12 w-12 flex-none place-items-center overflow-hidden rounded-xl bg-surface2">
+          {category.imagen ? <img src={imageUrl(category.imagen)} alt="" loading="lazy" decoding="async" className="h-[86%] w-[86%] object-contain transition duration-500 group-hover:scale-105" /> : <LayoutGrid size={22} className="text-muted" />}
         </span>
         <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm font-semibold">{category.nombre}</strong><ArrowRight size={14} className="flex-none text-muted transition group-hover:text-accent" /></span><span className="mt-0.5 block text-[11px] text-muted">{category.count} producto{category.count === 1 ? "" : "s"}</span></span>
       </button>
       {subcategorias.length > 0 && (
-        <div className="mt-3 grid gap-0.5 border-t border-line pt-2">
+        <div className="flex flex-wrap gap-1.5 border-t border-line pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
           {subcategorias.map((subcategoria) => (
-            <button key={`${subcategoria.id}-${subcategoria.depth}`} type="button" onClick={() => onSelect(subcategoria.id)} className="flex min-h-11 items-center justify-between gap-2 rounded-lg pr-2 text-left text-[11px] text-muted transition hover:bg-surface2 hover:text-ink" style={{ paddingLeft: `${8 + subcategoria.depth * 14}px` }} aria-label={`Ver subcategoría ${subcategoria.nombre}`}>
-              <span className="flex min-w-0 items-center gap-1.5"><span className={`h-1 w-1 flex-none rounded-full ${subcategoria.depth ? "bg-line" : "bg-accent/70"}`} aria-hidden="true" /><span className="truncate">{subcategoria.nombre}</span></span>
+            <button key={`${subcategoria.id}-${subcategoria.depth}`} type="button" onClick={() => onSelect(subcategoria.id)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] transition hover:border-accent hover:text-accent ${subcategoria.depth ? "border-line bg-paper/40 text-muted" : "border-line bg-surface2 text-ink"}`} aria-label={`Ver subcategoría ${subcategoria.nombre}`}>
+              <span className={`flex-none ${subcategoria.depth ? "text-muted" : "text-accent"}`} aria-hidden="true">{subcategoria.depth ? "↳" : "•"}</span>
+              <span className="whitespace-nowrap">{subcategoria.nombre}</span>
               <span className="flex-none text-[10px] text-muted">{subcategoria.count}</span>
             </button>
           ))}
@@ -1008,7 +1009,7 @@ export default function Store() {
             <section className="mt-12">
               <h2 className="text-lg font-semibold">Elegí por dónde empezar</h2>
               <p className="mt-1 text-xs text-muted">Categorías y subcategorías con sus productos. Tocá cualquiera para entrar directo.</p>
-              <div className="mt-4 grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-4 grid gap-2">
                 {categoryGroups.map((categoria) => <CategoryGroupCard key={categoria.id} category={categoria} subcategorias={categoria.subcategorias} onSelect={irACategoria} />)}
               </div>
             </section>
