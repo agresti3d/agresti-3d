@@ -265,9 +265,13 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
   }, [lightbox, onClose]);
   if (!product) return null;
   const varianteActiva = variantIndex !== null ? variantes[variantIndex] : null;
+  const imagenesProducto = (product.imagenes || []).map((img) => ({ ...img, type: "image" }));
+  const imagenVariante = varianteActiva?.imagen
+    ? { src: varianteActiva.imagen, alt: `${product.nombre} ${varianteActiva.nombre}`, type: "image" }
+    : null;
   const media = [
-    ...(varianteActiva?.imagen ? [{ src: varianteActiva.imagen, alt: `${product.nombre} ${varianteActiva.nombre}`, type: "image" }] : []),
-    ...(product.imagenes || []).map((img) => ({ ...img, type: "image" })),
+    ...(imagenVariante ? [imagenVariante] : []),
+    ...imagenesProducto.filter((img) => !imagenVariante || img.src !== imagenVariante.src),
     ...(product.videos || []).map((video) => ({ ...video, type: "video" })),
   ];
   const actual = media[slide] || null;
