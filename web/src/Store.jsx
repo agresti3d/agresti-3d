@@ -231,7 +231,7 @@ function ProductSkeleton() {
 
 function CategoryGroupCard({ category, subcategorias, onSelect }) {
   return (
-    <div className="grid gap-3 rounded-[18px] border border-line bg-surface p-3 transition hover:border-line-strong sm:grid-cols-[minmax(0,240px)_1fr] sm:items-center">
+    <div className="grid gap-3 rounded-[18px] border border-line bg-surface p-3 transition hover:border-line-strong sm:grid-cols-[minmax(0,300px)_1fr] sm:items-center">
       <button type="button" onClick={() => onSelect(category.id)} className="group flex min-h-[60px] items-center gap-3 text-left" aria-label={`Ver categoría ${category.nombre}`}>
         <span className="grid h-12 w-12 flex-none place-items-center overflow-hidden rounded-xl bg-surface2">
           {category.imagen ? <img src={imageUrl(category.imagen)} alt="" loading="lazy" decoding="async" className="h-[86%] w-[86%] object-contain transition duration-500 group-hover:scale-105" /> : <LayoutGrid size={22} className="text-muted" />}
@@ -241,7 +241,7 @@ function CategoryGroupCard({ category, subcategorias, onSelect }) {
       {subcategorias.length > 0 && (
         <div className="flex flex-wrap gap-1.5 border-t border-line pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
           {subcategorias.map((subcategoria) => (
-            <button key={`${subcategoria.id}-${subcategoria.depth}`} type="button" onClick={() => onSelect(subcategoria.id)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] transition hover:border-accent hover:text-accent ${subcategoria.depth ? "border-line bg-paper/40 text-muted" : "border-line bg-surface2 text-ink"}`} aria-label={`Ver subcategoría ${subcategoria.nombre}`}>
+            <button key={`${subcategoria.id}-${subcategoria.depth}`} type="button" onClick={() => onSelect(subcategoria.id)} className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[11px] transition hover:border-accent hover:text-accent ${subcategoria.depth ? "border-line bg-paper/40 text-muted" : "border-line bg-surface2 text-ink"}`} aria-label={`Ver subcategoría ${subcategoria.nombre}`}>
               <span className={`flex-none ${subcategoria.depth ? "text-muted" : "text-accent"}`} aria-hidden="true">{subcategoria.depth ? "↳" : "•"}</span>
               <span className="whitespace-nowrap">{subcategoria.nombre}</span>
               <span className="flex-none text-[10px] text-muted">{subcategoria.count}</span>
