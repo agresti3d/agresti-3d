@@ -2414,6 +2414,14 @@
                 <span>WhatsApp</span>
                 <input type="tel" data-branch-phone="${indice}" value="${escapeHTML(sucursal.telefono || "")}" maxlength="30" placeholder="54911...">
               </label>
+              <label class="field">
+                <span>Latitud</span>
+                <input type="number" data-branch-lat="${indice}" value="${sucursal.lat !== undefined && sucursal.lat !== null ? escapeHTML(sucursal.lat) : ""}" step="any" inputmode="decimal" placeholder="-34.7006">
+              </label>
+              <label class="field">
+                <span>Longitud</span>
+                <input type="number" data-branch-lng="${indice}" value="${sucursal.lng !== undefined && sucursal.lng !== null ? escapeHTML(sucursal.lng) : ""}" step="any" inputmode="decimal" placeholder="-58.3169">
+              </label>
               <button class="cloud-danger" type="button" data-remove-branch="${indice}">Quitar</button>
             </div>`
           )
@@ -2426,11 +2434,16 @@
     const filas = [...els.branchList.querySelectorAll("[data-branch-row]")];
     catalog.sucursales = filas.map((fila, indice) => {
       const base = catalog.sucursales[indice] || {};
+      const latTexto = fila.querySelector(`[data-branch-lat="${indice}"]`)?.value.trim() || "";
+      const lngTexto = fila.querySelector(`[data-branch-lng="${indice}"]`)?.value.trim() || "";
+      const lat = Number.parseFloat(latTexto.replace(",", "."));
+      const lng = Number.parseFloat(lngTexto.replace(",", "."));
       return {
         ...base,
         nombre: fila.querySelector(`[data-branch-name="${indice}"]`)?.value.trim() || "",
         localidad: fila.querySelector(`[data-branch-locality="${indice}"]`)?.value.trim() || "",
         telefono: fila.querySelector(`[data-branch-phone="${indice}"]`)?.value.trim() || "",
+        ...(Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : {}),
       };
     });
   };
