@@ -2240,6 +2240,9 @@
       (actual.variantes || []).forEach((variante) => {
         if (variante.imagen === urlAnterior) variante.imagen = nuevaUrl;
       });
+      (catalog.categorias || []).forEach((categoria) => {
+        if (categoria.portada === urlAnterior) categoria.portada = nuevaUrl;
+      });
       dirty = true;
       renderImagenes(actual);
       renderVariantes(actual);
