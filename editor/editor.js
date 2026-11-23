@@ -124,6 +124,7 @@
     imageFrameClose: $("#imageFrameClose"),
     imageFrameCancel: $("#imageFrameCancel"),
     imageFrameAccept: $("#imageFrameAccept"),
+    imageFrameBack: $("#imageFrameBack"),
     exportCatalogName: $("#exportCatalogName"),
     exportCatalogBackup: $("#exportCatalogBackup"),
     exportCatalogMeta: $("#exportCatalogMeta"),
@@ -1303,13 +1304,12 @@
       const recorte = await quitarFondo(file);
       ocultarProgresoImagen();
       setStatus(els.saveStatus, "Revisá el recorte de la foto de la opción.");
-      const editado = await abrirEditorRecorte(file, recorte);
-      if (!editado) return;
-      const enmarcado = await abrirEditorEncuadre(editado);
-      if (!enmarcado) return;
+      ocultarProgresoImagen();
+      const procesada = await editarFotoConBrochaYEncuadre(file, recorte);
+      if (!procesada) return;
       setStatus(els.saveStatus, `Subiendo la foto de la opción «${file.name}»…`);
       mostrarProgresoImagen("Subiendo la foto…", "Guardando la foto de la opción en Cloudinary.");
-      const url = await subirCloudinary(enmarcado, "image");
+      const url = await subirCloudinary(procesada, "image");
       const actual = catalog.productos.find((item) => item.id === selectedId);
       const variante = actual?.variantes?.[indice];
       if (!variante) throw new Error("La opción se cerró mientras se procesaba la foto.");
@@ -1542,6 +1542,7 @@
                 <input type="text" data-alt="${indice}" value="${escapeHTML(imagen.alt || "")}" placeholder="Texto alternativo" maxlength="160">
               </label>
               <div class="cloud-image__tools">
+                <button type="button" data-edit-image="${indice}" aria-label="Volver a editar la foto">Editar</button>
                 <button type="button" data-move="${indice}" data-dir="-1" ${indice === 0 ? "disabled" : ""} aria-label="Mover antes">←</button>
                 <button type="button" data-move="${indice}" data-dir="1" ${indice === imagenes.length - 1 ? "disabled" : ""} aria-label="Mover después">→</button>
                 <button type="button" data-remove="${indice}" aria-label="Quitar foto">Quitar</button>
@@ -1720,7 +1721,7 @@
     ctx.putImageData(data, 0, 0);
   };
 
-  const abrirEditorRecorte = async (file, recorteBlob) => {
+  const abrirEditorRecorte = async (file, recorteBlob, opciones = {}) => {
     if (!els.imageEditorDialog || !els.imageEditorCanvas) return recorteBlob;
     const [original, corte] = await Promise.all([cargarImagen(file), cargarImagen(recorteBlob)]);
     const anchoOriginal = corte.naturalWidth || corte.width;
@@ -1749,15 +1750,17 @@
       // Conservamos el alfa original para poder detectar y quitar halos claros.
       originalData.data[i + 3] = corteData.data[i + 3];
     }
-    limpiarAlfa(originalData, ancho, alto, 2);
+    if (opciones.limpiar !== false) limpiarAlfa(originalData, ancho, alto, 2);
     ctx.putImageData(originalData, 0, 0);
     editorRecorteState = {
       canvas, ctx, data: originalData, originalPixels,
       brushMode: "restore", drawing: false, undo: [], finalizado: false, resolve: null,
       zoom: 1, panX: 0, panY: 0, panMode: false, panning: false, panStart: null,
     };
-    if (els.imageEditorTitle) els.imageEditorTitle.textContent = `Revisar «${file.name}»`;
-    if (els.imageEditorHelp) els.imageEditorHelp.textContent = "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
+    if (els.imageEditorTitle) els.imageEditorTitle.textContent = opciones.reabrir ? `Seguir editando «${file.name}»` : `Revisar «${file.name}»`;
+    if (els.imageEditorHelp) els.imageEditorHelp.textContent = opciones.reabrir
+      ? "Seguí corrigiendo el fondo o los detalles con la brocha. Después podés volver a ajustar el encuadre."
+      : "Revisá el recorte. Con «Restaurar» recuperás la foto original en las zonas que falten; con «Borrar fondo» quitás restos de fondo.";
     els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === "restore"));
     if (els.imageBrushSize) els.imageBrushSize.value = "36";
     if (els.imageEditorPanToggle) els.imageEditorPanToggle.classList.remove("is-active");
@@ -1850,6 +1853,19 @@
     return new Promise((resolve) => {
       if (editorEncuadreState) editorEncuadreState.resolve = resolve;
     });
+  };
+
+  const editarFotoConBrochaYEncuadre = async (file, recorte, opciones = {}) => {
+    let editado = await abrirEditorRecorte(file, recorte, opciones);
+    while (editado) {
+      const resultado = await abrirEditorEncuadre(editado);
+      if (resultado === "volver") {
+        editado = await abrirEditorRecorte(file, editado, { ...opciones, limpiar: false, reabrir: true });
+        continue;
+      }
+      return resultado;
+    }
+    return null;
   };
 
   const finalizarEditorRecorte = (blob) => {
@@ -2091,14 +2107,8 @@
         const recorte = await quitarFondo(file);
         ocultarProgresoImagen();
         setStatus(els.imageStatus, "Revisá el recorte y corregilo con la brocha si hace falta.");
-        const editado = await abrirEditorRecorte(file, recorte);
-        if (!editado) {
-          setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
-          continue;
-        }
         ocultarProgresoImagen();
-        setStatus(els.imageStatus, "Ajustá el encuadre de la foto.");
-        const procesada = await abrirEditorEncuadre(editado);
+        const procesada = await editarFotoConBrochaYEncuadre(file, recorte);
         if (!procesada) {
           setStatus(els.imageStatus, `«${file.name}» descartada. La foto no se subió.`);
           continue;
@@ -2200,9 +2210,58 @@
     setStatus(els.saveStatus, "Categoría eliminada. Guardá el borrador para confirmarlo.");
   };
 
+  const editarImagenProducto = async (indice) => {
+    if (procesandoFotos) {
+      setStatus(els.imageStatus, "Ya hay una foto procesándose. Esperá a que termine.", "error");
+      return;
+    }
+    const producto = catalog?.productos?.find((item) => item.id === selectedId);
+    const imagen = producto?.imagenes?.[indice];
+    if (!producto || !imagen?.src) return;
+    procesandoFotos = true;
+    try {
+      setStatus(els.imageStatus, "Abriendo la foto para volver a editarla…");
+      const respuesta = await fetch(imageURL(imagen.src), { cache: "no-store" });
+      if (!respuesta.ok) throw new Error("No se pudo descargar la foto.");
+      const blob = await respuesta.blob();
+      const archivo = new File([blob], `foto-${indice + 1}.webp`, { type: blob.type || "image/webp" });
+      const editada = await editarFotoConBrochaYEncuadre(archivo, blob, { limpiar: false });
+      if (!editada) {
+        setStatus(els.imageStatus, "Edición cancelada. La foto no cambió.", "");
+        return;
+      }
+      mostrarProgresoImagen("Guardando la foto editada…", "Subiendo la nueva versión a Cloudinary.");
+      const nuevaUrl = await subirCloudinary(editada, "image");
+      const actual = catalog.productos.find((item) => item.id === selectedId);
+      const actualImagen = actual?.imagenes?.[indice];
+      if (!actual || !actualImagen) throw new Error("La foto se cerró mientras se editaba.");
+      const urlAnterior = actualImagen.src;
+      actualImagen.src = nuevaUrl;
+      (actual.variantes || []).forEach((variante) => {
+        if (variante.imagen === urlAnterior) variante.imagen = nuevaUrl;
+      });
+      dirty = true;
+      renderImagenes(actual);
+      renderVariantes(actual);
+      renderProductos();
+      programarAutoguardado();
+      setStatus(els.imageStatus, "Foto actualizada. Guardá el borrador para confirmar.", "success");
+    } catch (error) {
+      setStatus(els.imageStatus, `No se pudo editar la foto: ${error.message}`, "error");
+    } finally {
+      procesandoFotos = false;
+      ocultarProgresoImagen();
+    }
+  };
+
   const manejarClickImagenes = (event) => {
     const producto = catalog?.productos?.find((item) => item.id === selectedId);
     if (!producto) return;
+    const editar = event.target.closest("[data-edit-image]");
+    if (editar) {
+      editarImagenProducto(Number(editar.dataset.editImage));
+      return;
+    }
     const ver = event.target.closest("[data-view-image]");
     if (ver) {
       const imagen = producto.imagenes[Number(ver.dataset.viewImage)];
@@ -3889,6 +3948,38 @@
       els.imageList.addEventListener("click", manejarClickImagenes);
       els.imageList.addEventListener("input", manejarAltImagen);
     }
+    const seleccionarHerramientaRecorte = (modo) => {
+      if (!editorRecorteState) return;
+      editorRecorteState.brushMode = modo;
+      editorRecorteState.panMode = false;
+      els.imageEditorPanToggle?.classList.remove("is-active");
+      if (els.imageEditorCanvas) els.imageEditorCanvas.style.cursor = "none";
+      if (els.imageBrushCursor) els.imageBrushCursor.dataset.mode = modo;
+      els.imageEditorTools?.querySelectorAll("[data-brush]").forEach((boton) => boton.classList.toggle("is-active", boton.dataset.brush === modo));
+      ocultarCursorBrocha();
+    };
+    const deshacerRecorte = () => {
+      const estado = editorRecorteState;
+      if (!estado) return;
+      const anterior = estado.undo.pop();
+      if (!anterior) return;
+      estado.data.data.set(anterior.data);
+      estado.ctx.putImageData(estado.data, 0, 0);
+    };
+    const alternarMoverRecorte = () => {
+      if (!editorRecorteState) return;
+      editorRecorteState.panMode = !editorRecorteState.panMode;
+      els.imageEditorPanToggle?.classList.toggle("is-active", editorRecorteState.panMode);
+      if (els.imageEditorCanvas) els.imageEditorCanvas.style.cursor = editorRecorteState.panMode ? "grab" : "none";
+      ocultarCursorBrocha();
+    };
+    const centrarVistaRecorte = () => {
+      if (!editorRecorteState) return;
+      editorRecorteState.panX = 0;
+      editorRecorteState.panY = 0;
+      aplicarVistaRecorte();
+    };
+
     if (els.imageEditorCanvas) {
       const canvas = els.imageEditorCanvas;
       canvas.addEventListener("pointerenter", (event) => mostrarCursorBrocha(event));
@@ -3935,12 +4026,7 @@
       els.imageEditorTools.addEventListener("click", (event) => {
         const boton = event.target.closest("[data-brush]");
         if (!boton || !editorRecorteState) return;
-        editorRecorteState.brushMode = boton.dataset.brush === "erase" ? "erase" : "restore";
-        editorRecorteState.panMode = false;
-        els.imageEditorPanToggle?.classList.remove("is-active");
-        els.imageEditorCanvas.style.cursor = "none";
-        if (els.imageBrushCursor) els.imageBrushCursor.dataset.mode = editorRecorteState.brushMode;
-        els.imageEditorTools.querySelectorAll("[data-brush]").forEach((item) => item.classList.toggle("is-active", item === boton));
+        seleccionarHerramientaRecorte(boton.dataset.brush === "erase" ? "erase" : "restore");
       });
     }
     if (els.imageBrushSize) els.imageBrushSize.addEventListener("input", actualizarCursorBrocha);
@@ -3954,30 +4040,37 @@
     if (els.imageEditorPanToggle) {
       els.imageEditorPanToggle.addEventListener("click", () => {
         if (!editorRecorteState) return;
-        editorRecorteState.panMode = !editorRecorteState.panMode;
-        els.imageEditorPanToggle.classList.toggle("is-active", editorRecorteState.panMode);
-        els.imageEditorCanvas.style.cursor = editorRecorteState.panMode ? "grab" : "none";
-        ocultarCursorBrocha();
+        alternarMoverRecorte();
       });
     }
     if (els.imageEditorViewReset) {
       els.imageEditorViewReset.addEventListener("click", () => {
         if (!editorRecorteState) return;
-        editorRecorteState.panX = 0;
-        editorRecorteState.panY = 0;
-        aplicarVistaRecorte();
+        centrarVistaRecorte();
       });
     }
     if (els.imageEditorUndo) {
       els.imageEditorUndo.addEventListener("click", () => {
-        const estado = editorRecorteState;
-        if (!estado) return;
-        const anterior = estado.undo.pop();
-        if (!anterior) return;
-        estado.data.data.set(anterior.data);
-        estado.ctx.putImageData(estado.data, 0, 0);
+        deshacerRecorte();
       });
     }
+    document.addEventListener("keydown", (event) => {
+      if (!editorRecorteState || !els.imageEditorDialog?.open) return;
+      if (els.imageLightbox?.open || els.imageFrameDialog?.open) return;
+      const etiqueta = event.target?.tagName;
+      if (etiqueta === "INPUT" || etiqueta === "TEXTAREA" || etiqueta === "SELECT" || event.target?.isContentEditable) return;
+      const acciones = {
+        r: () => seleccionarHerramientaRecorte("restore"),
+        b: () => seleccionarHerramientaRecorte("erase"),
+        d: deshacerRecorte,
+        m: alternarMoverRecorte,
+        c: centrarVistaRecorte,
+      };
+      const accion = acciones[event.key.toLowerCase()];
+      if (!accion) return;
+      event.preventDefault();
+      accion();
+    });
     if (els.imageEditorAccept) {
       els.imageEditorAccept.addEventListener("click", () => {
         const estado = editorRecorteState;
@@ -4081,6 +4174,7 @@
       });
     }
     const cancelarEncuadre = () => finalizarEditorEncuadre(null);
+    els.imageFrameBack?.addEventListener("click", () => finalizarEditorEncuadre("volver"));
     els.imageFrameClose?.addEventListener("click", cancelarEncuadre);
     els.imageFrameCancel?.addEventListener("click", cancelarEncuadre);
     els.imageFrameDialog?.addEventListener("close", () => {
