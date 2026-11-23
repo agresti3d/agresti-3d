@@ -2395,6 +2395,61 @@
     }
   };
 
+  const extraerCoordenadasMapa = (texto) => {
+    const valor = decodeURIComponent(String(texto || ""));
+    const patrones = [
+      /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/,
+      /!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/,
+      /[?&]q=(-?\d+(?:\.\d+)?),\+?(-?\d+(?:\.\d+)?)/,
+      /search\/(-?\d+(?:\.\d+)?),\+?(-?\d+(?:\.\d+)?)/,
+      /place\/(-?\d+(?:\.\d+)?),\+?(-?\d+(?:\.\d+)?)/,
+    ];
+    for (const patron of patrones) {
+      const coincidencia = valor.match(patron);
+      if (!coincidencia) continue;
+      const lat = Number.parseFloat(coincidencia[1]);
+      const lng = Number.parseFloat(coincidencia[2]);
+      if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    }
+    return null;
+  };
+
+  const resolverCoordenadasMapa = async (link) => {
+    const texto = String(link || "").trim();
+    if (!texto) throw new Error("Pegá un link de Google Maps.");
+    const normalizado = /^https?:\/\//i.test(texto) ? texto : `https://${texto}`;
+    const directas = extraerCoordenadasMapa(normalizado);
+    if (directas) return directas;
+    if (!/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(normalizado)) {
+      throw new Error("No encontramos coordenadas en ese link. Usá un link de Google Maps.");
+    }
+    const respuesta = await fetch(`https://r.jina.ai/http://${normalizado.replace(/^https?:\/\//i, "")}`, { cache: "no-store" });
+    if (!respuesta.ok) throw new Error("No se pudo resolver el link corto. Abrí el link y pegá la URL completa de la barra.");
+    const contenido = await respuesta.text();
+    const final = contenido.match(/Final URL:\s*(\S+)/i)?.[1] || "";
+    const coords = extraerCoordenadasMapa(final) || extraerCoordenadasMapa(contenido);
+    if (!coords) throw new Error("El link no contiene coordenadas. Abrí Google Maps y copiá la URL completa de la barra.");
+    return coords;
+  };
+
+  const detectarUbicacionSucursal = async (indice) => {
+    leerSucursales();
+    const sucursal = catalog?.sucursales?.[indice];
+    if (!sucursal) return;
+    try {
+      setStatus(els.branchStatus, "Detectando ubicación desde el link…");
+      const coords = await resolverCoordenadasMapa(sucursal.mapLink);
+      sucursal.lat = coords.lat;
+      sucursal.lng = coords.lng;
+      dirty = true;
+      renderSucursales();
+      programarAutoguardado();
+      setStatus(els.branchStatus, `Ubicación detectada: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}. Guardá los cambios.`, "success");
+    } catch (error) {
+      setStatus(els.branchStatus, error.message, "error");
+    }
+  };
+
   const renderSucursales = () => {
     if (!els.branchList || !catalog) return;
     els.branchList.innerHTML = (catalog.sucursales || []).length
@@ -2414,14 +2469,14 @@
                 <span>WhatsApp</span>
                 <input type="tel" data-branch-phone="${indice}" value="${escapeHTML(sucursal.telefono || "")}" maxlength="30" placeholder="54911...">
               </label>
-              <label class="field">
-                <span>Latitud</span>
-                <input type="number" data-branch-lat="${indice}" value="${sucursal.lat !== undefined && sucursal.lat !== null ? escapeHTML(sucursal.lat) : ""}" step="any" inputmode="decimal" placeholder="-34.7006">
+              <label class="field cloud-branch-map">
+                <span>Link de Google Maps</span>
+                <input type="url" data-branch-map="${indice}" value="${escapeHTML(sucursal.mapLink || "")}" placeholder="https://maps.app.goo.gl/...">
               </label>
-              <label class="field">
-                <span>Longitud</span>
-                <input type="number" data-branch-lng="${indice}" value="${sucursal.lng !== undefined && sucursal.lng !== null ? escapeHTML(sucursal.lng) : ""}" step="any" inputmode="decimal" placeholder="-58.3169">
-              </label>
+              <div class="cloud-branch-coords">
+                <button type="button" data-branch-detect="${indice}">Detectar</button>
+                <span>${sucursal.lat !== undefined && sucursal.lat !== null ? "Ubicación lista" : "Sin ubicación"}</span>
+              </div>
               <button class="cloud-danger" type="button" data-remove-branch="${indice}">Quitar</button>
             </div>`
           )
@@ -2434,16 +2489,12 @@
     const filas = [...els.branchList.querySelectorAll("[data-branch-row]")];
     catalog.sucursales = filas.map((fila, indice) => {
       const base = catalog.sucursales[indice] || {};
-      const latTexto = fila.querySelector(`[data-branch-lat="${indice}"]`)?.value.trim() || "";
-      const lngTexto = fila.querySelector(`[data-branch-lng="${indice}"]`)?.value.trim() || "";
-      const lat = Number.parseFloat(latTexto.replace(",", "."));
-      const lng = Number.parseFloat(lngTexto.replace(",", "."));
       return {
         ...base,
         nombre: fila.querySelector(`[data-branch-name="${indice}"]`)?.value.trim() || "",
         localidad: fila.querySelector(`[data-branch-locality="${indice}"]`)?.value.trim() || "",
         telefono: fila.querySelector(`[data-branch-phone="${indice}"]`)?.value.trim() || "",
-        ...(Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : {}),
+        mapLink: fila.querySelector(`[data-branch-map="${indice}"]`)?.value.trim() || "",
       };
     });
   };
@@ -3517,6 +3568,11 @@
     if (els.saveBranches) els.saveBranches.addEventListener("click", guardarSucursales);
     if (els.branchList) {
       els.branchList.addEventListener("click", (event) => {
+        const detectar = event.target.closest("[data-branch-detect]");
+        if (detectar) {
+          detectarUbicacionSucursal(Number(detectar.dataset.branchDetect));
+          return;
+        }
         const boton = event.target.closest("[data-remove-branch]");
         if (!boton) return;
         const indice = Number(boton.dataset.removeBranch);
