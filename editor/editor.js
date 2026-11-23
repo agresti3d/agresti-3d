@@ -975,10 +975,13 @@
     const variantes = [...els.variantList.querySelectorAll("[data-variant-row]")]
       .map((fila, indice) => {
         const imagen = fila.dataset.variantImage || "";
+        const stockTexto = fila.querySelector(`[data-variant-stock="${indice}"]`)?.value.trim() || "";
+        const stock = Number.parseInt(stockTexto, 10);
         return {
           nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
           precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
           ...(imagen ? { imagen } : {}),
+          ...(Number.isInteger(stock) && stock >= 0 ? { stock } : {}),
         };
       })
       .filter((variante) => variante.nombre);
@@ -1347,6 +1350,10 @@
               <label class="field">
                 <span>Precio</span>
                 <input type="text" data-variant-price="${indice}" value="${escapeHTML(variante.precio || "")}" placeholder="Ej.: $15.000" maxlength="40">
+              </label>
+              <label class="field">
+                <span>Stock</span>
+                <input type="number" data-variant-stock="${indice}" min="0" step="1" inputmode="numeric" value="${variante.stock !== undefined && variante.stock !== null ? escapeHTML(variante.stock) : ""}" placeholder="u.">
               </label>
               <button type="button" class="cloud-danger" data-remove-variant="${indice}">Quitar</button>
             </div>`
@@ -3532,10 +3539,13 @@
           const filas = [...els.variantList.querySelectorAll("[data-variant-row]")];
           const valores = filas.map((fila, i) => {
             const imagen = fila.dataset.variantImage || "";
+            const stockTexto = fila.querySelector(`[data-variant-stock="${i}"]`)?.value.trim() || "";
+            const stock = Number.parseInt(stockTexto, 10);
             return {
               nombre: fila.querySelector(`[data-variant-name="${i}"]`)?.value.trim() || "",
               precio: fila.querySelector(`[data-variant-price="${i}"]`)?.value.trim() || "",
               ...(imagen ? { imagen } : {}),
+              ...(Number.isInteger(stock) && stock >= 0 ? { stock } : {}),
             };
           });
           if (valores[indice]) delete valores[indice].imagen;
@@ -3553,10 +3563,13 @@
         const filas = [...els.variantList.querySelectorAll("[data-variant-row]")];
         const valores = filas.map((fila, indice) => {
           const imagen = fila.dataset.variantImage || "";
+          const stockTexto = fila.querySelector(`[data-variant-stock="${indice}"]`)?.value.trim() || "";
+          const stock = Number.parseInt(stockTexto, 10);
           return {
             nombre: fila.querySelector(`[data-variant-name="${indice}"]`)?.value.trim() || "",
             precio: fila.querySelector(`[data-variant-price="${indice}"]`)?.value.trim() || "",
             ...(imagen ? { imagen } : {}),
+            ...(Number.isInteger(stock) && stock >= 0 ? { stock } : {}),
           };
         });
         valores.splice(Number(boton.dataset.removeVariant), 1);
