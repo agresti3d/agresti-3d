@@ -573,10 +573,11 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
     setGeoEstado("Buscando tu ubicación…");
     navigator.geolocation.getCurrentPosition(
       (posicion) => {
+        const origen = { lat: posicion.coords.latitude, lng: posicion.coords.longitude };
         const ordenadas = branches
           .map((sucursal) => {
             const coordenadas = coordenadasSucursal(sucursal);
-            return { ...sucursal, distancia: coordenadas ? distanciaKm(posicion.coords, coordenadas) : null };
+            return { ...sucursal, distancia: coordenadas ? distanciaKm(origen, coordenadas) : null };
           })
           .sort((a, b) => (a.distancia ?? Infinity) - (b.distancia ?? Infinity));
         setBranchesOrdenadas(ordenadas);
@@ -698,7 +699,7 @@ const distanciaKm = (a, b) => {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * radio * Math.asin(Math.sqrt(h));
 };
-const formatearDistancia = (km) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", ",")} km`;
+const formatearDistancia = (km) => !Number.isFinite(km) ? "" : km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", ",")} km`;
 const sucursalesDeProducto = (product, sucursales) => {
   if (!product || !Array.isArray(product.sucursalesDisponibles)) return sucursales;
   return sucursales.filter((sucursal) => product.sucursalesDisponibles.includes(sucursal.id));
