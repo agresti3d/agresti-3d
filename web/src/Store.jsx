@@ -40,6 +40,16 @@ const precioItem = (item, product) => item?.precio || item?.variante?.precio || 
 const imagenItem = (item, product) => item?.variante?.imagen || product?.imagenes?.[0]?.src || "";
 const stockTotalProducto = (product) => Object.values(product?.stockPorSucursal || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
 const tieneDatosStock = (product) => Boolean(product?.stockPorSucursal && Object.keys(product.stockPorSucursal).length);
+const stockVarianteProducto = (variante) => {
+  if (variante?.stock === null || variante?.stock === undefined || variante?.stock === "") return null;
+  const stock = Number(variante.stock);
+  return Number.isFinite(stock) ? stock : null;
+};
+const stockDisponibleProducto = (product) => {
+  const stocks = variantesDe(product).map(stockVarianteProducto).filter((stock) => stock !== null);
+  if (stocks.length) return stocks.reduce((sum, stock) => sum + stock, 0);
+  return stockTotalProducto(product);
+};
 
 function readCart() {
   try {
@@ -134,6 +144,10 @@ function ProductCard({ product, onOpen, onAdd, onCategory, categoryName }) {
   const swipeConsumed = useRef(false);
   const imagenes = Array.isArray(product.imagenes) ? product.imagenes.filter((imagen) => imagen?.src) : [];
   const variantes = variantesDe(product);
+  const stocksVariantes = variantes.map(stockVarianteProducto).filter((stock) => stock !== null);
+  const stockConocido = stocksVariantes.length > 0 || tieneDatosStock(product);
+  const stockProducto = stocksVariantes.length ? stocksVariantes.reduce((sum, stock) => sum + stock, 0) : stockTotalProducto(product);
+  const sinStock = !variantes.length && stockConocido && stockProducto <= 0;
   const actual = variantePreview?.imagen
     ? { src: variantePreview.imagen, alt: `${product.nombre} ${variantePreview.nombre}` }
     : imagenes[foto] || imagenes[0];
@@ -195,7 +209,7 @@ function ProductCard({ product, onOpen, onAdd, onCategory, categoryName }) {
         )}
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <span className="text-base font-semibold text-accent">{precioTexto}</span>
-          <button type="button" onClick={() => variantes.length ? onOpen(product, 0) : onAdd(product, 1, imageRef.current)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-3 text-[11px] font-semibold text-white transition hover:bg-accentDeep" aria-label={variantes.length ? `Elegir opción de ${product.nombre}` : `Agregar ${product.nombre} al carrito`}><ShoppingCart size={14} /> {variantes.length ? "Elegir" : "Agregar"}</button>
+          <button type="button" disabled={sinStock} onClick={() => variantes.length ? onOpen(product, 0) : onAdd(product, 1, imageRef.current)} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-3 text-[11px] font-semibold text-white transition hover:bg-accentDeep disabled:cursor-not-allowed disabled:opacity-40" aria-label={variantes.length ? `Elegir opción de ${product.nombre}` : `Agregar ${product.nombre} al carrito`}><ShoppingCart size={14} /> {sinStock ? "Sin stock" : variantes.length ? "Elegir" : "Agregar"}</button>
         </div>
         <button type="button" onClick={() => onOpen(product)} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-line text-[11px] font-semibold text-muted transition hover:border-accent hover:text-accent"><Info size={13} /> + Info</button>
       </div>
@@ -284,13 +298,15 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
   ].filter(Boolean);
   const resenas = Array.isArray(product.resenas) ? product.resenas.filter((resena) => resena?.nombre || resena?.texto) : [];
   const promedioResenas = resenas.length ? resenas.reduce((sum, resena) => sum + (Number(resena.rating) || 0), 0) / resenas.length : 0;
-  const stock = stockTotalProducto(product);
-  const stockLabel = tieneDatosStock(product) ? (stock > 0 ? `Stock disponible${stock ? ` (${stock})` : ""}` : "Sin stock") : "A pedido";
+  const stockVariante = stockVarianteProducto(varianteActiva);
+  const stock = stockVariante !== null ? stockVariante : (tieneDatosStock(product) ? stockTotalProducto(product) : null);
+  const stockLabel = stock === null ? "A pedido" : stock > 0 ? `Stock disponible (${stock})` : "Sin stock";
+  const sinStock = stock !== null && stock <= 0;
   const beneficios = [
     detalles.material && ["Material", detalles.material],
     detalles.capacidad && ["Capacidad", detalles.capacidad],
     detalles.peso && ["Peso", detalles.peso],
-    ["Producción", stock > 0 ? "Con stock" : "A pedido"],
+    ["Producción", stock === null ? "A pedido" : stock > 0 ? "Con stock" : "Sin stock"],
     ["Envío", "Todo el país"],
   ].filter(Boolean);
   const incluye = String(detalles.contenido || "").replace(/^incluye\s+/i, "").trim();
@@ -344,6 +360,10 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
     history.replaceState(history.state, "", `#${params.toString()}`);
   };
   const agregar = () => {
+    if (sinStock) {
+      setShareStatus("Esta opción no tiene stock disponible.");
+      return;
+    }
     onAdd(product, qty, imageRef.current, varianteActiva);
     onClose();
   };
@@ -377,7 +397,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
             <h2 id="productDetailTitle" className="mt-3 font-display text-3xl font-semibold tracking-tight">{product.nombre}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
               {resenas.length > 0 && <span className="inline-flex items-center gap-1 rounded-full border border-line bg-surface2 px-2 py-1 text-ink"><span className="text-accent">★</span> {promedioResenas.toFixed(1)} <span className="text-muted">({resenas.length})</span></span>}
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${stock > 0 ? "border-[#7dd3a9]/40 text-[#7dd3a9]" : "border-line text-muted"}`}>{stockLabel}</span>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${stock !== null && stock > 0 ? "border-[#7dd3a9]/40 text-[#7dd3a9]" : "border-line text-muted"}`}>{stockLabel}</span>
             </div>
             <p className="mt-2 font-display text-3xl font-bold leading-none tracking-tight text-accent sm:text-[2.1rem]">{money(varianteActiva?.precio || product.precio)}</p>
             {product.notaPrecio && <p className="mt-1 text-[11px] text-muted">{product.notaPrecio}</p>}
@@ -398,6 +418,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
                         {v.imagen && <img src={imageUrl(v.imagen)} alt="" loading="lazy" className="h-7 w-7 flex-none rounded-md object-contain" />}
                         <span className="font-medium">{v.nombre}</span>
                         {v.precio && <span className="flex-none text-accent">{v.precio}</span>}
+                        {stockVarianteProducto(v) !== null && <span className={`flex-none ${stockVarianteProducto(v) > 0 ? "text-[#7dd3a9]" : "text-[#ff9b86]"}`}>{stockVarianteProducto(v) > 0 ? `${stockVarianteProducto(v)} disp.` : "Sin stock"}</span>}
                       </button>
                     );
                   })}
@@ -436,7 +457,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
             )}
             <div className="mt-4 flex items-center gap-3">
               <div className="flex items-center rounded-full border border-line"><button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-11 w-11 place-items-center" aria-label="Menos"><Minus size={15} /></button><span className="w-8 text-center text-sm">{qty}</span><button type="button" onClick={() => setQty((q) => q + 1)} className="grid h-11 w-11 place-items-center" aria-label="Más"><Plus size={15} /></button></div>
-              <button type="button" onClick={agregar} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white">Agregar al carrito <ShoppingBag size={15} /></button>
+              <button type="button" onClick={agregar} disabled={sinStock} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{sinStock ? "Sin stock" : "Agregar al carrito"} <ShoppingBag size={15} /></button>
             </div>
             <button type="button" onClick={() => onInquiry(product)} className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full border border-line text-xs font-semibold text-ink transition hover:border-accent">Consultar por WhatsApp</button>
             {related.length > 0 && (
@@ -458,7 +479,7 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
       <div onClick={(event) => event.stopPropagation()} className="fixed inset-x-0 bottom-0 z-[96] border-t border-line bg-surface/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_45px_-24px_rgba(0,0,0,.9)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-[1000px] items-center gap-3">
           <div className="min-w-0 flex-1"><p className="truncate text-[10px] text-muted">{varianteActiva?.nombre || (variantes.length ? "Elegí una opción" : "Precio")}</p><p className="truncate font-display text-xl font-bold leading-none tracking-tight text-accent">{money(varianteActiva?.precio || product.precio)}</p></div>
-          <button type="button" onClick={agregar} className="inline-flex min-h-12 flex-none items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-white">Agregar <ShoppingBag size={15} /></button>
+          <button type="button" onClick={agregar} disabled={sinStock} className="inline-flex min-h-12 flex-none items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{sinStock ? "Sin stock" : "Agregar"} <ShoppingBag size={15} /></button>
         </div>
       </div>
       <AnimatePresence>
@@ -579,7 +600,14 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
               </div>
             )}
             <div className="grid gap-2 p-5">
-              {(branches.length ? branches : [{ id: "agresti", nombre: "Agresti.3D", localidad: "Buenos Aires, Wilde", telefono: WA_PHONE }]).map((sucursal) => {
+              {!branches.length && (
+                <div className="rounded-2xl border border-dashed border-line p-4 text-center">
+                  <p className="text-sm font-semibold text-ink">No hay sucursales disponibles para este producto.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">Escribinos y te confirmamos si lo podemos producir o derivar.</p>
+                  <a href={WA_URL} target="_blank" rel="noopener" className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold text-white">Escribir por WhatsApp</a>
+                </div>
+              )}
+              {branches.map((sucursal) => {
                 const telefono = String(sucursal.telefono || "").replace(/\D/g, "");
                 const href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeFinal)}`;
                 return (
@@ -598,6 +626,11 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
     </AnimatePresence>
   );
 }
+
+const sucursalesDeProducto = (product, sucursales) => {
+  if (!product || !Array.isArray(product.sucursalesDisponibles)) return sucursales;
+  return sucursales.filter((sucursal) => product.sucursalesDisponibles.includes(sucursal.id));
+};
 
 export default function Store() {
   const catalog = useCatalog();
@@ -668,7 +701,7 @@ export default function Store() {
       const variantesTexto = variantes.map((variante) => `${variante.nombre} ${variante.precio || ""}`).join(" ");
       const text = normalizarBusqueda(`${p.nombre} ${p.descripcion || ""} ${p.categoria} ${catMap.get(p.categoria)?.nombre || ""} ${variantesTexto} ${p.detalles?.colores || ""} ${p.detalles?.material || ""}`);
       const hasOptions = variantes.length > 0;
-      const hasStock = tieneDatosStock(p) && stockTotalProducto(p) > 0;
+      const hasStock = (variantes.some((variante) => stockVarianteProducto(variante) !== null) ? stockDisponibleProducto(p) > 0 : tieneDatosStock(p) && stockTotalProducto(p) > 0);
       return inCategory && inPrice && (!optionsOnly || hasOptions) && (!stockOnly || hasStock) && (!q || text.includes(q));
     });
     if (sort === "precio-asc") list = [...list].sort((a, b) => (numberPrice(a.precio) || 99999999) - (numberPrice(b.precio) || 99999999));
@@ -694,6 +727,21 @@ export default function Store() {
     const mismaCategoria = disponibles.filter((producto) => producto.categoria === referencia?.categoria);
     return [...mismaCategoria, ...disponibles].slice(0, 3);
   }, [cart, products]);
+
+  const inquiryBranches = useMemo(() => inquiry ? sucursalesDeProducto(inquiry, sucursales) : sucursales, [inquiry, sucursales]);
+  const cartBranches = useMemo(() => {
+    if (!cart.length) return sucursales;
+    const listas = cart
+      .map((item) => {
+        const producto = products.find((p) => p.id === item.id);
+        if (!producto) return null;
+        return Array.isArray(producto.sucursalesDisponibles) ? producto.sucursalesDisponibles : sucursales.map((sucursal) => sucursal.id);
+      })
+      .filter(Boolean);
+    if (!listas.length) return sucursales;
+    const comunes = listas.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+    return sucursales.filter((sucursal) => comunes.includes(sucursal.id));
+  }, [cart, products, sucursales]);
 
   useEffect(() => {
     if (!detail || detail.id === detailId) return;
@@ -872,8 +920,8 @@ export default function Store() {
       </div>
       <AnimatePresence>{detail && <Detail product={detail} initialVariantIndex={detailInitialVariantIndex} related={detailRelated} onOpenRelated={(producto) => openDetail(producto, variantesDe(producto).length ? 0 : null)} onClose={closeDetail} onAdd={add} onInquiry={setInquiry} onCategory={(id) => { setDetailId(null); setDetailVariantIndex(null); setCategory(id); history.replaceState(null, "", `#cat=${encodeURIComponent(id)}`); window.requestAnimationFrame(() => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" })); }} categoryName={catMap.get(detail.categoria)?.nombre || detail.categoria} />}</AnimatePresence>
       <AnimatePresence>{cartOpen && <Cart items={cart} products={products} suggestions={cartSuggestions} onOpenSuggestion={(producto) => { setCartOpen(false); openDetail(producto, variantesDe(producto).length ? 0 : null); }} onClose={() => setCartOpen(false)} onChange={change} onRemove={remove} onCheckout={() => setCheckoutOpen(true)} />}</AnimatePresence>
-      <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={sucursales} message={mensajePedido} summary={resumenPedido} footer="Elegí la sucursal más cercana. El envío o retiro se coordina por WhatsApp." />
-      <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={sucursales} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí la sucursal y el mensaje incluirá el link de este producto." footer="Al elegir una sucursal se abre WhatsApp con la consulta y el link del producto." />
+      <CheckoutDialog open={checkoutOpen} onClose={() => setCheckoutOpen(false)} branches={cartBranches} message={mensajePedido} summary={resumenPedido} description="Elegí una sucursal que tenga disponible todo el pedido." footer="Elegí la sucursal más cercana. El envío o retiro se coordina por WhatsApp." />
+      <CheckoutDialog open={Boolean(inquiry)} onClose={() => setInquiry(null)} branches={inquiryBranches} message={mensajeConsulta} eyebrow="Consulta" title="Consultar por WhatsApp" description="Elegí una sucursal que tenga disponible este producto." footer="Al elegir una sucursal se abre WhatsApp con la consulta y el link del producto." />
       <AnimatePresence>
         {fly && (
           <motion.img
