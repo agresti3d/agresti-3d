@@ -229,17 +229,26 @@ function ProductSkeleton() {
   );
 }
 
-function CategoryCard({ category, onClick }) {
+function CategoryGroupCard({ category, subcategorias, onSelect }) {
   return (
-    <button type="button" onClick={onClick} className="group overflow-hidden rounded-[20px] border border-line bg-surface p-3 text-left transition hover:-translate-y-1 hover:border-line-strong">
-      <div className="grid aspect-[1.35] place-items-center overflow-hidden rounded-[14px] bg-surface2">
-        {category.imagen ? <img src={imageUrl(category.imagen)} alt="" loading="lazy" width="400" height="300" className="h-[85%] w-[85%] object-contain transition duration-500 group-hover:scale-105" /> : <LayoutGrid size={32} className="text-muted" />}
-      </div>
-      <div className="flex items-end justify-between gap-2 pt-3">
-        <div><h3 className="text-sm font-semibold">{category.nombre}</h3><p className="mt-1 text-xs text-muted">{category.count} productos</p></div>
-        <span className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted transition group-hover:border-accent group-hover:text-accent"><ArrowRight size={14} /></span>
-      </div>
-    </button>
+    <div className="flex flex-col overflow-hidden rounded-[20px] border border-line bg-surface p-3 transition hover:border-line-strong">
+      <button type="button" onClick={() => onSelect(category.id)} className="group flex min-h-[64px] items-center gap-3 text-left" aria-label={`Ver categoría ${category.nombre}`}>
+        <span className="grid h-14 w-14 flex-none place-items-center overflow-hidden rounded-xl bg-surface2">
+          {category.imagen ? <img src={imageUrl(category.imagen)} alt="" loading="lazy" decoding="async" className="h-[86%] w-[86%] object-contain transition duration-500 group-hover:scale-105" /> : <LayoutGrid size={24} className="text-muted" />}
+        </span>
+        <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><strong className="truncate text-sm font-semibold">{category.nombre}</strong><ArrowRight size={14} className="flex-none text-muted transition group-hover:text-accent" /></span><span className="mt-0.5 block text-[11px] text-muted">{category.count} producto{category.count === 1 ? "" : "s"}</span></span>
+      </button>
+      {subcategorias.length > 0 && (
+        <div className="mt-3 grid gap-0.5 border-t border-line pt-2">
+          {subcategorias.map((subcategoria) => (
+            <button key={`${subcategoria.id}-${subcategoria.depth}`} type="button" onClick={() => onSelect(subcategoria.id)} className="flex min-h-11 items-center justify-between gap-2 rounded-lg pr-2 text-left text-[11px] text-muted transition hover:bg-surface2 hover:text-ink" style={{ paddingLeft: `${8 + subcategoria.depth * 14}px` }} aria-label={`Ver subcategoría ${subcategoria.nombre}`}>
+              <span className="flex min-w-0 items-center gap-1.5"><span className={`h-1 w-1 flex-none rounded-full ${subcategoria.depth ? "bg-line" : "bg-accent/70"}`} aria-hidden="true" /><span className="truncate">{subcategoria.nombre}</span></span>
+              <span className="flex-none text-[10px] text-muted">{subcategoria.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -761,13 +770,39 @@ export default function Store() {
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const pathOf = (id) => { const path = []; let c = catMap.get(id); while (c) { path.unshift(c); c = catMap.get(c.padre); } return path; };
   const rootOf = (id) => pathOf(id)[0]?.id || "";
+  const categoryCounts = useMemo(() => {
+    const counts = new Map();
+    products.forEach((producto) => {
+      pathOf(producto.categoria).forEach((categoria) => counts.set(categoria.id, (counts.get(categoria.id) || 0) + 1));
+    });
+    return counts;
+  }, [products, catMap]);
   const roots = useMemo(() => categories.filter((c) => !c.padre).map((c) => {
+    const count = categoryCounts.get(c.id) || 0;
     const list = products.filter((p) => pathOf(p.categoria).some((x) => x.id === c.id));
     const conFoto = list.filter((p) => p.imagenes?.[0]?.src);
     const ultimo = [...conFoto].sort((a, b) => String(b.creado || "").localeCompare(String(a.creado || "")))[0] || conFoto[0];
     const portada = c.portada && c.portada !== "auto" ? c.portada : ultimo?.imagenes?.[0]?.src;
-    return { ...c, count: list.length, imagen: portada };
-  }).filter((c) => c.count > 0), [categories, products]);
+    return { ...c, count, imagen: portada };
+  }).filter((c) => c.count > 0), [categories, products, categoryCounts]);
+
+  const categoryGroups = useMemo(() => {
+    const porPadre = new Map();
+    categories.forEach((categoria) => {
+      const padre = categoria.padre || "";
+      if (!porPadre.has(padre)) porPadre.set(padre, []);
+      porPadre.get(padre).push(categoria);
+    });
+    const descendientes = (padreId, depth = 0) =>
+      (porPadre.get(padreId) || []).flatMap((categoria) => {
+        const count = categoryCounts.get(categoria.id) || 0;
+        return [
+          { ...categoria, depth, count },
+          ...descendientes(categoria.id, depth + 1),
+        ].filter((item) => item.count > 0);
+      });
+    return roots.map((root) => ({ ...root, subcategorias: descendientes(root.id) }));
+  }, [roots, categories, categoryCounts]);
 
   const filtered = useMemo(() => {
     const q = normalizarBusqueda(query.trim());
@@ -972,8 +1007,10 @@ export default function Store() {
           {category === "todos" && (
             <section className="mt-12">
               <h2 className="text-lg font-semibold">Elegí por dónde empezar</h2>
-              <p className="mt-1 text-xs text-muted">Seleccioná una categoría para explorar sus productos.</p>
-              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">{roots.map((c) => <CategoryCard key={c.id} category={c} onClick={() => irACategoria(c.id)} />)}</div>
+              <p className="mt-1 text-xs text-muted">Categorías y subcategorías con sus productos. Tocá cualquiera para entrar directo.</p>
+              <div className="mt-4 grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {categoryGroups.map((categoria) => <CategoryGroupCard key={categoria.id} category={categoria} subcategorias={categoria.subcategorias} onSelect={irACategoria} />)}
+              </div>
             </section>
           )}
 
