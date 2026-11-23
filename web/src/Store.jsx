@@ -556,8 +556,56 @@ function Cart({ items, products, onClose, onChange, onRemove, onCheckout, sugges
 
 function CheckoutDialog({ open, onClose, branches, message, summary = null, eyebrow = "Cerrar pedido", title = "Elegí tu sucursal", description = "El mensaje va a incluir el detalle y el link de cada producto.", footer = "Al elegir una sucursal se abre WhatsApp con el pedido completo y los links." }) {
   const [modoEntrega, setModoEntrega] = useState("retiro");
+  const [branchesOrdenadas, setBranchesOrdenadas] = useState(branches);
+  const [geoEstado, setGeoEstado] = useState("");
+  const [geoLoading, setGeoLoading] = useState(false);
+  const ordenarPorCercania = () => {
+    if (!navigator.geolocation) {
+      setGeoEstado("Tu navegador no permite ubicación.");
+      return;
+    }
+    const conCoordenadas = branches.filter((sucursal) => Boolean(coordenadasSucursal(sucursal)));
+    if (!conCoordenadas.length) {
+      setGeoEstado("Las sucursales todavía no tienen coordenadas cargadas.");
+      return;
+    }
+    setGeoLoading(true);
+    setGeoEstado("Buscando tu ubicación…");
+    navigator.geolocation.getCurrentPosition(
+      (posicion) => {
+        const ordenadas = branches
+          .map((sucursal) => {
+            const coordenadas = coordenadasSucursal(sucursal);
+            return { ...sucursal, distancia: coordenadas ? distanciaKm(posicion.coords, coordenadas) : null };
+          })
+          .sort((a, b) => (a.distancia ?? Infinity) - (b.distancia ?? Infinity));
+        setBranchesOrdenadas(ordenadas);
+        setGeoLoading(false);
+        setGeoEstado("Sucursales ordenadas por cercanía.");
+      },
+      () => {
+        setGeoLoading(false);
+        setGeoEstado("No pudimos acceder a tu ubicación. Podés elegir igual.");
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  };
   useEffect(() => {
     if (open) setModoEntrega("retiro");
+  }, [open]);
+  useEffect(() => {
+    setBranchesOrdenadas(branches);
+    setGeoEstado("");
+  }, [branches, open]);
+  useEffect(() => {
+    if (!open || !navigator.geolocation || !navigator.permissions?.query) return undefined;
+    let activo = true;
+    navigator.permissions.query({ name: "geolocation" })
+      .then((estado) => {
+        if (activo && estado.state === "granted") ordenarPorCercania();
+      })
+      .catch(() => {});
+    return () => { activo = false; };
   }, [open]);
   useEffect(() => {
     if (!open) return undefined;
@@ -600,20 +648,25 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
               </div>
             )}
             <div className="grid gap-2 p-5">
-              {!branches.length && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-paper/30 px-3 py-2">
+                <div><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-muted">Cerca de vos</p><p className="mt-0.5 text-[10px] text-muted">Usamos tu ubicación solo para ordenar las sucursales.</p></div>
+                <button type="button" onClick={ordenarPorCercania} disabled={geoLoading} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-line px-3 text-[10px] font-semibold text-ink transition hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"><MapPin size={13} /> {geoLoading ? "Buscando…" : "Usar mi ubicación"}</button>
+                {geoEstado && <p className="w-full text-[10px] text-muted" role="status" aria-live="polite">{geoEstado}</p>}
+              </div>
+              {!branchesOrdenadas.length && (
                 <div className="rounded-2xl border border-dashed border-line p-4 text-center">
                   <p className="text-sm font-semibold text-ink">No hay sucursales disponibles para este producto.</p>
                   <p className="mt-1 text-xs leading-relaxed text-muted">Escribinos y te confirmamos si lo podemos producir o derivar.</p>
                   <a href={WA_URL} target="_blank" rel="noopener" className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-xs font-semibold text-white">Escribir por WhatsApp</a>
                 </div>
               )}
-              {branches.map((sucursal) => {
+              {branchesOrdenadas.map((sucursal) => {
                 const telefono = String(sucursal.telefono || "").replace(/\D/g, "");
                 const href = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeFinal)}`;
                 return (
                   <a key={sucursal.id || sucursal.nombre} href={href} target="_blank" rel="noopener" onClick={onClose} className="flex min-h-[64px] items-center gap-3 rounded-2xl border border-line bg-paper/40 p-3 transition hover:border-accent hover:bg-accent/5">
                     <span className="grid h-10 w-10 flex-none place-items-center rounded-full border border-accent/40 bg-accent/10 text-accent"><MapPin size={17} /></span>
-                    <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{sucursal.nombre}</strong><span className="mt-0.5 block text-xs text-muted">{sucursal.localidad}</span></span>
+                    <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{sucursal.nombre}</strong><span className="mt-0.5 block text-xs text-muted">{sucursal.localidad}{sucursal.distancia !== null && sucursal.distancia !== undefined ? ` · a ${formatearDistancia(sucursal.distancia)}` : ""}</span></span>
                     <span className="inline-flex flex-none items-center gap-1 text-[11px] font-semibold text-accent">WhatsApp <ArrowUpRight size={13} /></span>
                   </a>
                 );
@@ -627,6 +680,25 @@ function CheckoutDialog({ open, onClose, branches, message, summary = null, eyeb
   );
 }
 
+const COORDENADAS_CONOCIDAS = {
+  "buenos-aires-buenos-aires": { lat: -34.7006, lng: -58.3169 },
+  "la-rioja-la-rioja": { lat: -29.4131, lng: -66.8558 },
+};
+const coordenadasSucursal = (sucursal) => {
+  const lat = Number(sucursal?.lat);
+  const lng = Number(sucursal?.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  return COORDENADAS_CONOCIDAS[sucursal?.id] || null;
+};
+const distanciaKm = (a, b) => {
+  const radio = 6371;
+  const rad = (grados) => (grados * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * radio * Math.asin(Math.sqrt(h));
+};
+const formatearDistancia = (km) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", ",")} km`;
 const sucursalesDeProducto = (product, sucursales) => {
   if (!product || !Array.isArray(product.sucursalesDisponibles)) return sucursales;
   return sucursales.filter((sucursal) => product.sucursalesDisponibles.includes(sucursal.id));
