@@ -4129,7 +4129,7 @@
     if (els.imageFrameZoom) {
       els.imageFrameZoom.addEventListener("input", () => {
         if (!editorEncuadreState) return;
-        editorEncuadreState.zoom = Math.max(0.5, Math.min(1.5, Number(els.imageFrameZoom.value) / 100));
+        editorEncuadreState.zoom = Math.max(0.5, Math.min(3, Number(els.imageFrameZoom.value) / 100));
         if (els.imageFrameZoomValue) els.imageFrameZoomValue.textContent = `${els.imageFrameZoom.value}%`;
         renderizarEncuadre();
       });
