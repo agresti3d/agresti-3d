@@ -1046,3 +1046,13 @@
 .cloud-image-editor__tools button.is-active { border-color: var(--cloud-accent); background: rgba(255,106,61,.12); color: var(--cloud-accent); }
 #imageEditorPanToggle.is-active { border-color: var(--cloud-accent); color: var(--cloud-accent); }
 .cloud-kbd { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: .25rem; padding: 0 .25rem; border: 1px solid var(--cloud-line-strong); border-radius: 4px; background: rgba(255,255,255,.06); color: var(--cloud-muted); font: inherit; font-size: .58rem; line-height: 1; }
+.cloud-mobile-back { display: none; }
+@media (max-width: 900px) {
+  .cloud-mobile-back { display: inline-flex; min-height: 44px; align-items: center; justify-content: flex-start; gap: .35rem; padding: .4rem .7rem; border: 1px solid var(--cloud-line); border-radius: 8px; background: transparent; color: var(--cloud-ink); font: inherit; font-size: .78rem; font-weight: 600; text-align: left; }
+  #panelProductos.cloud-shell--editing .cloud-sidebar { display: none; }
+  #panelProductos:not(.cloud-shell--editing) .cloud-main { display: none; }
+}
+.cloud-mobile-new { display: none; }
+@media (max-width: 900px) {
+  .cloud-mobile-new { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 30; display: inline-flex; min-height: 48px; align-items: center; gap: .3rem; padding: .55rem .95rem; border: 1px solid var(--cloud-accent); border-radius: 999px; background: var(--cloud-accent); box-shadow: 0 12px 30px rgba(0,0,0,.45); color: #fff; font: inherit; font-size: .78rem; font-weight: 700; }
+}
