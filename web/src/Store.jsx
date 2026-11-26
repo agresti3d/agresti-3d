@@ -387,12 +387,12 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
         <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="productDetailTitle" className="relative mx-auto grid max-h-[calc(100dvh-1.5rem)] w-full max-w-[1000px] overflow-y-auto rounded-[24px] border border-line bg-surface shadow-2xl sm:max-h-[calc(100dvh-3rem)] lg:grid-cols-2">
           <div className="relative flex flex-col bg-surface2 p-4">
             <button type="button" onClick={onClose} className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-full border border-line bg-paper/80 text-ink" aria-label="Cerrar ficha"><X size={18} /></button>
-            <div className="relative flex h-[310px] items-center justify-center sm:h-[390px] lg:h-[460px]">
+            <div className="relative flex h-[310px] items-center justify-center overflow-hidden sm:h-[390px] lg:h-[460px]">
               {actual?.type === "video" ? (
                 <video src={imageUrl(actual.src)} controls muted playsInline preload="metadata" onPlay={(e) => { e.currentTarget.muted = true; }} className="max-h-full w-full rounded-xl bg-black">Tu navegador no reproduce este video.</video>
               ) : (
-                <button type="button" onClick={abrirVisor} onTouchStart={iniciarSwipe} onTouchEnd={terminarSwipe} className="group grid h-full w-full touch-pan-y place-items-center" aria-label="Ver foto en pantalla completa">
-                  {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} className="max-h-full max-w-full object-contain transition duration-300 group-hover:scale-[1.02]" /> : <span className="text-sm text-muted">Sin foto</span>}
+                <button type="button" onClick={abrirVisor} onTouchStart={iniciarSwipe} onTouchEnd={terminarSwipe} className="group grid h-full w-full touch-pan-y place-items-center overflow-hidden" aria-label="Ver foto en pantalla completa">
+                  {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} decoding="async" className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]" /> : <span className="text-sm text-muted">Sin foto</span>}
                 </button>
               )}
               {media.length > 1 && (
