@@ -391,8 +391,8 @@ function Detail({ product, onClose, onAdd, onCategory, onInquiry, categoryName, 
               {actual?.type === "video" ? (
                 <video src={imageUrl(actual.src)} controls muted playsInline preload="metadata" onPlay={(e) => { e.currentTarget.muted = true; }} className="max-h-full w-full rounded-xl bg-black">Tu navegador no reproduce este video.</video>
               ) : (
-                <button type="button" onClick={abrirVisor} onTouchStart={iniciarSwipe} onTouchEnd={terminarSwipe} className="group grid h-full w-full touch-pan-y place-items-center overflow-hidden" aria-label="Ver foto en pantalla completa">
-                  {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} decoding="async" className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]" /> : <span className="text-sm text-muted">Sin foto</span>}
+                <button type="button" onClick={abrirVisor} onTouchStart={iniciarSwipe} onTouchEnd={terminarSwipe} className="group relative grid h-full w-full touch-pan-y place-items-center overflow-hidden" aria-label="Ver foto en pantalla completa">
+                  {actual?.src ? <img ref={imageRef} src={imageUrl(actual.src)} alt={actual.alt || product.nombre} decoding="async" className="absolute inset-0 h-full w-full object-contain transition duration-300 group-hover:scale-[1.02]" /> : <span className="text-sm text-muted">Sin foto</span>}
                 </button>
               )}
               {media.length > 1 && (
