@@ -34,6 +34,9 @@
     productCount: $("#productCount"),
     searchProducts: $("#searchProducts"),
     productList: $("#productList"),
+    panelProductos: $("#panelProductos"),
+    backToProducts: $("#backToProducts"),
+    newProductMobile: $("#newProductMobile"),
     newProduct: $("#newProduct"),
     emptyNewProduct: $("#emptyNewProduct"),
     emptyState: $("#emptyState"),
@@ -888,6 +891,20 @@
   const mostrarFormulario = (visible) => {
     if (els.emptyState) els.emptyState.hidden = visible;
     if (els.productForm) els.productForm.hidden = !visible;
+    els.panelProductos?.classList.toggle("cloud-shell--editing", Boolean(visible));
+    if (visible && window.matchMedia("(max-width: 900px)").matches) {
+      window.requestAnimationFrame(() => els.productForm?.scrollIntoView({ block: "start", behavior: "auto" }));
+    }
+  };
+
+  const volverListaProductos = () => {
+    if (!els.productForm || els.productForm.hidden) return;
+    const hayCambios = dirty || (creating && Boolean(els.productName?.value.trim()));
+    if (hayCambios && !window.confirm("¿Volver a la lista de productos? Los cambios sin guardar se perderán.")) return;
+    selectedId = null;
+    creating = false;
+    mostrarFormulario(false);
+    window.requestAnimationFrame(() => els.searchProducts?.scrollIntoView({ block: "start", behavior: "auto" }));
   };
 
   const editarProducto = (id) => {
@@ -3500,6 +3517,8 @@
       });
     }
     if (els.newProduct) els.newProduct.addEventListener("click", nuevoProducto);
+    if (els.newProductMobile) els.newProductMobile.addEventListener("click", nuevoProducto);
+    if (els.backToProducts) els.backToProducts.addEventListener("click", volverListaProductos);
     if (els.emptyNewProduct) els.emptyNewProduct.addEventListener("click", nuevoProducto);
     if (els.searchProducts) {
       els.searchProducts.addEventListener("input", () => {
