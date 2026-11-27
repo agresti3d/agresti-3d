@@ -1056,3 +1056,55 @@
 @media (max-width: 900px) {
   .cloud-mobile-new { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 30; display: inline-flex; min-height: 48px; align-items: center; gap: .3rem; padding: .55rem .95rem; border: 1px solid var(--cloud-accent); border-radius: 999px; background: var(--cloud-accent); box-shadow: 0 12px 30px rgba(0,0,0,.45); color: #fff; font: inherit; font-size: .78rem; font-weight: 700; }
 }
+/* Evitar desborde horizontal y zoom gestual en el editor */
+html, body.cloud-body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  touch-action: pan-x pan-y;
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body.cloud-body,
+.cloud-app,
+.cloud-main-wrap,
+.cloud-panel,
+.cloud-shell,
+.cloud-main,
+.cloud-sidebar,
+.cloud-form,
+.cloud-form__head,
+.cloud-form__actions,
+.cloud-manager,
+.cloud-manager__head,
+.cloud-tools-grid,
+.cloud-tool-card,
+.cloud-tool-card__actions {
+  min-width: 0;
+  max-width: 100%;
+}
+.cloud-main-wrap { width: 100%; }
+.cloud-shell { width: 100%; }
+.cloud-app input,
+.cloud-app select,
+.cloud-app textarea,
+.cloud-app button { max-width: 100%; }
+.cloud-form__actions,
+.cloud-form__head,
+.cloud-header,
+.cloud-manager__head,
+.cloud-tool-card__actions,
+.cloud-image-editor__actions,
+.cloud-image-editor__tools { flex-wrap: wrap; }
+.cloud-tabs { max-width: 100%; overscroll-behavior-x: contain; }
+.cloud-user-row { flex-wrap: wrap; }
+.cloud-user-row__actions { min-width: 0; }
+@media (max-width: 560px) {
+  .cloud-variant { grid-template-columns: 1fr; }
+  .cloud-variant .cloud-danger { grid-column: auto; justify-self: stretch; }
+  .cloud-image-editor { width: calc(100vw - 16px); }
+  .cloud-form__actions--sticky { top: 84px; }
+}
+@supports not (overflow: clip) {
+  html, body.cloud-body { overflow-x: hidden; }
+}
