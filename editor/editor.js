@@ -4234,7 +4234,19 @@
     });
   };
 
+  const bloquearGestosZoom = () => {
+    const evitar = (event) => event.preventDefault();
+    document.addEventListener("gesturestart", evitar, { passive: false });
+    document.addEventListener("gesturechange", evitar, { passive: false });
+    document.addEventListener("gestureend", evitar, { passive: false });
+    document.addEventListener("dblclick", (event) => {
+      if (event.target.closest("input, textarea, select, canvas")) return;
+      event.preventDefault();
+    }, { passive: false });
+  };
+
   const iniciar = () => {
+    bloquearGestosZoom();
     iniciarSesionUI();
     if (!initFirebase()) return;
     auth.onAuthStateChanged((user) => {
